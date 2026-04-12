@@ -7,12 +7,40 @@ tasks:
     cmds:
       - echo "Initializing the project"
       - mise install
-      - cargo install trunk ui-cli leptosfmt
+      - rustup target add wasm32-unknown-unknown
+      - cargo install leptosfmt
       - cargo install cargo-leptos --locked
       - cog install-hook -a -o
+
+  dev:
+    desc: "Start the development server with hot-reload (requires cargo-leptos)"
+    cmds:
+      - cargo leptos watch
+
+  build:
+    desc: "Build the production bundle (requires cargo-leptos)"
+    cmds:
+      - cargo leptos build --release
+
+  serve:
+    desc: "Build and run the production server"
+    cmds:
+      - task: build
+      - ./target/release/monofolio
+
   lint:
     desc: "Run linters and formatters"
     cmds:
       - echo "Running linters and formatters"
       - cargo fmt --all -- --check
-      - cargo clippy --all-targets -- -D warnings
+      - cargo clippy --features ssr -- -D warnings
+
+  fmt:
+    desc: "Format the code"
+    cmds:
+      - cargo fmt --all
+
+  test:
+    desc: "Run tests"
+    cmds:
+      - cargo test --features ssr

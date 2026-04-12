@@ -1,0 +1,97 @@
+[package]
+name = "monofolio"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+actix-files = { version = "0.6", optional = true }
+actix-web = { version = "4", optional = true, features = ["macros"] }
+console_error_panic_hook = "0.1"
+leptos = { version = "0.7", features = [] }
+leptos_actix = { version = "0.7", optional = true }
+leptos_meta = { version = "0.7" }
+leptos_router = { version = "0.7", features = [] }
+wasm-bindgen = "=0.2.100"
+
+[features]
+csr = ["leptos/csr"]
+hydrate = ["leptos/hydrate"]
+ssr = [
+  "dep:actix-files",
+  "dep:actix-web",
+  "dep:leptos_actix",
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+]
+
+[package.metadata.leptos]
+# The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle
+output-name = "monofolio"
+
+# The site root folder is where cargo-leptos generates all output.
+site-root = "target/site"
+
+# The site-pkg-dir is relative to site-root
+site-pkg-dir = "pkg"
+
+# The SCSS source file. If it ends with .sass it uses the Sass format
+style-file = "style/main.scss"
+
+# Enables additional asset hashing for cache-busting
+assets-dir = "public"
+
+# The IP and port (target) to serve the output.
+# On production, often change to "0.0.0.0"
+site-addr = "127.0.0.1:5437"
+
+# The port number to use for automatic reload websocket
+reload-port = 3001
+
+# [Optional] Command to use when running end2end tests
+end2end-cmd = "npx playwright test"
+end2end-dir = "end2end"
+
+#  The browserlist query used for optimizing the CSS.
+browserquery = "defaults"
+
+# Set by cargo-leptos watch when building with that tool.
+# `env` is reserved for the LEPTOS_OUTPUT_NAME environment variable
+watch = false
+
+# The environment Leptos will run in, usually either "DEV" or "PROD"
+env = "DEV"
+
+# The features to use when compiling the bin target
+#
+# Optional. Can be over-ridden with the command line option --bin-features
+bin-features = ["ssr"]
+
+# If the --no-default-features flag should be used when compiling the bin target
+#
+# Optional. Defaults to false.
+bin-default-features = false
+
+# The features to use when compiling the lib target
+#
+# Optional. Can be over-ridden with the command line option --lib-features
+lib-features = ["hydrate"]
+
+# If the --no-default-features flag should be used when compiling the lib target
+#
+# Optional. Defaults to false.
+lib-default-features = false
+
+# The profile to use for the lib target when compiling for release
+#
+# Optional. Defaults to "release".
+lib-profile-release = "wasm-release"
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1

@@ -1,0 +1,10 @@
+# This file sets up the build configuration for different targets.
+# When building for WASM (hydrate), we use the wasm32-unknown-unknown target.
+# When building for the server (ssr), we use the native target.
+
+[build]
+# Needed to avoid linking issues on Linux with wasm targets
+rustflags = ["--cfg=web_sys_unstable_apis"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg=web_sys_unstable_apis"]
