@@ -1,0 +1,83 @@
+use serde::{Deserialize, Serialize};
+
+/// A URL link shown on the home page.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SocialLink {
+    pub name: String,
+    pub url: String,
+    #[serde(default)]
+    pub primaire: bool,
+    #[serde(rename = "imgUrl", default)]
+    pub img_url: String,
+}
+
+/// A single entry in the career / education timeline.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HistoryEntry {
+    pub title: String,
+    pub lieux: String,
+    pub date: String,
+    pub weight: u32,
+    #[serde(rename = "imgUrl", default)]
+    pub img_url: String,
+    #[serde(rename = "icoUrl", default)]
+    pub ico_url: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub url: Vec<SocialLink>,
+}
+
+/// Configuration for the home page, loaded from `contents/home.yaml`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct HomeConfig {
+    pub name: String,
+    pub presentation: String,
+    #[serde(rename = "shortDescription")]
+    pub short_description: String,
+    #[serde(rename = "coverTitle", default)]
+    pub cover_title: Vec<String>,
+    #[serde(rename = "cvUrl", default)]
+    pub cv_url: String,
+    #[serde(default)]
+    pub url: Vec<SocialLink>,
+    #[serde(default)]
+    pub history: Vec<HistoryEntry>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn social_link_defaults() {
+        let yaml = "name: GitHub\nurl: https://github.com\n";
+        let link: SocialLink = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(link.name, "GitHub");
+        assert!(!link.primaire);
+        assert!(link.img_url.is_empty());
+    }
+
+    #[test]
+    fn home_config_round_trips() {
+        let config = HomeConfig {
+            name: "Max".to_string(),
+            presentation: "Hello".to_string(),
+            short_description: "Dev".to_string(),
+            cover_title: vec!["Hello".to_string()],
+            cv_url: "cv.pdf".to_string(),
+            url: vec![],
+            history: vec![],
+        };
+        let yaml = serde_yaml::to_string(&config).unwrap();
+        let parsed: HomeConfig = serde_yaml::from_str(&yaml).unwrap();
+        assert_eq!(config, parsed);
+    }
+
+    #[test]
+    fn history_entry_url_defaults_to_empty_vec() {
+        let yaml = "title: T\nlieux: L\ndate: 2020\nweight: 1\n";
+        let entry: HistoryEntry = serde_yaml::from_str(yaml).unwrap();
+        assert!(entry.url.is_empty());
+    }
+}

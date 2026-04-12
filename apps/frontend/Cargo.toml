@@ -1,0 +1,73 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "frontend"
+path = "src/main.rs"
+
+[dependencies]
+leptos = { workspace = true }
+leptos_meta = { workspace = true }
+leptos_router = { workspace = true }
+leptos_actix = { workspace = true, optional = true }
+actix-web = { workspace = true, optional = true }
+actix-files = { workspace = true, optional = true }
+utoipa = { workspace = true, optional = true }
+utoipa-actix-web = { workspace = true, optional = true }
+utoipa-scalar = { version = "0.3", features = ["actix-web"], optional = true }
+tracing = { workspace = true }
+tracing-actix-web = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+
+trace = { path = "../../libs/trace", optional = true }
+content = { path = "../../libs/content" }
+api = { path = "../../libs/api", optional = true }
+
+[features]
+default = []
+hydrate = ["leptos/hydrate"]
+ssr = [
+    "dep:actix-web",
+    "dep:actix-files",
+    "dep:leptos_actix",
+    "dep:utoipa",
+    "dep:utoipa-actix-web",
+    "dep:utoipa-scalar",
+    "dep:tracing-actix-web",
+    "dep:tokio",
+    "dep:anyhow",
+    "dep:trace",
+    "dep:api",
+    "dep:serde_yaml",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+]
+
+[package.metadata.leptos]
+# Name used by cargo-leptos
+name = "monofolio"
+# Output directory for the WASM artefacts
+site-root = "target/site"
+# Public assets directory
+site-pkg-dir = "pkg"
+# Assets directory (images, CSS, etc.)
+assets-dir = "public"
+# JS entry point created by cargo-leptos
+js-dir = "js"
+# The app binary
+bin-exe-name = "frontend"
+# Feature flags
+lib-features = ["hydrate"]
+bin-features = ["ssr"]
+# Styles
+style-file = "style/main.scss"
