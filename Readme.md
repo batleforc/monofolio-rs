@@ -16,7 +16,7 @@ The goal of this V2 is to strengthen is to redo the design, the codebase, the wa
 - Move to [Leptos](https://github.com/leptos-rs/leptos) with SSR (using Actix) for better performance and SEO.
 - Use Shadcn UI for the UI and use [Rust/UI](http://github.com/rust-ui/ui) for the components and the design system.
 - handle:
-  - the markdown parsing with [comrak](https://github.com/kivikakk/comrak)
+  - the markdown parsing with [pulldown-cmark](https://pulldown-cmark.github.io/pulldown-cmark/index.html)
   - the image optimization with [image](https://github.com/image-rs/image)
   - the code block parsing with [Shiki](https://github.com/shikijs/shiki)
   - the RSS feed generation by hand and helped by actix
