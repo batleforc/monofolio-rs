@@ -19,10 +19,9 @@ async fn main() -> anyhow::Result<()> {
         service_name: "monofolio".to_string(),
     });
 
-    let home_yaml =
-        std::fs::read_to_string("contents/home.yaml").unwrap_or_else(|_| String::new());
-    let home_config: HomeConfig = serde_yaml::from_str(&home_yaml)
-        .expect("Failed to parse contents/home.yaml");
+    let home_yaml = std::fs::read_to_string("contents/home.yaml").unwrap_or_else(|_| String::new());
+    let home_config: HomeConfig =
+        serde_yaml::from_str(&home_yaml).expect("Failed to parse contents/home.yaml");
 
     let conf = leptos::config::get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -34,6 +33,8 @@ async fn main() -> anyhow::Result<()> {
     let server = HttpServer::new(move || {
         let leptos_options = conf.leptos_options.clone();
         let site_root = leptos_options.site_root.clone();
+        let media_path =
+            std::env::var("MEDIA_PATH").unwrap_or_else(|_| "contents/media".to_string());
 
         let (app, api) = App::new()
             .into_utoipa_app()
@@ -65,7 +66,9 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
             })
-            .service(Files::new("/", site_root.to_string()))
+            .service(Files::new("/assets", site_root.to_string()))
+            .service(Files::new("/pkg", format!("{site_root}/pkg")))
+            .service(Files::new("/media", media_path))
     })
     .bind((Ipv4Addr::UNSPECIFIED, addr.port()))?;
 

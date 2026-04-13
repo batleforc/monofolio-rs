@@ -33,7 +33,7 @@ content = { path = "../../libs/content" }
 api = { path = "../../libs/api", optional = true }
 
 [features]
-default = []
+default = ["ssr"]
 hydrate = ["leptos/hydrate"]
 ssr = [
     "dep:actix-web",
