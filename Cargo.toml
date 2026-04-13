@@ -1,11 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "libs/trace",
-    "libs/content",
-    "libs/api",
-    "apps/frontend",
-]
+members = ["libs/trace", "libs/content", "libs/api", "apps/frontend"]
 
 [workspace.dependencies]
 # Actix
@@ -62,6 +57,9 @@ gray_matter = "0.2"
 
 # Error handling
 thiserror = "2"
+tw_merge = { version = "0.1.21", features = ["variant"] }
+icons = { version = "0.18.2", features = ["leptos"] }
+leptos_ui = "0.3.22"
 
 [profile.release]
 lto = true
@@ -69,3 +67,41 @@ opt-level = 3
 
 [profile.release.package.frontend]
 opt-level = 'z'
+
+[[workspace.metadata.leptos]]
+# Name of the Leptos package inside the workspace
+name = "frontend"
+
+# Hydrate feature flag – compiled to WASM
+lib-features = ["hydrate"]
+
+# SSR feature flag – compiled to native
+bin-features = ["ssr"]
+
+# Output directory for generated artefacts
+site-root = "target/site"
+
+# Package directory under site-root for WASM / JS output
+site-pkg-dir = "pkg"
+
+# Directory with static assets copied into site-root
+assets-dir = "apps/frontend/public"
+
+# Address used by cargo-leptos dev server
+site-addr = "0.0.0.0:3000"
+
+# Address used by cargo-leptos for hot-reloading websocket
+reload-port = 3001
+
+# Main SCSS file
+style-file = "apps/frontend/style/main.css"
+
+# End2end testing command (can be overridden)
+end2end-cmd = "echo 'no e2e runner configured'"
+
+# Browser command (used by cargo-leptos to open the browser after build)
+browser-query = "google-chrome-stable"
+bin-package = "frontend"
+lib-package = "frontend"
+
+tailwind-input-file = "apps/frontend/style/main.css"

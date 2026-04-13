@@ -56,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
                         <html lang="en">
                             <head>
                                 <meta charset="utf-8" />
+                                <leptos_meta::MetaTags />
                                 <AutoReload options=leptos_options.clone() />
                                 <HydrationScripts options=leptos_options.clone() />
                             </head>
