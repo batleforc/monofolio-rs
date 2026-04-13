@@ -54,6 +54,13 @@ opentelemetry-otlp = { version = "0.31", features = [
 # Content parsing
 pulldown-cmark = "0.12"
 gray_matter = "0.2"
+image = { version = "0.25", default-features = true, features = [
+    "png",
+    "jpeg",
+    "webp",
+] }
+mermaid-rs-renderer = { version = "0.2.0", default-features = false }
+sha2 = "0.10"
 
 # Error handling
 thiserror = "2"

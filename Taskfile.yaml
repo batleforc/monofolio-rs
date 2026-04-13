@@ -35,6 +35,11 @@ tasks:
     cmds:
       - cargo build --package frontend --features ssr
 
+  gen:
+    desc: "Generate the content database and the sidebar data"
+    cmds:
+      - cargo run --package content --bin content-build
+
   dev:
     desc: "Start development server with hot-reloading (requires cargo-leptos)"
     cmds:
