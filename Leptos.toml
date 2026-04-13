@@ -24,7 +24,7 @@ site-addr = "0.0.0.0:3000"
 reload-port = 3001
 
 # Main SCSS file
-style-file = "apps/frontend/style/main.scss"
+style-file = "apps/frontend/style/main.css"
 
 # End2end testing command (can be overridden)
 end2end-cmd = "echo 'no e2e runner configured'"

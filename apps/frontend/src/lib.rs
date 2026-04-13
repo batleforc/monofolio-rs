@@ -9,6 +9,13 @@ mod pages;
 
 use pages::{home::HomePage, not_found::NotFoundPage};
 
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn hydrate() {
+    console_error_panic_hook::set_once();
+    leptos::mount::hydrate_body(App);
+}
+
 /// Root application component.
 #[component]
 pub fn App() -> impl IntoView {
