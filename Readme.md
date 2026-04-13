@@ -25,6 +25,11 @@ The goal of this V2 is to strengthen is to redo the design, the codebase, the wa
 - Data
   - The whole content of the website is etiher stored in markdown files or in a YAML file, the markdown files are used for the blog posts and the projects, and the YAML file is used for the different pages like the home page, the about page, etc... this way i can easily add new content without having to change the codebase.
   - The markdown file should be parsed have a separate build step to generate a tiny database like that would include all the handle done
+  - Build command for that step:
+    - `cargo run -p content --bin content-build`
+    - Optional paths:
+      - `--content-root <path>` (default: `contents`)
+      - `--output-dir <path>` (default: `target/content-build`)
   - This should also allow to have search engine inside the website and to have a better user experience when navigating through the website.
   - The sidebar should also be generated based on the front matter of the markdown files
 - docs:

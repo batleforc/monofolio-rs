@@ -11,3 +11,6 @@ pulldown-cmark = { workspace = true }
 gray_matter = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+image = { workspace = true }
+mermaid-rs-renderer = { workspace = true }
+sha2 = { workspace = true }
