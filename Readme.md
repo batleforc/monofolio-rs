@@ -32,7 +32,7 @@ The goal of this V2 is to strengthen is to redo the design, the codebase, the wa
 - Hot Reloading:
   - I need the Data to be hot reloaded when i change the markdown files or the YAML file, this way i can see the changes in real time without having to restart the server.
 - Testing:
-  - I dont know wich bees has stung me but i want to make sure that the code is fully tested and covered has much as possible.
+  - I dont know which bees has stung me but i want to make sure that the code is fully tested and covered has much as possible.
   - So i need to do:
     - Unit Tests
       - Rust basic unit tests for the different functions and modules

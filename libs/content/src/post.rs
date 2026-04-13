@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::markdown::{parse_markdown_to_html, MarkdownMeta};
+use crate::markdown::{parse_markdown_document, MarkdownContent, MarkdownMeta};
 
 /// Metadata for a blog post or project page.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -31,11 +31,11 @@ impl From<(MarkdownMeta, String)> for PostMeta {
     }
 }
 
-/// A fully parsed post with its HTML body.
+/// A fully parsed post with its markdown content payload.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Post {
     pub meta: PostMeta,
-    pub html: String,
+    pub content: MarkdownContent,
 }
 
 impl Post {
@@ -44,10 +44,10 @@ impl Post {
     /// `slug` is the URL-friendly identifier (typically the filename without
     /// the `.md` extension).
     pub fn from_markdown(slug: &str, input: &str) -> Self {
-        let (meta, html) = parse_markdown_to_html(input);
+        let doc = parse_markdown_document(input);
         Self {
-            meta: PostMeta::from((meta, slug.to_string())),
-            html,
+            meta: PostMeta::from((doc.meta, slug.to_string())),
+            content: doc.content,
         }
     }
 }
@@ -62,7 +62,7 @@ mod tests {
         let post = Post::from_markdown("hello-world", md);
         assert_eq!(post.meta.slug, "hello-world");
         assert_eq!(post.meta.title, "Hello");
-        assert!(post.html.contains("Body."));
+        assert!(!post.content.nodes.is_empty());
     }
 
     #[test]
