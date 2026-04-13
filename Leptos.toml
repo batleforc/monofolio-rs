@@ -1,0 +1,33 @@
+[[workspace.members]]
+# Name of the Leptos package inside the workspace
+name = "frontend"
+
+# Hydrate feature flag – compiled to WASM
+lib-features = ["hydrate"]
+
+# SSR feature flag – compiled to native
+bin-features = ["ssr"]
+
+# Output directory for generated artefacts
+site-root = "target/site"
+
+# Package directory under site-root for WASM / JS output
+site-pkg-dir = "pkg"
+
+# Directory with static assets copied into site-root
+assets-dir = "apps/frontend/public"
+
+# Address used by cargo-leptos dev server
+site-addr = "0.0.0.0:3000"
+
+# Address used by cargo-leptos for hot-reloading websocket
+reload-port = 3001
+
+# Main SCSS file
+style-file = "apps/frontend/style/main.scss"
+
+# End2end testing command (can be overridden)
+end2end-cmd = "echo 'no e2e runner configured'"
+
+# Browser command (used by cargo-leptos to open the browser after build)
+browser-query = "google-chrome-stable"

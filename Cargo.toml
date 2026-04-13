@@ -1,0 +1,71 @@
+[workspace]
+resolver = "2"
+members = [
+    "libs/trace",
+    "libs/content",
+    "libs/api",
+    "apps/frontend",
+]
+
+[workspace.dependencies]
+# Actix
+actix-web = { version = "4", features = ["macros"] }
+actix-files = { version = "0.6" }
+
+# Async
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+anyhow = "1"
+
+# Leptos
+leptos = { version = "0.8" }
+leptos_actix = { version = "0.8" }
+leptos_meta = { version = "0.8" }
+leptos_router = { version = "0.8" }
+
+# OpenAPI
+utoipa = { version = "5", features = ["actix_extras"] }
+utoipa-actix-web = { version = "0.1" }
+utoipa-scalar = { version = "0.3", features = ["actix-web"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+# Tracing
+tracing = { version = "0.1", features = ["std"] }
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "registry",
+    "std",
+    "fmt",
+] }
+tracing-opentelemetry = { version = "0.32" }
+tracing-actix-web = { version = "0.7" }
+
+# OpenTelemetry
+opentelemetry = { version = "0.31", features = ["trace", "metrics"] }
+opentelemetry_sdk = { version = "0.31", features = [
+    "trace",
+    "metrics",
+    "rt-tokio",
+] }
+opentelemetry-otlp = { version = "0.31", features = [
+    "grpc-tonic",
+    "trace",
+    "metrics",
+] }
+
+# Content parsing
+pulldown-cmark = "0.12"
+gray_matter = "0.2"
+
+# Error handling
+thiserror = "2"
+
+[profile.release]
+lto = true
+opt-level = 3
+
+[profile.release.package.frontend]
+opt-level = 'z'

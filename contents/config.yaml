@@ -1,5 +1,6 @@
 port: 5437
 env: "development"
+mediaPath: "contents/media"
 tracing:
   - name: "console"
     level: 2

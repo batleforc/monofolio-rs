@@ -10,9 +10,32 @@ tasks:
       - cargo install trunk ui-cli leptosfmt
       - cargo install cargo-leptos --locked
       - cog install-hook -a -o
+
   lint:
     desc: "Run linters and formatters"
     cmds:
       - echo "Running linters and formatters"
       - cargo fmt --all -- --check
       - cargo clippy --all-targets -- -D warnings
+
+  test:
+    desc: "Run all unit tests (excluding frontend WASM)"
+    cmds:
+      - cargo test --workspace --exclude frontend
+
+  check:
+    desc: "Check compilation for all targets"
+    cmds:
+      - cargo check --workspace --exclude frontend
+      - cargo check --package frontend --features ssr
+      - cargo check --package frontend --features hydrate --target wasm32-unknown-unknown
+
+  build:
+    desc: "Build the server binary (SSR)"
+    cmds:
+      - cargo build --package frontend --features ssr
+
+  dev:
+    desc: "Start development server with hot-reloading (requires cargo-leptos)"
+    cmds:
+      - cargo leptos watch
