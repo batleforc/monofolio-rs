@@ -81,14 +81,7 @@ async fn main() -> anyhow::Result<()> {
                                     content="width=device-width, initial-scale=1"
                                 />
                                 <Meta charset="UTF-8" />
-                                <Meta
-                                    name="description"
-                                    content="Maxime Leriche's portfolio website."
-                                />
-                                <Meta
-                                    name="apple-mobile-web-app-title"
-                                    content="Maxime Leriche Portfolio"
-                                />
+
                                 <Link rel="shortcut icon" href="/assets/favicon.ico" />
                                 <Link
                                     rel="icon"

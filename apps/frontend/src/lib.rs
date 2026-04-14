@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, Title};
+use leptos_meta::{provide_meta_context, Meta, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     path,
@@ -23,7 +23,8 @@ pub fn App() -> impl IntoView {
 
     view! {
         <Title text="Maxime Leriche - Portfolio" />
-
+        <Meta name="description" content="Maxime Leriche's portfolio website." />
+        <Meta name="apple-mobile-web-app-title" content="Maxime Leriche Portfolio" />
         <Router>
             <nav>
                 <a href="/">"Home"</a>
