@@ -16,6 +16,8 @@ use utoipa::OpenApi;
     tags(
         (name = "health", description = "Health and readiness probes."),
         (name = "home", description = "Home page content."),
+        (name = "content-db", description = "Content database connectivity and stats."),
+        (name = "rss", description = "RSS 2.0 feed."),
     ),
     servers(
         (url = "/", description = "Current server.")

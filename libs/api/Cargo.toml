@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-files = { workspace = true }
 actix-web = { workspace = true }
 utoipa = { workspace = true }
 utoipa-actix-web = { workspace = true }

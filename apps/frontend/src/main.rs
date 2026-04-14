@@ -3,15 +3,16 @@
 async fn main() -> anyhow::Result<()> {
     use actix_files::Files;
     use actix_web::{middleware::Compress, web::Data, App, HttpServer};
-    use api::{health::health, home::get_home, ApiDoc};
-    use content::HomeConfig;
+    use anyhow::Context as _;
+    use api::{api_v1_scope, public::{public_scope, PublicRoot}, rss::RssFeed, ApiDoc};
+    use content::{ContentDatabase, HomeConfig};
     use leptos::prelude::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use std::net::Ipv4Addr;
     use trace::{shutdown_tracing, start_tracing, Context};
     use tracing_actix_web::TracingLogger;
     use utoipa::OpenApi;
-    use utoipa_actix_web::{scope, AppExt};
+    use utoipa_actix_web::AppExt;
     use utoipa_scalar::{Scalar, Servable};
 
     let tracing_output = start_tracing(&Context {
@@ -19,9 +20,23 @@ async fn main() -> anyhow::Result<()> {
         service_name: "monofolio".to_string(),
     });
 
-    let home_yaml = std::fs::read_to_string("contents/home.yaml").unwrap_or_else(|_| String::new());
+    let content_base_path =
+        std::env::var("CONTENT_DB_PATH").unwrap_or_else(|_| "target/content-build".to_string());
+    let home_yaml = std::fs::read_to_string(format!("{}/home.yaml", content_base_path))
+        .unwrap_or_else(|_| String::new());
     let home_config: HomeConfig =
         serde_yaml::from_str(&home_yaml).expect("Failed to parse contents/home.yaml");
+    let content_db_path = format!("{}/db.json", content_base_path);
+    let content_database_json = std::fs::read_to_string(&content_db_path)
+        .with_context(|| format!("Failed to read content database at {content_db_path}"))?;
+    let content_database: ContentDatabase = serde_json::from_str(&content_database_json)
+        .with_context(|| format!("Failed to parse content database at {content_db_path}"))?;
+    let rss_path = format!("{content_base_path}/rss.xml");
+    let rss_feed = RssFeed(
+        std::fs::read_to_string(&rss_path)
+            .with_context(|| format!("Failed to read RSS feed at {rss_path}"))?,
+    );
+    let public_root = PublicRoot(std::path::PathBuf::from(format!("{content_base_path}/public")));
 
     let conf = leptos::config::get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -42,11 +57,16 @@ async fn main() -> anyhow::Result<()> {
             .map(|app| app.wrap(TracingLogger::default()))
             .map(|app| app.wrap(Compress::default()))
             .app_data(Data::new(home_config.clone()))
+            .app_data(Data::new(content_database.clone()))
+            .app_data(Data::new(rss_feed.clone()))
+            .app_data(Data::new(public_root.clone()))
             .app_data(Data::new(leptos_options.clone()))
-            .service(scope("/api/v1").service(health).service(get_home))
+            .service(api_v1_scope())
+            .service(api::rss::get_rss)
             .split_for_parts();
 
-        app.service(Scalar::with_url("/api/docs", api))
+        app.service(public_scope())
+            .service(Scalar::with_url("/api/docs", api))
             .leptos_routes(routes.clone(), {
                 let leptos_options = leptos_options.clone();
                 move || {
