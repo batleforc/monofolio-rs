@@ -2,6 +2,8 @@ pub mod content_db;
 pub mod doc;
 pub mod health;
 pub mod home;
+pub mod nav;
+pub mod page;
 pub mod public;
 pub mod rss;
 
@@ -16,4 +18,8 @@ pub fn api_v1_scope(
         .service(health::health)
         .service(home::get_home)
         .service(content_db::get_content_database_status)
+        .service(nav::get_blog_nav)
+        .service(nav::get_doc_nav)
+        .service(nav::get_projects_nav)
+        .service(page::get_page)
 }

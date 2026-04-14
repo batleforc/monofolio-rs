@@ -33,7 +33,14 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| view! { <NotFoundPage /> }>
                     <Route path=path!("/") view=HomePage />
-                    <Route path=path!("/about") view=|| view! { <p>"About page - coming soon."</p> } />
+                    <Route
+                        path=path!("/about")
+                        view=|| view! { <p>"About page - coming soon."</p> }
+                    />
+                    <Route
+                        path=path!("/blog/*any")
+                        view=|| view! { <p>"Blog page - coming soon."</p> }
+                    />
                 </Routes>
             </main>
         </Router>
