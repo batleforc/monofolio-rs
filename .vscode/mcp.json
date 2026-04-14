@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "rust-ui": {
+      "args": [
+        "mcp"
+      ],
+      "command": "ui"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use super::rss::write_blog_rss_feed;
 use super::{
     build_content_database, copy_file_to_bundle, process_home_yaml_media_for_bundle,
     process_markdown_media_for_bundle, process_mermaid_codeblocks_for_bundle,
@@ -69,6 +70,7 @@ pub fn build_content_database_and_bundle(
     process_markdown_media_for_bundle(content_root, &bundle, &mut database)?;
     process_home_yaml_media_for_bundle(content_root, &bundle)?;
     process_mermaid_codeblocks_for_bundle(&bundle, &mut database)?;
+    write_blog_rss_feed(&bundle, &database)?;
     finalize_content_output_bundle(&bundle, &database)?;
     Ok((database, bundle))
 }
