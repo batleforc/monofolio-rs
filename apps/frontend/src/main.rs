@@ -8,6 +8,7 @@ async fn main() -> anyhow::Result<()> {
     use content::{ContentDatabase, HomeConfig};
     use leptos::prelude::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
+    use leptos_meta::{Link, Meta};
     use std::net::Ipv4Addr;
     use trace::{shutdown_tracing, start_tracing, Context};
     use tracing_actix_web::TracingLogger;
@@ -75,7 +76,33 @@ async fn main() -> anyhow::Result<()> {
                         <!DOCTYPE html>
                         <html lang="en">
                             <head>
-                                <meta charset="utf-8" />
+                                <Meta
+                                    name="viewport"
+                                    content="width=device-width, initial-scale=1"
+                                />
+                                <Meta charset="UTF-8" />
+                                <Meta
+                                    name="description"
+                                    content="Maxime Leriche's portfolio website."
+                                />
+                                <Meta
+                                    name="apple-mobile-web-app-title"
+                                    content="Maxime Leriche Portfolio"
+                                />
+                                <Link rel="shortcut icon" href="/assets/favicon.ico" />
+                                <Link
+                                    rel="icon"
+                                    href="/assets/favicon-96x96.png"
+                                    sizes="96x96"
+                                    type_="image/png"
+                                />
+                                <Link rel="icon" href="/assets/favicon.svg" type_="image/svg+xml" />
+                                <Link
+                                    rel="apple-touch-icon"
+                                    sizes="180x180"
+                                    href="/assets/apple-touch-icon.png"
+                                />
+                                <Link rel="manifest" href="/assets/manifest.json" />
                                 <leptos_meta::MetaTags />
                                 <AutoReload options=leptos_options.clone() />
                                 <HydrationScripts options=leptos_options.clone() />
