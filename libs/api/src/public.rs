@@ -101,4 +101,132 @@ mod tests {
 
         std::fs::remove_dir_all(root).unwrap();
     }
+
+    #[actix_web::test]
+    async fn parent_dir_segments_return_404() {
+        let root = unique_temp_dir();
+        let suffix = root.file_name().unwrap().to_str().unwrap().to_string();
+        let outside_dir = std::env::temp_dir().join(format!("escape-{suffix}"));
+        let outside_file = outside_dir.join("secret.txt");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&outside_dir).unwrap();
+        std::fs::write(&outside_file, "secret").unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(PublicRoot(root.clone())))
+                .service(public_scope()),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .uri("/public/../escape-target/secret.txt")
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        std::fs::remove_dir_all(root).unwrap();
+        std::fs::remove_dir_all(outside_dir).unwrap();
+    }
+
+    #[actix_web::test]
+    async fn encoded_parent_dir_segments_return_404() {
+        let root = unique_temp_dir();
+        let suffix = root.file_name().unwrap().to_str().unwrap().to_string();
+        let outside_dir = std::env::temp_dir().join(format!("escape-{suffix}"));
+        let outside_file = outside_dir.join("secret.txt");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&outside_dir).unwrap();
+        std::fs::write(&outside_file, "secret").unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(PublicRoot(root.clone())))
+                .service(public_scope()),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .uri("/public/%2e%2e/escape-target/secret.txt")
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        std::fs::remove_dir_all(root).unwrap();
+        std::fs::remove_dir_all(outside_dir).unwrap();
+    }
+
+    #[actix_web::test]
+    async fn double_encoded_parent_dir_return_404() {
+        // %252e%252e is the double-encoded form of ".." (%25 = '%', so %252e = '%2e' = '.')
+        let root = unique_temp_dir();
+        let suffix = root.file_name().unwrap().to_str().unwrap().to_string();
+        let outside_dir = std::env::temp_dir().join(format!("escape-dbl-{suffix}"));
+        let outside_file = outside_dir.join("secret.txt");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&outside_dir).unwrap();
+        std::fs::write(&outside_file, "secret").unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(PublicRoot(root.clone())))
+                .service(public_scope()),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .uri("/public/%252e%252e/escape-target-dbl/secret.txt")
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        std::fs::remove_dir_all(root).unwrap();
+        std::fs::remove_dir_all(outside_dir).unwrap();
+    }
+
+    #[actix_web::test]
+    async fn absolute_path_returns_404() {
+        // /etc/passwd or any absolute path should be rejected
+        let root = unique_temp_dir();
+        std::fs::create_dir_all(&root).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(PublicRoot(root.clone())))
+                .service(public_scope()),
+        )
+        .await;
+
+        let req = test::TestRequest::get()
+            .uri("/public/%2fetc%2fpasswd")
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[actix_web::test]
+    async fn absolute_path_with_drive_prefix_returns_404() {
+        // Windows-style absolute path: C:\secret shouldn't escape root on any OS
+        let root = unique_temp_dir();
+        std::fs::create_dir_all(&root).unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(Data::new(PublicRoot(root.clone())))
+                .service(public_scope()),
+        )
+        .await;
+
+        // Encoded form of "C:\secret.txt" as a URL segment
+        let req = test::TestRequest::get()
+            .uri("/public/C%3A%5Csecret.txt")
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        // Either served from inside root (file won't exist → 404) or rejected outright
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }
