@@ -18,6 +18,8 @@ use utoipa::OpenApi;
         (name = "home", description = "Home page content."),
         (name = "content-db", description = "Content database connectivity and stats."),
         (name = "rss", description = "RSS 2.0 feed."),
+        (name = "nav", description = "Navigation data: blog sidebar, doc sidebar and project list."),
+        (name = "page", description = "Single page retrieval by content handle."),
     ),
     servers(
         (url = "/", description = "Current server.")
