@@ -268,7 +268,8 @@ fn processes_media_references_and_writes_public_media() {
     )
     .expect("doc");
 
-    let (mut db, bundle) = build_content_database_and_prepare_bundle(&root, &output).expect("stage1");
+    let (mut db, bundle) =
+        build_content_database_and_prepare_bundle(&root, &output).expect("stage1");
     process_markdown_media_for_bundle(&root, &bundle, &mut db).expect("process media");
 
     let first_entry = db.entries.first().expect("entry");
@@ -319,6 +320,7 @@ fn full_workflow_helper_builds_and_finalizes_bundle() {
     let root = temporary_directory();
     let output = temporary_directory();
 
+    fs::create_dir_all(root.join("blogs")).expect("create blogs");
     fs::create_dir_all(root.join("docs")).expect("create docs");
     fs::create_dir_all(root.join("media")).expect("create media");
     fs::write(root.join("config.yaml"), "port: 3000\nenv: test\n").expect("config");
@@ -334,15 +336,31 @@ fn full_workflow_helper_builds_and_finalizes_bundle() {
         "---\ntitle: Docs\nspec:\n  doc: true\nimage: media#icon.svg\n---\n![Alt](media#icon.svg)",
     )
     .expect("doc");
+    fs::write(
+        root.join("blogs/first.md"),
+        "---\ntitle: First post\ndescription: First blog entry\ndate: 2025-01-01T00:00:00Z\ntags:\n  - rust\nspec:\n  blog: true\n---\nHello",
+    )
+    .expect("blog");
 
     let (db, bundle) = build_content_database_and_bundle(&root, &output).expect("full workflow");
 
     assert!(bundle.db_path.exists());
     assert!(bundle.config_path.exists());
     assert!(bundle.home_path.exists());
+    assert!(output.join("rss.xml").exists());
     assert!(bundle.public_dir.join("media/icon.svg").exists());
     assert!(bundle.public_dir.join("media/home-icon.svg").exists());
-    assert_eq!(db.entries[0].image, "/public/media/icon.svg");
+    let docs_entry = db
+        .entries
+        .iter()
+        .find(|entry| entry.handle == "docs")
+        .expect("docs entry");
+    assert_eq!(docs_entry.image, "/public/media/icon.svg");
+
+    let rss = fs::read_to_string(output.join("rss.xml")).expect("read rss");
+    assert!(rss.contains("<title>First post</title>"));
+    assert!(rss.contains("<link>/blog/first</link>"));
+    assert!(rss.contains("<category>rust</category>"));
 
     fs::remove_dir_all(root).expect("cleanup root");
     fs::remove_dir_all(output).expect("cleanup output");

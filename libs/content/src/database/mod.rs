@@ -4,6 +4,7 @@ use std::path::Path;
 mod assets;
 mod build;
 mod bundle;
+mod rss;
 #[cfg(test)]
 mod tests;
 mod types;
