@@ -83,6 +83,7 @@ async fn main() -> anyhow::Result<()> {
                                 />
                                 <Meta charset="UTF-8" />
 
+                                <Link rel="stylesheet" href="/pkg/frontend.css" />
                                 <Link rel="shortcut icon" href="/assets/favicon.ico" />
                                 <Link
                                     rel="icon"
