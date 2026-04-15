@@ -151,13 +151,11 @@ pub fn HomePage() -> impl IntoView {
                 loading.set(false);
             });
         }
-        #[cfg(feature = "ssr")]
-        {
-            loading.set(false);
-        }
     };
 
-    // Trigger initial fetch on mount (client-only).
+    // Trigger initial fetch on mount (client-only); SSR keeps loading=true so
+    // the initial SSR HTML matches the WASM initial render.
+    #[cfg(not(feature = "ssr"))]
     do_fetch();
 
     let retry = Callback::new(move |_: ()| do_fetch());
