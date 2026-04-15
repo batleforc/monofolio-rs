@@ -78,11 +78,13 @@ pub fn Hero(data: HomeData) -> impl IntoView {
     .to_class();
 
     view! {
-        <section class="relative overflow-hidden min-h-[calc(100svh-3.5rem)] flex items-center before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_70%_60%_at_70%_30%,oklch(from_var(--primary)_l_c_h_/_0.12),transparent_70%)] before:pointer-events-none">
+        <section class="relative overflow-hidden min-h-[calc(100svh-3.5rem)] flex items-center cyber-grid-bg before:absolute before:inset-0 before:bg-[radial-gradient(ellipse_70%_60%_at_70%_30%,oklch(from_var(--primary)_l_c_h_/_0.14),transparent_70%)] before:pointer-events-none">
             <div class="relative max-w-5xl mx-auto px-5 py-20 w-full">
-                <p class="text-muted-foreground mb-2">{move || t.get().hero_greeting}</p>
+                <p class="text-muted-foreground mb-2 font-mono text-sm tracking-widest uppercase">
+                    {move || t.get().hero_greeting}
+                </p>
 
-                <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-4 bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent">
+                <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-4 bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent glitch">
                     {name.clone()}
                 </h1>
 
@@ -107,7 +109,7 @@ pub fn Hero(data: HomeData) -> impl IntoView {
                                 );
                                 view! {
                                     <span
-                                        class="hero-ticker-item absolute left-0 top-0 text-lg font-semibold text-primary opacity-0 whitespace-nowrap"
+                                        class="hero-ticker-item absolute left-0 top-0 text-lg font-mono font-semibold text-primary opacity-0 whitespace-nowrap"
                                         style=delay
                                     >
                                         {title}
@@ -143,12 +145,12 @@ pub fn Hero(data: HomeData) -> impl IntoView {
                 </div>
             </div>
 
-            // Decorative blob
+            // Decorative blob — neon cyan glow (cyberpunk) with copper ring (steampunk)
             <div
                 class="absolute right-[-8rem] top-1/2 -translate-y-1/2 pointer-events-none hidden md:block"
                 aria-hidden="true"
             >
-                <div class="hero-blob w-[28rem] h-[28rem] rounded-[50%_45%_55%_48%/48%_55%_45%_52%] bg-primary/[0.08]"></div>
+                <div class="hero-blob w-[28rem] h-[28rem] rounded-[50%_45%_55%_48%/48%_55%_45%_52%] bg-primary/[0.07] cyber-glow border border-primary/30"></div>
             </div>
         </section>
     }

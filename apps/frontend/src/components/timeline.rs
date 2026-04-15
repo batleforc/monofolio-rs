@@ -50,7 +50,7 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
         <section class="timeline-section" id="timeline">
             <SectionInner>
                 <SectionTitle>{move || t.get().timeline_title}</SectionTitle>
-                <ol class="relative ps-10 before:absolute before:start-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-primary before:to-border before:rounded-sm">
+                <ol class="relative ps-10 before:absolute before:start-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-primary before:via-border before:to-accent before:rounded-sm">
                     {entries
                         .into_iter()
                         .map(|entry| {
@@ -60,13 +60,13 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                             let entry_c = entry.clone();
                             view! {
                                 <li class="relative pb-10 last:pb-0 flex gap-5">
-                                    // Icon bubble on the timeline rail
-                                    <div class="absolute start-[-0.6875rem] top-0.5 w-7 h-7 rounded-full border-2 border-primary bg-card flex items-center justify-center text-primary z-10">
+                                    // Icon bubble on the timeline rail — cyan neon (cyber)
+                                    <div class="absolute start-[-0.6875rem] top-0.5 w-7 h-7 rounded border-2 border-primary bg-card flex items-center justify-center text-primary z-10 cyber-glow">
                                         <LeptosIcon icon class="w-3.5 h-3.5 stroke-current" />
                                     </div>
                                     // Card body
-                                    <Card class="flex-1 p-4 hover:border-primary transition-colors">
-                                        <span class="text-[0.7rem] uppercase tracking-wider font-semibold text-primary">
+                                    <Card class="flex-1 p-4">
+                                        <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
                                             {date}
                                         </span>
                                         <h3 class="text-base font-bold mt-1 mb-0.5">
