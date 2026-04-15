@@ -24,7 +24,7 @@ pub fn About(data: HomeData) -> impl IntoView {
 
     view! {
         <section
-            class="border-y border-border bg-card"
+            class="border-y border-border bg-card/50"
             id="about"
         >
             <SectionInner>
