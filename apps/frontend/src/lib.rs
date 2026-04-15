@@ -12,7 +12,7 @@ mod pages;
 
 use components::navbar::NavBar;
 use i18n::provide_i18n;
-use pages::{contact::ContactPage, home::HomePage, not_found::NotFoundPage};
+use pages::{about::AboutPage, contact::ContactPage, home::HomePage, not_found::NotFoundPage};
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -36,10 +36,7 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| view! { <NotFoundPage /> }>
                     <Route path=path!("/") view=HomePage />
-                    <Route
-                        path=path!("/about")
-                        view=|| view! { <p>"About page - coming soon."</p> }
-                    />
+                    <Route path=path!("/about") view=AboutPage />
                     <Route
                         path=path!("/blog/*any")
                         view=|| view! { <p>"Blog page - coming soon."</p> }
