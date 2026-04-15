@@ -1,2 +1,3 @@
+pub mod contact;
 pub mod home;
 pub mod not_found;

@@ -40,7 +40,58 @@ tasks:
     cmds:
       - cargo run --package content --bin content-build
 
+  gen:watch:
+    desc: "Watch contents/ and rebuild generated content on every change"
+    cmds:
+      - |
+        if command -v inotifywait >/dev/null 2>&1; then
+          echo "Watching contents/ for changes..."
+          cargo run --package content --bin content-build
+          while inotifywait -r -e modify,create,delete,move contents; do
+            cargo run --package content --bin content-build
+          done
+        else
+          echo "inotifywait is required (install inotify-tools)."
+          echo "Fallback: run 'task gen' manually after content edits."
+          exit 1
+        fi
+
   dev:
     desc: "Start development server with hot-reloading (requires cargo-leptos)"
     cmds:
       - cargo leptos watch --project frontend
+
+  dev:content:
+    desc: "Dev mode: rebuild content on contents/ changes and restart leptos watch"
+    cmds:
+      - |
+        if ! command -v inotifywait >/dev/null 2>&1; then
+          echo "inotifywait is required (install inotify-tools)."
+          exit 1
+        fi
+
+        run_leptos_watch() {
+          while true; do
+            cargo leptos watch --project frontend
+          done
+        }
+
+        run_leptos_watch &
+        SUPERVISOR_PID=$!
+
+        cleanup() {
+          kill "$SUPERVISOR_PID" 2>/dev/null || true
+          pkill -f "cargo leptos watch --project frontend" 2>/dev/null || true
+        }
+        trap cleanup EXIT INT TERM
+
+        echo "Initial content build..."
+        cargo run --package content --bin content-build
+        pkill -f "cargo leptos watch --project frontend" 2>/dev/null || true
+
+        echo "Watching contents/ for changes..."
+        while inotifywait -r -e modify,create,delete,move contents; do
+          cargo run --package content --bin content-build
+          # Restart leptos watch only after successful content generation.
+          pkill -f "cargo leptos watch --project frontend" 2>/dev/null || true
+        done

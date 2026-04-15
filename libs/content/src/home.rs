@@ -54,6 +54,16 @@ pub struct HomeConfig {
     pub cover_title_en: Option<Vec<String>>,
     #[serde(rename = "cvUrl", default)]
     pub cv_url: String,
+    #[serde(rename = "contactEmail", default)]
+    pub contact_email: Option<String>,
+    #[serde(rename = "contactLocation", default)]
+    pub contact_location: Option<String>,
+    #[serde(rename = "contactAvailability", default)]
+    pub contact_availability: Option<String>,
+    #[serde(rename = "contactAvailabilityEn", default)]
+    pub contact_availability_en: Option<String>,
+    #[serde(rename = "currentWork", default)]
+    pub current_work: Option<String>,
     #[serde(default)]
     pub url: Vec<SocialLink>,
     #[serde(default)]
@@ -84,6 +94,13 @@ mod tests {
             cover_title: vec!["Hello".to_string()],
             cover_title_en: None,
             cv_url: "cv.pdf".to_string(),
+            contact_email: Some("contact@example.dev".to_string()),
+            contact_location: Some("Nouvelle-Aquitaine, France".to_string()),
+            current_work: Some(
+                "Ingénieur Socle de fabrication / Couche d'échange à la Macif".to_string(),
+            ),
+            contact_availability: Some("Disponible".to_string()),
+            contact_availability_en: Some("Available".to_string()),
             url: vec![],
             history: vec![],
         };

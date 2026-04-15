@@ -4,13 +4,13 @@ use leptos_ui::variants;
 
 // ── Reusable UI primitives built with leptos_ui ──────────────────────────
 
-/// Card wrapper with a translucent-cyan border and dark background.
+// Card wrapper with a translucent-cyan border and dark background.
 clx! { Card, div, "rounded border border-border bg-card text-card-foreground hover:border-primary/40 transition-colors" }
 
-/// Section title — monospace font with a neon-cyan underline accent.
+// Section title — monospace font with a neon-cyan underline accent.
 clx! { SectionTitle, h2, "text-2xl font-mono font-bold tracking-tight mb-8 relative inline-block after:block after:h-[2px] after:w-10 after:bg-primary after:rounded-sm after:mt-1 cyber-text-glow" }
 
-/// Inner wrapper that centres content and adds responsive horizontal padding.
+// Inner wrapper that centres content and adds responsive horizontal padding.
 clx! { SectionInner, div, "max-w-5xl mx-auto px-5 py-16" }
 
 // ── Button variants via leptos_ui::variants! ─────────────────────────────

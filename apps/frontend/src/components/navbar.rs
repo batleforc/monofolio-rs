@@ -22,7 +22,11 @@ pub fn NavBar() -> impl IntoView {
     view! {
         <header class="sticky top-0 z-50 border-b border-border backdrop-blur-md bg-background/90 cyber-grid-bg">
             <div class="max-w-5xl mx-auto px-5 h-14 flex items-center gap-8">
-                <a href="/" class="font-mono font-bold text-xl text-primary tracking-tight cyber-text-glow" aria-label="Home">
+                <a
+                    href="/"
+                    class="font-mono font-bold text-xl text-primary tracking-tight cyber-text-glow"
+                    aria-label="Home"
+                >
                     "Max."
                 </a>
 
@@ -34,11 +38,18 @@ pub fn NavBar() -> impl IntoView {
                         {move || t.get().nav_home}
                     </a>
                     <a
+                        href="/contact"
+                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {move || t.get().nav_contact}
+                    </a>
+                    <a
                         href="/about"
                         class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
                         {move || t.get().nav_about}
                     </a>
+
                 </nav>
 
                 <button

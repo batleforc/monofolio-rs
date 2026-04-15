@@ -59,6 +59,21 @@ fn collect_media_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<Str
     }
 }
 
+fn collect_cv_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<String>) {
+    // get cvUrl key (if any) and collect media refs from its value
+    if let serde_yaml::Value::Mapping(map) = value {
+        for (key, value) in map {
+            if let serde_yaml::Value::String(key_str) = key {
+                if key_str == "cvUrl" {
+                    if let Some(url) = value.as_str() {
+                        refs.insert(url.to_string());
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn node_text(node: &MarkdownNode) -> String {
     let mut text = node.text.clone();
     for child in &node.children {
@@ -246,6 +261,7 @@ pub fn process_home_yaml_media_for_bundle(
 
     let mut refs = BTreeSet::new();
     collect_media_refs_in_yaml(&home_yaml, &mut refs);
+    collect_cv_refs_in_yaml(&home_yaml, &mut refs);
 
     for relative_path in refs {
         let src = content_media_root.join(&relative_path);

@@ -1,6 +1,7 @@
 use icons::common::icon_type::IconType;
 use icons::leptos::icon_component::LeptosIcon;
 use leptos::prelude::*;
+use leptos_icons::Icon;
 use tw_merge::IntoTailwindClass;
 
 use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant};
@@ -8,11 +9,17 @@ use crate::i18n::{use_language, use_translations, Language};
 use crate::pages::home::{HomeData, SocialLinkData};
 
 /// Map a home.yaml imgUrl value to the appropriate `IconType`.
-fn social_icon_type(img_url: &str) -> IconType {
+enum SocialIconType {
+    Builtin(IconType),
+    Gitea,
+}
+
+fn social_icon_type(img_url: &str) -> SocialIconType {
     match img_url {
-        "ico#github" => IconType::Github,
-        "ico#linkedin2" => IconType::Linkedin,
-        _ => IconType::ExternalLink,
+        "ico#github" => SocialIconType::Builtin(IconType::Github),
+        "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
+        "ico#gitea" => SocialIconType::Gitea,
+        _ => SocialIconType::Builtin(IconType::ExternalLink),
     }
 }
 
@@ -35,7 +42,22 @@ fn SocialIconButton(link: SocialLinkData) -> impl IntoView {
             title=link.name.clone()
             aria-label=link.name
         >
-            <LeptosIcon icon class="w-4 h-4" />
+            {match icon {
+                SocialIconType::Builtin(icon) => {
+                    view! { <LeptosIcon icon class="w-4 h-4" /> }.into_any()
+                }
+                SocialIconType::Gitea => {
+                    view! {
+                        <Icon
+                            icon=icondata_si::SiGitea
+                            width="1rem"
+                            height="1rem"
+                            style="color: currentColor;"
+                        />
+                    }
+                        .into_any()
+                }
+            }}
         </a>
     }
 }
@@ -68,7 +90,7 @@ pub fn Hero(data: HomeData) -> impl IntoView {
     };
 
     let name = data.name.clone();
-    let cv_url = data.cv_url.clone();
+    let cv_url = format!("/public/media/{}", data.cv_url);
     let social_links_primary: Vec<_> = data.url.iter().filter(|s| s.primaire).cloned().collect();
 
     let primary_btn_class = ButtonClass {
@@ -105,7 +127,7 @@ pub fn Hero(data: HomeData) -> impl IntoView {
                                 let delay = format!(
                                     "animation-delay:{}s;animation-duration:{}s",
                                     i * 3,
-                                    total_s
+                                    total_s,
                                 );
                                 view! {
                                     <span

@@ -67,6 +67,11 @@ pub struct HomeResponse {
     pub cover_title: Vec<String>,
     pub cover_title_en: Option<Vec<String>>,
     pub cv_url: String,
+    pub contact_email: Option<String>,
+    pub contact_location: Option<String>,
+    pub current_work: Option<String>,
+    pub contact_availability: Option<String>,
+    pub contact_availability_en: Option<String>,
     pub url: Vec<SocialLinkResponse>,
     pub history: Vec<HistoryEntryResponse>,
 }
@@ -82,6 +87,11 @@ impl From<HomeConfig> for HomeResponse {
             cover_title: cfg.cover_title,
             cover_title_en: cfg.cover_title_en,
             cv_url: cfg.cv_url,
+            contact_email: cfg.contact_email,
+            contact_location: cfg.contact_location,
+            current_work: cfg.current_work,
+            contact_availability: cfg.contact_availability,
+            contact_availability_en: cfg.contact_availability_en,
             url: cfg.url.into_iter().map(SocialLinkResponse::from).collect(),
             history: cfg
                 .history
@@ -123,6 +133,13 @@ mod tests {
             cover_title: vec!["Ops, Back, Front.".to_string()],
             cover_title_en: None,
             cv_url: "cv.pdf".to_string(),
+            contact_email: Some("contact@example.dev".to_string()),
+            contact_location: Some("Niort, France".to_string()),
+            current_work: Some(
+                "Ingénieur Socle de fabrication / Couche d'échange à la Macif".to_string(),
+            ),
+            contact_availability: Some("Disponible".to_string()),
+            contact_availability_en: Some("Available".to_string()),
             url: vec![],
             history: vec![],
         }

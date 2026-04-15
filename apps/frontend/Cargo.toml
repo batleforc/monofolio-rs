@@ -39,10 +39,19 @@ api = { path = "../../libs/api", optional = true }
 tw_merge.workspace = true
 icons.workspace = true
 leptos_ui.workspace = true
+leptos_icons = "0.7.1"
+icondata_si = "0.1.0"
 
 [features]
 default = ["ssr"]
-hydrate = ["dep:wasm-bindgen", "dep:console_error_panic_hook", "dep:gloo-net", "dep:web-sys", "dep:wasm-bindgen-futures", "leptos/hydrate"]
+hydrate = [
+    "dep:wasm-bindgen",
+    "dep:console_error_panic_hook",
+    "dep:gloo-net",
+    "dep:web-sys",
+    "dep:wasm-bindgen-futures",
+    "leptos/hydrate",
+]
 ssr = [
     "dep:actix-web",
     "dep:actix-files",
@@ -78,4 +87,4 @@ bin-exe-name = "frontend"
 lib-features = ["hydrate"]
 bin-features = ["ssr"]
 # Styles
-style-file = "style/main.css"
+style-file = "../../target/tmp/tailwind.css"
