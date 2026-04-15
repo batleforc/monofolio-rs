@@ -40,6 +40,11 @@ pub struct HomeData {
     pub cover_title: Vec<String>,
     pub cover_title_en: Option<Vec<String>>,
     pub cv_url: String,
+    pub contact_email: Option<String>,
+    pub contact_location: Option<String>,
+    pub current_work: Option<String>,
+    pub contact_availability: Option<String>,
+    pub contact_availability_en: Option<String>,
     pub url: Vec<SocialLinkData>,
     pub history: Vec<HistoryEntryData>,
 }
@@ -114,10 +119,25 @@ fn ErrorScreen(#[prop(into)] on_retry: Callback<()>) -> impl IntoView {
 /// Renders the full home page content once data is available.
 #[component]
 fn HomeContent(data: HomeData) -> impl IntoView {
+    let t = use_translations();
+    let contact_btn_class = ButtonClass {
+        variant: ButtonVariant::Outline,
+        size: ButtonSize::Default,
+    }
+    .to_class();
+
     view! {
         <Hero data=data.clone() />
         <About data=data.clone() />
         <Timeline data=data />
+        <footer class="border-t border-border/70 mt-8">
+            <div class="max-w-5xl mx-auto px-5 py-10 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+                <p class="text-sm text-muted-foreground">"Let's build something useful."</p>
+                <a href="/contact" class=contact_btn_class>
+                    {move || t.get().home_footer_contact_cta}
+                </a>
+            </div>
+        </footer>
     }
 }
 
@@ -168,9 +188,9 @@ pub fn HomePage() -> impl IntoView {
             <Show when=move || fetch_error.get() && !loading.get()>
                 <ErrorScreen on_retry=retry />
             </Show>
-            <Show when=move || !loading.get() && !fetch_error.get()>
-                {move || home_data.get().map(|data| view! { <HomeContent data=data /> })}
-            </Show>
+            <Show when=move || {
+                !loading.get() && !fetch_error.get()
+            }>{move || home_data.get().map(|data| view! { <HomeContent data=data /> })}</Show>
         </div>
     }
 }

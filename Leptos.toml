@@ -23,8 +23,8 @@ site-addr = "0.0.0.0:3000"
 # Address used by cargo-leptos for hot-reloading websocket
 reload-port = 3001
 
-# Main SCSS file
-style-file = "apps/frontend/style/main.css"
+# Generated CSS file served to the browser
+style-file = "target/tmp/tailwind.css"
 
 # End2end testing command (can be overridden)
 end2end-cmd = "echo 'no e2e runner configured'"
