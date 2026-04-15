@@ -170,6 +170,11 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
         Language::En => "No project to display yet.",
     };
 
+    let open_label = move || match lang.get() {
+        Language::Fr => "Ouvrir",
+        Language::En => "Open",
+    };
+
     view! {
         <section>
             <SectionInner>
@@ -193,12 +198,20 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                 let tags = project.tags.clone();
                                 let techno = project.techno.clone();
                                 let project_handle = project.handle.clone();
+                                let project_url = format!("/{}", project.handle.trim_start_matches('/'));
                                 view! {
                                     <Card class="p-4">
                                         <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
                                             {released_at}
                                         </span>
-                                        <h3 class="text-base font-bold mt-1 mb-1">{title}</h3>
+                                        <h3 class="text-base font-bold mt-1 mb-1">
+                                            <a
+                                                href=project_url.clone()
+                                                class="hover:text-primary transition-colors underline-offset-2 hover:underline"
+                                            >
+                                                {title}
+                                            </a>
+                                        </h3>
                                         <p class="text-sm text-muted-foreground line-clamp-3">{description}</p>
                                         <div class="flex flex-wrap gap-1.5 mt-3">
                                             {techno
@@ -224,7 +237,15 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                                 })
                                                 .collect_view()}
                                         </div>
-                                        <p class="mt-3 text-xs text-muted-foreground font-mono">{project_handle}</p>
+                                        <div class="mt-3 flex items-center justify-between gap-2">
+                                            <p class="text-xs text-muted-foreground font-mono truncate">{project_handle}</p>
+                                            <a
+                                                href=project_url
+                                                class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                            >
+                                                {open_label}
+                                            </a>
+                                        </div>
                                     </Card>
                                 }
                             })
@@ -319,7 +340,12 @@ pub fn HomePage() -> impl IntoView {
                 {move || {
                     home_data
                         .get()
-                        .map(|data| view! { <HomeContent data=data projects=projects_data.get() /> })
+                        .map(|data| view! {
+                            <HomeContent
+                                data=data
+                                projects=projects_data.get()
+                            />
+                        })
                 }}
             </Show>
         </div>

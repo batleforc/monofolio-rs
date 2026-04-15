@@ -6,33 +6,33 @@ use crate::components::ui::{
 };
 use crate::i18n::{use_language, Language};
 
-/// Custom 404 page.
+/// Custom 418 page (I'm a teapot).
 #[component]
-pub fn NotFoundPage() -> impl IntoView {
+pub fn TeapotPage() -> impl IntoView {
     let lang = use_language();
 
     let title = move || match lang.get() {
-        Language::Fr => "404 - Page introuvable",
-        Language::En => "404 - Page not found",
+        Language::Fr => "418 - Je suis une teiere",
+        Language::En => "418 - I'm a teapot",
     };
 
     let description = move || match lang.get() {
-        Language::Fr => "La page demandée n'existe pas (ou plus).",
-        Language::En => "The page you requested does not exist (or no longer exists).",
+        Language::Fr => "Cette page refuse de preparer du cafe. Elle prefere clairement le the.",
+        Language::En => "This page refuses to brew coffee. It clearly prefers tea.",
     };
 
     let home_label = move || match lang.get() {
-        Language::Fr => "Retour à l'accueil",
+        Language::Fr => "Retour a l'accueil",
         Language::En => "Back to home",
     };
 
-    let teapot_label = move || match lang.get() {
-        Language::Fr => "Voir la page 418",
-        Language::En => "Open the 418 page",
+    let not_found_label = move || match lang.get() {
+        Language::Fr => "Aller vers 404",
+        Language::En => "Go to 404",
     };
 
-    let primary_btn_class = ButtonClass {
-        variant: ButtonVariant::Primary,
+    let outline_btn_class = ButtonClass {
+        variant: ButtonVariant::Outline,
         size: ButtonSize::Default,
     }
     .to_class();
@@ -49,10 +49,13 @@ pub fn NotFoundPage() -> impl IntoView {
                 <div class="max-w-2xl mx-auto pt-12">
                     <SectionTitle>{title}</SectionTitle>
                     <Card class="p-6 sm:p-8">
+                        <p class="text-6xl leading-none mb-4" aria-hidden="true">
+                            "(  )"
+                        </p>
                         <p class="text-muted-foreground mb-6">{description}</p>
                         <div class="flex flex-wrap items-center gap-3">
-                            <a href="/" class=primary_btn_class>{home_label}</a>
-                            <a href="/418" class=ghost_btn_class>{teapot_label}</a>
+                            <a href="/" class=outline_btn_class>{home_label}</a>
+                            <a href="/404" class=ghost_btn_class>{not_found_label}</a>
                         </div>
                     </Card>
                 </div>

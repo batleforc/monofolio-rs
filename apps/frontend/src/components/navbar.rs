@@ -44,6 +44,24 @@ pub fn NavBar() -> impl IntoView {
                         {move || t.get().nav_contact}
                     </a>
                     <a
+                        href="/projects"
+                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {move || t.get().nav_projects}
+                    </a>
+                    <a
+                        href="/blog"
+                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {move || t.get().nav_blog}
+                    </a>
+                    <a
+                        href="/docs"
+                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {move || t.get().nav_docs}
+                    </a>
+                    <a
                         href="/about"
                         class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
