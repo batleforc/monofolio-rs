@@ -37,7 +37,10 @@ impl Language {
 pub struct Translations {
     pub nav_home: &'static str,
     pub nav_about: &'static str,
+    pub nav_blog: &'static str,
+    pub nav_docs: &'static str,
     pub nav_contact: &'static str,
+    pub nav_projects: &'static str,
     pub hero_greeting: &'static str,
     pub hero_cta_about: &'static str,
     pub about_title: &'static str,
@@ -51,7 +54,10 @@ pub struct Translations {
 pub static FR: Translations = Translations {
     nav_home: "Accueil",
     nav_about: "À propos",
+    nav_blog: "Blog",
+    nav_docs: "Docs",
     nav_contact: "Contact",
+    nav_projects: "Projets",
     hero_greeting: "Bonjour 👋",
     hero_cta_about: "More about me",
     about_title: "À propos de moi",
@@ -65,7 +71,10 @@ pub static FR: Translations = Translations {
 pub static EN: Translations = Translations {
     nav_home: "Home",
     nav_about: "About",
+    nav_blog: "Blog",
+    nav_docs: "Docs",
     nav_contact: "Contact",
+    nav_projects: "Projects",
     hero_greeting: "Hello 👋",
     hero_cta_about: "More about me",
     about_title: "About me",
