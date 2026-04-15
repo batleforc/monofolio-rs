@@ -1,69 +1,62 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --primary: oklch(0.505 0.213 27.518);
-  --primary-foreground: oklch(0.971 0.013 17.38);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --chart-1: oklch(0.808 0.114 19.571);
-  --chart-2: oklch(0.637 0.237 25.331);
-  --chart-3: oklch(0.577 0.245 27.325);
-  --chart-4: oklch(0.505 0.213 27.518);
-  --chart-5: oklch(0.444 0.177 26.899);
-  --sidebar-primary: oklch(0.577 0.245 27.325);
-  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
-  --destructive: oklch(0.577 0.245 27.325);
-}
+/*
+ * Cyberpunk × Steampunk hybrid theme
+ * 70% Cyberpunk  – dark base, electric-cyan neon, sharp geometry, circuit grids
+ * 30% Steampunk  – warm amber / copper accents, brass tones, mechanical aesthetic
+ */
 
-.dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
-  --primary: oklch(0.444 0.177 26.899);
-  --primary-foreground: oklch(0.971 0.013 17.38);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --chart-1: oklch(0.808 0.114 19.571);
-  --chart-2: oklch(0.637 0.237 25.331);
-  --chart-3: oklch(0.577 0.245 27.325);
-  --chart-4: oklch(0.505 0.213 27.518);
-  --chart-5: oklch(0.444 0.177 26.899);
-  --sidebar-primary: oklch(0.637 0.237 25.331);
-  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
-  --destructive: oklch(0.704 0.191 22.216);
+:root {
+  /* Sharp corners → cyberpunk feel */
+  --radius: 0.125rem;
+
+  /* === Dark cyberpunk base === */
+  --background: oklch(0.07 0.014 240);
+  --foreground: oklch(0.92 0.022 195);
+  --card: oklch(0.10 0.015 238);
+  --card-foreground: oklch(0.92 0.022 195);
+  --popover: oklch(0.10 0.015 238);
+  --popover-foreground: oklch(0.92 0.022 195);
+
+  /* === Primary: electric cyan (cyberpunk neon) === */
+  --primary: oklch(0.80 0.17 196);
+  --primary-foreground: oklch(0.07 0.014 240);
+
+  /* === Secondary: dark elevated surface === */
+  --secondary: oklch(0.14 0.018 238);
+  --secondary-foreground: oklch(0.80 0.17 196);
+
+  /* === Muted === */
+  --muted: oklch(0.13 0.015 238);
+  --muted-foreground: oklch(0.58 0.04 212);
+
+  /* === Accent: warm copper / amber (steampunk brass) === */
+  --accent: oklch(0.72 0.14 52);
+  --accent-foreground: oklch(0.07 0.014 240);
+
+  /* === Destructive === */
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.97 0.01 0);
+
+  /* === Borders & inputs (translucent cyan) === */
+  --border: oklch(0.80 0.17 196 / 0.22);
+  --input: oklch(0.80 0.17 196 / 0.12);
+  --ring: oklch(0.80 0.17 196 / 0.45);
+
+  /* === Chart palette (cyber-neon spectrum) === */
+  --chart-1: oklch(0.80 0.17 196);
+  --chart-2: oklch(0.72 0.14 52);
+  --chart-3: oklch(0.72 0.18 305);
+  --chart-4: oklch(0.72 0.17 150);
+  --chart-5: oklch(0.65 0.22 25);
+
+  /* === Custom cyber/steam tokens === */
+  --cyber-glow: 0 0 6px oklch(0.80 0.17 196 / 0.60),
+                0 0 22px oklch(0.80 0.17 196 / 0.25);
+  --steam-glow: 0 0 6px oklch(0.72 0.14 52 / 0.60),
+                0 0 22px oklch(0.72 0.14 52 / 0.25);
+  --grid-line: oklch(0.80 0.17 196 / 0.055);
 }
 
 @theme inline {
@@ -111,8 +104,7 @@
 }
 
 /* =========================================================
-   Custom keyframe animations
-   (component layout handled by Tailwind utility classes)
+   Cyberpunk × Steampunk visual effects
    ========================================================= */
 
 body {
@@ -121,6 +113,42 @@ body {
 
 main {
   padding-bottom: 4rem;
+}
+
+/* Circuit-grid background pattern (cyberpunk) */
+.cyber-grid-bg {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Neon text glow (cyan, cyberpunk) */
+.cyber-text-glow {
+  text-shadow: var(--cyber-glow);
+}
+
+/* Neon element glow (used on borders / icons) */
+.cyber-glow {
+  box-shadow: var(--cyber-glow);
+}
+
+/* Steampunk copper/amber glow */
+.steam-glow {
+  box-shadow: var(--steam-glow);
+}
+
+/* Glitch flicker animation for hero heading */
+.glitch {
+  animation: glitch-flicker 6s infinite;
+}
+
+@keyframes glitch-flicker {
+  0%, 90%, 100% { text-shadow: var(--cyber-glow); opacity: 1; }
+  92%            { text-shadow: none; opacity: 0.85; clip-path: inset(20% 0 30% 0); }
+  93%            { text-shadow: var(--cyber-glow); opacity: 1; clip-path: none; }
+  95%            { text-shadow: none; opacity: 0.9; clip-path: inset(60% 0 10% 0); }
+  96%            { text-shadow: var(--cyber-glow); opacity: 1; clip-path: none; }
 }
 
 /* Animated cycling hero title ticker */

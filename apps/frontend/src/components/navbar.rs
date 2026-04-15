@@ -20,9 +20,9 @@ pub fn NavBar() -> impl IntoView {
     );
 
     view! {
-        <header class="sticky top-0 z-50 border-b border-border backdrop-blur-md bg-background/85">
+        <header class="sticky top-0 z-50 border-b border-border backdrop-blur-md bg-background/90 cyber-grid-bg">
             <div class="max-w-5xl mx-auto px-5 h-14 flex items-center gap-8">
-                <a href="/" class="font-bold text-xl text-primary tracking-tight" aria-label="Home">
+                <a href="/" class="font-mono font-bold text-xl text-primary tracking-tight cyber-text-glow" aria-label="Home">
                     "Max."
                 </a>
 
