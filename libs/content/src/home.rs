@@ -15,6 +15,9 @@ pub struct SocialLink {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HistoryEntry {
     pub title: String,
+    /// Optional English translation of the title.
+    #[serde(rename = "titleEn", default)]
+    pub title_en: Option<String>,
     pub lieux: String,
     pub date: String,
     pub weight: u32,
@@ -24,6 +27,9 @@ pub struct HistoryEntry {
     pub ico_url: String,
     #[serde(default)]
     pub description: String,
+    /// Optional English translation of the description.
+    #[serde(rename = "descriptionEn", default)]
+    pub description_en: Option<String>,
     #[serde(default)]
     pub url: Vec<SocialLink>,
 }
@@ -33,10 +39,19 @@ pub struct HistoryEntry {
 pub struct HomeConfig {
     pub name: String,
     pub presentation: String,
+    /// Optional English translation of the presentation text.
+    #[serde(rename = "presentationEn", default)]
+    pub presentation_en: Option<String>,
     #[serde(rename = "shortDescription")]
     pub short_description: String,
+    /// Optional English translation of the short description.
+    #[serde(rename = "shortDescriptionEn", default)]
+    pub short_description_en: Option<String>,
     #[serde(rename = "coverTitle", default)]
     pub cover_title: Vec<String>,
+    /// Optional English cover titles.
+    #[serde(rename = "coverTitleEn", default)]
+    pub cover_title_en: Option<Vec<String>>,
     #[serde(rename = "cvUrl", default)]
     pub cv_url: String,
     #[serde(default)]
@@ -63,8 +78,11 @@ mod tests {
         let config = HomeConfig {
             name: "Max".to_string(),
             presentation: "Hello".to_string(),
+            presentation_en: Some("Hello EN".to_string()),
             short_description: "Dev".to_string(),
+            short_description_en: None,
             cover_title: vec!["Hello".to_string()],
+            cover_title_en: None,
             cv_url: "cv.pdf".to_string(),
             url: vec![],
             history: vec![],
@@ -72,6 +90,14 @@ mod tests {
         let yaml = serde_yaml::to_string(&config).unwrap();
         let parsed: HomeConfig = serde_yaml::from_str(&yaml).unwrap();
         assert_eq!(config, parsed);
+    }
+
+    #[test]
+    fn history_entry_bilingual_defaults() {
+        let yaml = "title: T\nlieux: L\ndate: 2020\nweight: 1\n";
+        let entry: HistoryEntry = serde_yaml::from_str(yaml).unwrap();
+        assert!(entry.title_en.is_none());
+        assert!(entry.description_en.is_none());
     }
 
     #[test]

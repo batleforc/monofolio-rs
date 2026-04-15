@@ -1,3 +1,4 @@
+#![recursion_limit = "512"]
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Meta, Title};
 use leptos_router::{
@@ -5,8 +6,12 @@ use leptos_router::{
     path,
 };
 
+mod components;
+mod i18n;
 mod pages;
 
+use components::navbar::NavBar;
+use i18n::provide_i18n;
 use pages::{home::HomePage, not_found::NotFoundPage};
 
 #[cfg(feature = "hydrate")]
@@ -20,16 +25,14 @@ pub fn hydrate() {
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+    provide_i18n();
 
     view! {
         <Title text="Maxime Leriche - Portfolio" />
         <Meta name="description" content="Maxime Leriche's portfolio website." />
         <Meta name="apple-mobile-web-app-title" content="Maxime Leriche Portfolio" />
         <Router>
-            <nav>
-                <a href="/">"Home"</a>
-                <a href="/about">"About"</a>
-            </nav>
+            <NavBar />
             <main>
                 <Routes fallback=|| view! { <NotFoundPage /> }>
                     <Route path=path!("/") view=HomePage />

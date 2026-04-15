@@ -1,25 +1,93 @@
 use actix_web::{get, web::Data, HttpResponse, Responder};
-use content::HomeConfig;
+use content::{HomeConfig, SocialLink, HistoryEntry};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
 
-/// Summarised home-page data returned by the API.
+/// A social link in the home-page API response.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct SocialLinkResponse {
+    pub name: String,
+    pub url: String,
+    pub primaire: bool,
+    pub img_url: String,
+}
+
+impl From<SocialLink> for SocialLinkResponse {
+    fn from(s: SocialLink) -> Self {
+        Self {
+            name: s.name,
+            url: s.url,
+            primaire: s.primaire,
+            img_url: s.img_url,
+        }
+    }
+}
+
+/// A career/education timeline entry in the home-page API response.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HistoryEntryResponse {
+    pub title: String,
+    pub title_en: Option<String>,
+    pub lieux: String,
+    pub date: String,
+    pub weight: u32,
+    pub img_url: String,
+    pub ico_url: String,
+    pub description: String,
+    pub description_en: Option<String>,
+    pub url: Vec<SocialLinkResponse>,
+}
+
+impl From<HistoryEntry> for HistoryEntryResponse {
+    fn from(h: HistoryEntry) -> Self {
+        Self {
+            title: h.title,
+            title_en: h.title_en,
+            lieux: h.lieux,
+            date: h.date,
+            weight: h.weight,
+            img_url: h.img_url,
+            ico_url: h.ico_url,
+            description: h.description,
+            description_en: h.description_en,
+            url: h.url.into_iter().map(SocialLinkResponse::from).collect(),
+        }
+    }
+}
+
+/// Full home-page data returned by the API.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct HomeResponse {
     pub name: String,
+    pub presentation: String,
+    pub presentation_en: Option<String>,
     pub short_description: String,
+    pub short_description_en: Option<String>,
     pub cover_title: Vec<String>,
+    pub cover_title_en: Option<Vec<String>>,
     pub cv_url: String,
+    pub url: Vec<SocialLinkResponse>,
+    pub history: Vec<HistoryEntryResponse>,
 }
 
 impl From<HomeConfig> for HomeResponse {
     fn from(cfg: HomeConfig) -> Self {
         Self {
             name: cfg.name,
+            presentation: cfg.presentation,
+            presentation_en: cfg.presentation_en,
             short_description: cfg.short_description,
+            short_description_en: cfg.short_description_en,
             cover_title: cfg.cover_title,
+            cover_title_en: cfg.cover_title_en,
             cv_url: cfg.cv_url,
+            url: cfg.url.into_iter().map(SocialLinkResponse::from).collect(),
+            history: cfg
+                .history
+                .into_iter()
+                .map(HistoryEntryResponse::from)
+                .collect(),
         }
     }
 }
@@ -49,8 +117,11 @@ mod tests {
         HomeConfig {
             name: "Max".to_string(),
             presentation: "Hello".to_string(),
+            presentation_en: Some("Hello EN".to_string()),
             short_description: "Dev".to_string(),
+            short_description_en: None,
             cover_title: vec!["Ops, Back, Front.".to_string()],
+            cover_title_en: None,
             cv_url: "cv.pdf".to_string(),
             url: vec![],
             history: vec![],
@@ -63,6 +134,7 @@ mod tests {
         let resp = HomeResponse::from(cfg);
         assert_eq!(resp.name, "Max");
         assert_eq!(resp.cv_url, "cv.pdf");
+        assert_eq!(resp.presentation_en, Some("Hello EN".to_string()));
     }
 
     #[actix_web::test]
@@ -78,5 +150,6 @@ mod tests {
         assert!(resp.status().is_success());
         let body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(body["name"], "Max");
+        assert_eq!(body["presentation_en"], "Hello EN");
     }
 }
