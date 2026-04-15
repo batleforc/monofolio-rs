@@ -90,7 +90,7 @@ pub fn Hero(data: HomeData) -> impl IntoView {
     };
 
     let name = data.name.clone();
-    let cv_url = format!("/public/media/{}", data.cv_url);
+    let about_url = "/about";
     let social_links_primary: Vec<_> = data.url.iter().filter(|s| s.primaire).cloned().collect();
 
     let primary_btn_class = ButtonClass {
@@ -149,13 +149,11 @@ pub fn Hero(data: HomeData) -> impl IntoView {
 
                 <div class="flex flex-wrap items-center gap-4">
                     <a
-                        href=cv_url.clone()
+                        href=about_url
                         class=primary_btn_class
-                        target="_blank"
-                        rel="noopener noreferrer"
                     >
-                        <LeptosIcon icon=IconType::Download class="w-4 h-4" />
-                        {move || t.get().hero_cta_cv}
+                        <LeptosIcon icon=IconType::ArrowRight class="w-4 h-4" />
+                        {move || t.get().hero_cta_about}
                     </a>
 
                     <div class="flex gap-3 items-center">
