@@ -14,7 +14,7 @@ pub use database::{
     ContentDatabase, ContentDatabaseError, ContentDates, ContentEntry, ContentKind,
     ContentOutputBundle, DirMeta, SidebarItem,
 };
-pub use home::HomeConfig;
+pub use home::{HomeConfig, SocialLink, HistoryEntry};
 pub use markdown::{
     parse_markdown_document, parse_markdown_to_html, resolve_handle, MarkdownContent,
     MarkdownDocument, MarkdownHeading, MarkdownLink, MarkdownMeta, MarkdownNode, MarkdownSpec,

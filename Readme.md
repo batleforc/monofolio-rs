@@ -75,3 +75,83 @@ The goal of this V2 is to strengthen is to redo the design, the codebase, the wa
 - I won't lie, i stand in between two minds, a fully Cyberpunk design (70%) and a more Steampunk one (30%), i will try to find a way to mix both of them together and create a unique design that represent me and my work.
 - It should also be able to switch from French to English (if the page has already been translated)
 - I loved my previous design, but it wasn't really me, it was more of a professional one that didn't help me convey my personality across my work.
+
+---
+
+## Home Page – Developer Guide
+
+### Architecture
+
+The home page is **100% client-hydrated**: the server delivers a lightweight loading skeleton, and the WASM bundle fetches content from `/api/v1/home` after hydration.
+
+```
+Server (SSR)              Client (WASM)
+─────────────             ─────────────
+Loading skeleton   →  hydrates  →  fetches /api/v1/home  →  renders content
+```
+
+### Editing `contents/home.yaml`
+
+`home.yaml` is the single source of truth for home-page content.
+
+| Field | Description |
+|---|---|
+| `name` | Full display name |
+| `presentation` | Multi-line bio (FR) |
+| `presentationEn` | Multi-line bio (EN, optional) |
+| `shortDescription` | One-liner below the name (FR) |
+| `shortDescriptionEn` | One-liner below the name (EN, optional) |
+| `coverTitle` | List of rotating hero subtitles (FR) |
+| `coverTitleEn` | List of rotating hero subtitles (EN, optional) |
+| `cvUrl` | Path/URL of the downloadable CV |
+| `url[]` | Social links (`name`, `url`, `primaire`, `imgUrl`) |
+| `history[]` | Career/education timeline entries |
+
+#### `history[]` entry fields
+
+| Field | Description |
+|---|---|
+| `title` | Entry title (FR) |
+| `titleEn` | Entry title (EN, optional) |
+| `lieux` | Location |
+| `date` | Date range (free text) |
+| `weight` | Sort order (ascending) |
+| `icoUrl` | Icon: `ico#school`, `ico#work`, `ico#handyman` |
+| `imgUrl` | Logo image: `media#filename.png` |
+| `description` | Multi-line description (FR) |
+| `descriptionEn` | Multi-line description (EN, optional) |
+
+### Adding / Updating Translations
+
+UI strings (nav labels, buttons, loading text) live in:
+
+```
+apps/frontend/src/i18n/translations.rs
+```
+
+Each language is a `pub static` of type `Translations`. To add a new string:
+
+1. Add a field to the `Translations` struct.
+2. Fill in both `FR` and `EN` static instances.
+3. Reference the field via `t.get().<field>` in a component.
+
+### i18n Language Toggle
+
+- The active language is stored as a `RwSignal<Language>` in the Leptos context.
+- Pressing the language button calls `toggle_language(lang)` which:
+  - Switches the signal between `Fr` and `En`.
+  - Persists the choice to `localStorage` under the key `"lang"`.
+- On page load the stored value is read, defaulting to `Fr` if absent.
+
+### Running Locally
+
+```bash
+# Build content database
+cargo run -p content --bin content-build
+
+# Run the dev server (SSR + serve WASM)
+cargo run --package frontend --features ssr
+
+# Run unit tests
+cargo test --package content --package api
+```
