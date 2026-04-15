@@ -3,7 +3,7 @@
 
 /*
  * Cyberpunk × Steampunk hybrid theme
- * 70% Cyberpunk  – dark base, electric-cyan neon, sharp geometry, circuit grids
+ * 70% Cyberpunk  – dark base, neon-red/crimson primary, sharp geometry, circuit grids
  * 30% Steampunk  – warm amber / copper accents, brass tones, mechanical aesthetic
  */
 
@@ -11,52 +11,52 @@
   /* Sharp corners → cyberpunk feel */
   --radius: 0.125rem;
 
-  /* === Dark cyberpunk base === */
-  --background: oklch(0.07 0.014 240);
-  --foreground: oklch(0.92 0.022 195);
-  --card: oklch(0.10 0.015 238);
-  --card-foreground: oklch(0.92 0.022 195);
-  --popover: oklch(0.10 0.015 238);
-  --popover-foreground: oklch(0.92 0.022 195);
+  /* === Dark cyberpunk base (near-black with warm red undertone) === */
+  --background: oklch(0.07 0.018 18);
+  --foreground: oklch(0.93 0.018 25);
+  --card: oklch(0.10 0.018 18);
+  --card-foreground: oklch(0.93 0.018 25);
+  --popover: oklch(0.10 0.018 18);
+  --popover-foreground: oklch(0.93 0.018 25);
 
-  /* === Primary: electric cyan (cyberpunk neon) === */
-  --primary: oklch(0.80 0.17 196);
-  --primary-foreground: oklch(0.07 0.014 240);
+  /* === Primary: neon red / crimson (cyberpunk) === */
+  --primary: oklch(0.65 0.26 25);
+  --primary-foreground: oklch(0.97 0.01 0);
 
   /* === Secondary: dark elevated surface === */
-  --secondary: oklch(0.14 0.018 238);
-  --secondary-foreground: oklch(0.80 0.17 196);
+  --secondary: oklch(0.14 0.022 18);
+  --secondary-foreground: oklch(0.65 0.26 25);
 
   /* === Muted === */
-  --muted: oklch(0.13 0.015 238);
-  --muted-foreground: oklch(0.58 0.04 212);
+  --muted: oklch(0.13 0.016 18);
+  --muted-foreground: oklch(0.58 0.04 30);
 
   /* === Accent: warm copper / amber (steampunk brass) === */
   --accent: oklch(0.72 0.14 52);
-  --accent-foreground: oklch(0.07 0.014 240);
+  --accent-foreground: oklch(0.07 0.018 18);
 
   /* === Destructive === */
-  --destructive: oklch(0.65 0.22 25);
+  --destructive: oklch(0.55 0.28 25);
   --destructive-foreground: oklch(0.97 0.01 0);
 
-  /* === Borders & inputs (translucent cyan) === */
-  --border: oklch(0.80 0.17 196 / 0.22);
-  --input: oklch(0.80 0.17 196 / 0.12);
-  --ring: oklch(0.80 0.17 196 / 0.45);
+  /* === Borders & inputs (translucent red) === */
+  --border: oklch(0.65 0.26 25 / 0.22);
+  --input: oklch(0.65 0.26 25 / 0.12);
+  --ring: oklch(0.65 0.26 25 / 0.45);
 
-  /* === Chart palette (cyber-neon spectrum) === */
-  --chart-1: oklch(0.80 0.17 196);
+  /* === Chart palette (cyber-neon spectrum, red-anchored) === */
+  --chart-1: oklch(0.65 0.26 25);
   --chart-2: oklch(0.72 0.14 52);
   --chart-3: oklch(0.72 0.18 305);
   --chart-4: oklch(0.72 0.17 150);
-  --chart-5: oklch(0.65 0.22 25);
+  --chart-5: oklch(0.80 0.17 196);
 
   /* === Custom cyber/steam tokens === */
-  --cyber-glow: 0 0 6px oklch(0.80 0.17 196 / 0.60),
-                0 0 22px oklch(0.80 0.17 196 / 0.25);
+  --cyber-glow: 0 0 6px oklch(0.65 0.26 25 / 0.65),
+                0 0 22px oklch(0.65 0.26 25 / 0.30);
   --steam-glow: 0 0 6px oklch(0.72 0.14 52 / 0.60),
                 0 0 22px oklch(0.72 0.14 52 / 0.25);
-  --grid-line: oklch(0.80 0.17 196 / 0.055);
+  --grid-line: oklch(0.65 0.26 25 / 0.06);
 }
 
 @theme inline {
