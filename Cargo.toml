@@ -52,15 +52,15 @@ opentelemetry-otlp = { version = "0.31", features = [
 ] }
 
 # Content parsing
-pulldown-cmark = "0.12"
-gray_matter = "0.2"
+pulldown-cmark = "0.13"
+gray_matter = "0.3"
 image = { version = "0.25", default-features = true, features = [
     "png",
     "jpeg",
     "webp",
 ] }
-mermaid-rs-renderer = { version = "0.2.0", default-features = false }
-sha2 = "0.10"
+mermaid-rs-renderer = { version = "0.2", default-features = false }
+sha2 = "0.11"
 
 # Error handling
 thiserror = "2"
@@ -79,10 +79,10 @@ opt-level = 'z'
 # Name of the Leptos package inside the workspace
 name = "frontend"
 
-# Hydrate feature flag – compiled to WASM
+# Hydrate feature flag - compiled to WASM
 lib-features = ["hydrate"]
 
-# SSR feature flag – compiled to native
+# SSR feature flag - compiled to native
 bin-features = ["ssr"]
 
 # Output directory for generated artefacts

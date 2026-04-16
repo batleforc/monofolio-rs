@@ -69,12 +69,8 @@ RUN cargo leptos build --release --project frontend
 # =============================================================================
 # Stage 3 - runtime: minimal image with only what the server needs at runtime
 # =============================================================================
-FROM docker.io/debian:bookworm-slim AS runtime
+FROM gcr.io/distroless/cc-debian12:nonroot@sha256:e2d29aec8061843706b7e484c444f78fafb05bfe47745505252b1769a05d14f1
 WORKDIR /app
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
 
 # SSR server binary
 COPY --from=rust-builder /app/target/release/frontend ./frontend

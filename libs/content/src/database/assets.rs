@@ -100,7 +100,8 @@ where
             hasher.update(entry_handle.as_bytes());
             hasher.update(b"::");
             hasher.update(source.as_bytes());
-            let digest = format!("{:x}", hasher.finalize());
+            let hash = hasher.finalize();
+            let digest: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
             let file_name = format!("{}-{}.svg", entry_handle.replace('/', "-"), &digest[..16]);
             let svg_path = bundle_mermaid_root.join(&file_name);
 
