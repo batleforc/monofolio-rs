@@ -151,7 +151,7 @@ cargo leptos watch -p frontend
 - [ ] Implémenter HTML sanitization (ammonia crate)
 - [x] Ajouter anchor links aux headings
 - [x] Générer table of contents
-- [ ] Support des footnotes
+- [x] Support des footnotes
 
 ---
 

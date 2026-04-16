@@ -11,6 +11,7 @@ pub mod code;
 pub mod code_block;
 pub mod container;
 pub mod emphasis;
+pub mod footnote;
 pub mod heading;
 pub mod html;
 pub mod image;
@@ -29,6 +30,7 @@ use code::render_inline_code;
 use code_block::render_code_block;
 use container::render_container;
 use emphasis::render_emphasis;
+use footnote::{render_footnote_reference, FootnoteSection};
 use heading::render_heading;
 use html::render_html;
 use image::render_image;
@@ -125,6 +127,8 @@ pub fn RenderMarkdownNode(node: MarkdownNode) -> impl IntoView {
         "image" => render_image(node).into_any(),
         "hard_break" => render_hard_break().into_any(),
         "soft_break" => render_soft_break().into_any(),
+        "footnote_reference" => render_footnote_reference(node).into_any(),
+        "footnote_definition" => view! { <></> }.into_any(),
         _ => render_container(node).into_any(),
     }
 }
@@ -153,12 +157,18 @@ pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
         });
     }
 
+    let footnote_nodes = nodes.clone();
+    let body_nodes: Vec<MarkdownNode> = nodes
+        .into_iter()
+        .filter(|n| n.kind != "footnote_definition")
+        .collect();
+
     view! {
         <article class="prose prose-sm max-w-none">
-            {nodes
+            {body_nodes
                 .into_iter()
                 .map(|node| view! { <RenderMarkdownNode node=node /> })
-                .collect_view()}
+                .collect_view()} <FootnoteSection nodes=footnote_nodes />
         </article>
     }
 }
