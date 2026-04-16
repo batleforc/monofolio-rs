@@ -2,6 +2,9 @@ use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+#[cfg(not(feature = "ssr"))]
+use js_sys;
+
 pub mod blockquote;
 pub mod breaks;
 pub mod code;
@@ -18,6 +21,7 @@ pub mod rule;
 pub mod strong;
 pub mod table;
 pub mod text;
+pub mod toc;
 
 use blockquote::render_blockquote;
 use breaks::{render_hard_break, render_soft_break};
@@ -35,6 +39,7 @@ use rule::render_rule;
 use strong::render_strong;
 use table::render_table;
 use text::render_text;
+use toc::{extract_headings, TableOfContents};
 
 /// Represents a markdown AST node.
 /// Corresponds to the backend's `MarkdownNode` structure.
@@ -54,6 +59,39 @@ pub struct MarkdownNode {
 pub struct MarkdownContent {
     pub format: String,
     pub nodes: Vec<MarkdownNode>,
+}
+
+/// Recursively extract plain text from a node tree.
+pub fn extract_text(nodes: &[MarkdownNode]) -> String {
+    let mut out = String::new();
+    for node in nodes {
+        if !node.text.is_empty() {
+            out.push_str(&node.text);
+        }
+        out.push_str(&extract_text(&node.children));
+    }
+    out
+}
+
+/// Turn a heading's plain text into a URL-friendly slug.
+pub fn slugify(text: &str) -> String {
+    text.to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+/// Ensure heading anchors target heading elements with a dedicated id namespace.
+pub fn heading_anchor_id(base_id: &str) -> String {
+    if base_id.starts_with("heading-") {
+        base_id.to_string()
+    } else {
+        format!("heading-{base_id}")
+    }
 }
 
 /// Render a collection of child nodes.
@@ -95,6 +133,26 @@ pub fn RenderMarkdownNode(node: MarkdownNode) -> impl IntoView {
 #[component]
 pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
     let nodes = content.nodes;
+
+    #[cfg(not(feature = "ssr"))]
+    {
+        Effect::new(|_| {
+            let _ = js_sys::eval(
+                r#"(function() {
+                    var hash = window.location.hash;
+                    if (!hash) return;
+                    var rawId = decodeURIComponent(hash.slice(1));
+                    var el = document.getElementById(rawId);
+                    if (!el) {
+                        el = document.getElementById('heading-' + rawId);
+                    }
+                    if (!el) return;
+                    el.scrollIntoView({ block: 'nearest', behavior: "smooth" });
+                })()"#,
+            );
+        });
+    }
+
     view! {
         <article class="prose prose-sm max-w-none">
             {nodes
@@ -109,8 +167,33 @@ pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
 #[component]
 pub fn MarkdownFromValue(value: serde_json::Value) -> impl IntoView {
     match serde_json::from_value::<MarkdownContent>(value) {
-        Ok(content) => view! { <MarkdownRenderer content=content /> }.into_any(),
+        Ok(content) => view! { <MarkdownWithToc content=content /> }.into_any(),
         Err(_) => view! { <div class="text-sm text-muted-foreground">"Failed to parse markdown content"</div> }
         .into_any(),
+    }
+}
+
+/// Renders markdown with an optional sticky table of contents on the right.
+#[component]
+pub fn MarkdownWithToc(content: MarkdownContent) -> impl IntoView {
+    let entries = extract_headings(&content.nodes);
+    let has_toc = !entries.is_empty();
+
+    if has_toc {
+        view! {
+            <div class="flex gap-4">
+                <div class="flex-1 min-w-0">
+                    <MarkdownRenderer content=content />
+                </div>
+                <aside class="hidden lg:block w-48 shrink-0">
+                    <div class="sticky top-6 border border-border rounded-lg p-4 bg-background/70 backdrop-blur-sm">
+                        <TableOfContents entries=entries />
+                    </div>
+                </aside>
+            </div>
+        }
+        .into_any()
+    } else {
+        view! { <MarkdownRenderer content=content /> }.into_any()
     }
 }

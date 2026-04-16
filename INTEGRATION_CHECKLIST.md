@@ -149,8 +149,8 @@ cargo leptos watch -p frontend
 
 - [ ] Ajouter syntax highlighting pour code blocks
 - [ ] Implémenter HTML sanitization (ammonia crate)
-- [ ] Ajouter anchor links aux headings
-- [ ] Générer table of contents
+- [x] Ajouter anchor links aux headings
+- [x] Générer table of contents
 - [ ] Support des footnotes
 
 ---
