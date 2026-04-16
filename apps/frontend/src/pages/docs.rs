@@ -1,4 +1,7 @@
+use std::collections::HashSet;
+
 use leptos::prelude::*;
+use leptos_router::hooks::use_location;
 use serde::Deserialize;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
@@ -8,7 +11,7 @@ use crate::i18n::{use_language, Language};
 struct DocSidebarItemData {
     title: String,
     handle: String,
-    order: usize,
+    order: u64,
     kind: String,
     children: Vec<DocSidebarItemData>,
 }
@@ -34,12 +37,17 @@ async fn load_docs_nav() -> Vec<DocSidebarItemData> {
 }
 
 #[allow(dead_code)]
-fn render_doc_tree(items: Vec<DocSidebarItemData>, depth: usize) -> impl IntoView {
+fn render_doc_tree(
+    items: Vec<DocSidebarItemData>,
+    active_handle: String,
+    depth: usize,
+    expanded_folders: RwSignal<HashSet<String>>,
+) -> impl IntoView {
     let mut sorted = items;
     sorted.sort_by(|a, b| a.order.cmp(&b.order));
 
     view! {
-        <ul class="flex flex-col gap-2">
+        <ul class="flex flex-col gap-1.5">
             {sorted
                 .into_iter()
                 .map(|item| {
@@ -54,12 +62,73 @@ fn render_doc_tree(items: Vec<DocSidebarItemData>, depth: usize) -> impl IntoVie
                     let has_children = !item.children.is_empty();
                     let children = item.children.clone();
                     let is_folder = item.kind == "folder";
+                    let is_folder_with_index = item.kind == "folder_with_index";
+                    let is_folder_like = is_folder || is_folder_with_index;
+                    let is_active = item.handle == active_handle;
+                    let title = item.title.clone();
+                    let handle = item.handle.clone();
+                    let handle_for_toggle = handle.clone();
+                    let handle_for_open = handle.clone();
+                    let active_handle_next = active_handle.clone();
                     view! {
                         <li class=indent>
                             <div class="flex items-center gap-2">
-                                {if is_folder {
+                                {if is_folder_like && has_children {
                                     view! {
-                                        <span class="text-sm font-medium text-foreground/80">{item.title.clone()}</span>
+                                        <button
+                                            type="button"
+                                            class="inline-flex h-5 w-5 items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                                            on:click=move |_| {
+                                                if depth == 0 {
+                                                    return;
+                                                }
+                                                expanded_folders
+                                                    .update(|open| {
+                                                        if open.contains(&handle_for_toggle) {
+                                                            open.remove(&handle_for_toggle);
+                                                        } else {
+                                                            open.insert(handle_for_toggle.clone());
+                                                        }
+                                                    });
+                                            }
+                                        >
+                                            <span aria-hidden="true">
+                                                {move || {
+                                                    if depth == 0
+                                                        || expanded_folders
+                                                            .with(|open| open.contains(&handle_for_open))
+                                                    {
+                                                        "▾"
+                                                    } else {
+                                                        "▸"
+                                                    }
+                                                }}
+                                            </span>
+                                        </button>
+                                    }
+                                        .into_any()
+                                } else {
+                                    view! { <span class="inline-flex h-5 w-5"></span> }.into_any()
+                                }}
+                                {if is_folder_with_index {
+                                    view! {
+                                        <a
+                                            href=href
+                                            class=if is_active {
+                                                "text-sm font-semibold text-primary underline"
+                                            } else {
+                                                "text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                                            }
+                                        >
+                                            {title.clone()}
+                                        </a>
+                                    }
+                                        .into_any()
+                                } else if is_folder {
+                                    view! {
+                                        <span class="text-xs uppercase tracking-wide text-muted-foreground">
+                                            {title}
+                                        </span>
                                     }
                                         .into_any()
                                 } else {
@@ -68,26 +137,31 @@ fn render_doc_tree(items: Vec<DocSidebarItemData>, depth: usize) -> impl IntoVie
                                             href=href
                                             class="text-sm font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline"
                                         >
-                                            {item.title.clone()}
+                                            {title}
                                         </a>
                                     }
                                         .into_any()
                                 }}
-
-                                <span class="text-[0.65rem] uppercase tracking-widest font-mono text-muted-foreground">
-                                    {item.kind}
-                                </span>
                             </div>
 
-                            {if has_children {
-                                view! {
-                                    <div class="mt-2">
-                                        {render_doc_tree(children, depth + 1)}
-                                    </div>
+                            {move || {
+                                let is_open = depth == 0
+                                    || expanded_folders.with(|open| open.contains(&handle));
+                                if has_children && is_open {
+                                    view! {
+                                        <div class="mt-2">
+                                            {render_doc_tree(
+                                                children.clone(),
+                                                active_handle_next.clone(),
+                                                depth + 1,
+                                                expanded_folders,
+                                            )}
+                                        </div>
+                                    }
+                                        .into_any()
+                                } else {
+                                    view! { <></> }.into_any()
                                 }
-                                    .into_any()
-                            } else {
-                                view! { <></> }.into_any()
                             }}
                         </li>
                     }
@@ -121,11 +195,33 @@ fn collect_folder_with_index_sections(
     }
 }
 
+#[allow(dead_code)]
+fn collect_active_path_folders(
+    items: &[DocSidebarItemData],
+    active_handle: &str,
+    out: &mut HashSet<String>,
+) -> bool {
+    for item in items {
+        let self_matches = item.handle == active_handle;
+        let child_matches = collect_active_path_folders(&item.children, active_handle, out);
+        if self_matches || child_matches {
+            if !item.children.is_empty() {
+                out.insert(item.handle.clone());
+            }
+            return true;
+        }
+    }
+    false
+}
+
 #[component]
 pub fn DocsReferencePage() -> impl IntoView {
+    let _location = use_location();
     let lang = use_language();
     let docs_nav: RwSignal<Vec<DocSidebarItemData>> = RwSignal::new(vec![]);
+    let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
     let loading = RwSignal::new(true);
+    #[cfg(not(feature = "ssr"))]
     let did_init = RwSignal::new(false);
 
     #[cfg(not(feature = "ssr"))]
@@ -142,6 +238,19 @@ pub fn DocsReferencePage() -> impl IntoView {
                 docs_nav.set(data);
                 loading.set(false);
             });
+        });
+
+        Effect::new(move |_| {
+            let handle = _location.pathname.get().trim_start_matches('/').to_string();
+            let nav_data = docs_nav.get();
+            if !handle.starts_with("docs/") && handle != "docs" {
+                expanded_folders.set(HashSet::new());
+                return;
+            }
+
+            let mut open = HashSet::new();
+            collect_active_path_folders(&nav_data, &handle, &mut open);
+            expanded_folders.set(open);
         });
     }
 
@@ -161,8 +270,8 @@ pub fn DocsReferencePage() -> impl IntoView {
     };
 
     let sidebar_label = move || match lang.get() {
-        Language::Fr => "Sidebar",
-        Language::En => "Sidebar",
+        Language::Fr => "Navigation docs",
+        Language::En => "Docs navigation",
     };
 
     let index_label = move || match lang.get() {
@@ -200,7 +309,6 @@ pub fn DocsReferencePage() -> impl IntoView {
                         }
                             .into_any();
                     }
-
                     if docs_nav.get().is_empty() {
                         return view! {
                             <Card class="p-5">
@@ -209,10 +317,8 @@ pub fn DocsReferencePage() -> impl IntoView {
                         }
                             .into_any();
                     }
-
                     let nav_data = docs_nav.get();
-                    let mut index_sections: Vec<(DocSidebarItemData, Vec<DocSidebarItemData>)> =
-                        Vec::new();
+                    let mut index_sections: Vec<(DocSidebarItemData, Vec<DocSidebarItemData>)> = Vec::new();
                     collect_folder_with_index_sections(&nav_data, &mut index_sections);
 
                     view! {
@@ -222,17 +328,33 @@ pub fn DocsReferencePage() -> impl IntoView {
                                     <p class="text-xs uppercase tracking-widest font-mono text-muted-foreground mb-3">
                                         {move || sidebar_label()}
                                     </p>
-                                    {render_doc_tree(nav_data.clone(), 0)}
+                                    {move || {
+                                        render_doc_tree(
+                                                nav_data.clone(),
+                                                _location
+                                                    .pathname
+                                                    .get()
+                                                    .trim_start_matches('/')
+                                                    .to_string(),
+                                                0,
+                                                expanded_folders,
+                                            )
+                                            .into_any()
+                                    }}
                                 </Card>
                             </aside>
 
                             <Card class="p-5">
                                 <p class="text-sm font-semibold">{move || index_label()}</p>
-                                <p class="text-xs text-muted-foreground mt-1 mb-4">{move || index_hint()}</p>
+                                <p class="text-xs text-muted-foreground mt-1 mb-4">
+                                    {move || index_hint()}
+                                </p>
 
                                 {if index_sections.is_empty() {
                                     view! {
-                                        <p class="text-sm text-muted-foreground">{move || index_empty()}</p>
+                                        <p class="text-sm text-muted-foreground">
+                                            {move || index_empty()}
+                                        </p>
                                     }
                                         .into_any()
                                 } else {
@@ -241,8 +363,10 @@ pub fn DocsReferencePage() -> impl IntoView {
                                             {index_sections
                                                 .into_iter()
                                                 .map(|(section, entries)| {
-                                                    let section_href =
-                                                        format!("/{}", section.handle.trim_start_matches('/'));
+                                                    let section_href = format!(
+                                                        "/{}",
+                                                        section.handle.trim_start_matches('/'),
+                                                    );
                                                     let section_title = section.title.clone();
                                                     view! {
                                                         <div>
@@ -257,8 +381,10 @@ pub fn DocsReferencePage() -> impl IntoView {
                                                                     .into_iter()
                                                                     .take(24)
                                                                     .map(|item| {
-                                                                        let href =
-                                                                            format!("/{}", item.handle.trim_start_matches('/'));
+                                                                        let href = format!(
+                                                                            "/{}",
+                                                                            item.handle.trim_start_matches('/'),
+                                                                        );
                                                                         let label = item.title.clone();
                                                                         view! {
                                                                             <a

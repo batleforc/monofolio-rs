@@ -21,5 +21,6 @@ pub fn api_v1_scope(
         .service(nav::get_blog_nav)
         .service(nav::get_doc_nav)
         .service(nav::get_projects_nav)
+        .service(nav::get_search_index)
         .service(page::get_page)
 }

@@ -32,6 +32,38 @@ impl From<&ContentEntry> for ProjectSummary {
     }
 }
 
+/// Lightweight entry used by the global navbar search.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq, Eq)]
+pub struct SearchEntry {
+    pub title: String,
+    pub description: String,
+    pub handle: String,
+    pub href: String,
+    pub kind: String,
+}
+
+impl From<&ContentEntry> for SearchEntry {
+    fn from(entry: &ContentEntry) -> Self {
+        let kind = if entry.kind.doc {
+            "doc"
+        } else if entry.kind.blog {
+            "blog"
+        } else if entry.kind.project {
+            "project"
+        } else {
+            "content"
+        };
+
+        Self {
+            title: entry.title.clone(),
+            description: entry.description.clone(),
+            handle: entry.handle.clone(),
+            href: format!("/{}", entry.handle.trim_start_matches('/')),
+            kind: kind.to_string(),
+        }
+    }
+}
+
 /// Blog timeline entry used for the blog sidebar.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq, Eq)]
 pub struct BlogSidebarEntry {
@@ -178,6 +210,23 @@ pub async fn get_projects_nav(database: Data<ContentDatabase>) -> impl Responder
         .map(ProjectSummary::from)
         .collect();
     HttpResponse::Ok().json(projects)
+}
+
+/// Return a flat search index spanning all content-backed pages.
+#[utoipa::path(
+    tag = "nav",
+    responses(
+        (status = 200, description = "Search index entries.", body = Vec<SearchEntry>),
+        (status = 500, description = "Internal server error.")
+    )
+)]
+#[get("/search")]
+#[instrument(name = "get_search_index", skip(database))]
+pub async fn get_search_index(database: Data<ContentDatabase>) -> impl Responder {
+    info!("Serving search index");
+    let mut entries: Vec<SearchEntry> = database.entries.iter().map(SearchEntry::from).collect();
+    entries.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+    HttpResponse::Ok().json(entries)
 }
 
 #[cfg(test)]
@@ -376,5 +425,19 @@ mod tests {
         let body: serde_json::Value = actix_test::read_body_json(resp).await;
         assert_eq!(body.as_array().unwrap().len(), 1);
         assert_eq!(body[0]["handle"], "project/my-project");
+    }
+
+    #[actix_web::test]
+    async fn get_search_index_returns_entries() {
+        let app = actix_test::init_service(
+            App::new().app_data(Data::new(sample_database())).service(get_search_index),
+        )
+        .await;
+        let req = actix_test::TestRequest::get().uri("/search").to_request();
+        let resp = actix_test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        let body: serde_json::Value = actix_test::read_body_json(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 3);
+        assert_eq!(body[0]["href"], "/blogs/first");
     }
 }

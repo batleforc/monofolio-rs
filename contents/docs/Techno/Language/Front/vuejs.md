@@ -25,7 +25,7 @@ Vue.js is a JavaScript framework that is used for web development. Vue.js is a p
 
 This website is built with Vue.js, and I have used Vue.js for a lot of projects.
 
-```vuejs
+```vue
 <script setup lang="ts">
 import { defineProps } from 'vue'
 

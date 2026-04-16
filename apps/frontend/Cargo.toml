@@ -28,9 +28,15 @@ serde_json = { workspace = true }
 serde_yaml = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 gloo-net = { version = "0.6", features = ["http"], optional = true }
-web-sys = { version = "0.3", features = ["Window", "Storage"], optional = true }
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Storage",
+    "Navigator",
+    "Clipboard",
+], optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
 
 trace = { path = "../../libs/trace", optional = true }
@@ -46,6 +52,7 @@ icondata_si = "0.1.0"
 default = ["ssr"]
 hydrate = [
     "dep:wasm-bindgen",
+    "dep:js-sys",
     "dep:console_error_panic_hook",
     "dep:gloo-net",
     "dep:web-sys",

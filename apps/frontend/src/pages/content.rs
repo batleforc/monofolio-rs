@@ -1,15 +1,18 @@
+use std::collections::HashSet;
+
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use serde::Deserialize;
 use serde_json::Value;
 
+use crate::components::markdown::MarkdownFromValue;
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 struct DocSidebarItemData {
     title: String,
     handle: String,
-    order: usize,
+    order: u64,
     kind: String,
     children: Vec<DocSidebarItemData>,
 }
@@ -69,6 +72,7 @@ fn render_doc_sidebar_tree(
     items: Vec<DocSidebarItemData>,
     active_handle: String,
     depth: usize,
+    expanded_folders: RwSignal<HashSet<String>>,
 ) -> impl IntoView {
     let mut sorted = items;
     sorted.sort_by(|a, b| a.order.cmp(&b.order));
@@ -89,17 +93,74 @@ fn render_doc_sidebar_tree(
                     let has_children = !item.children.is_empty();
                     let children = item.children.clone();
                     let is_folder = item.kind == "folder";
+                    let is_folder_with_index = item.kind == "folder_with_index";
+                    let is_folder_like = is_folder || is_folder_with_index;
                     let is_active = item.handle == active_handle;
                     let item_title = item.title.clone();
-                    let kind = item.kind.clone();
+                    let handle = item.handle.clone();
+                    let handle_for_toggle = handle.clone();
+                    let handle_for_open = handle.clone();
                     let active_handle_next = active_handle.clone();
 
                     view! {
                         <li class=indent>
                             <div class="flex items-center gap-2">
-                                {if is_folder {
+                                {if is_folder_like && has_children {
                                     view! {
-                                        <span class="text-sm font-medium text-foreground/80">{item_title.clone()}</span>
+                                        <button
+                                            type="button"
+                                            class="inline-flex h-5 w-5 items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                                            on:click=move |_| {
+                                                if depth == 0 {
+                                                    return;
+                                                }
+                                                expanded_folders
+                                                    .update(|open| {
+                                                        if open.contains(&handle_for_toggle) {
+                                                            open.remove(&handle_for_toggle);
+                                                        } else {
+                                                            open.insert(handle_for_toggle.clone());
+                                                        }
+                                                    });
+                                            }
+                                        >
+                                            <span aria-hidden="true">
+                                                {move || {
+                                                    if depth == 0
+                                                        || expanded_folders
+                                                            .with(|open| open.contains(&handle_for_open))
+                                                    {
+                                                        "▾"
+                                                    } else {
+                                                        "▸"
+                                                    }
+                                                }}
+                                            </span>
+                                        </button>
+                                    }
+                                        .into_any()
+                                } else {
+                                    view! { <span class="inline-flex h-5 w-5"></span> }.into_any()
+                                }}
+                                {if is_folder_with_index {
+                                    view! {
+                                        <a
+                                            href=href
+                                            class=if is_active {
+                                                "text-sm font-semibold text-primary underline"
+                                            } else {
+                                                "text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                                            }
+                                        >
+                                            {item_title}
+                                        </a>
+                                    }
+                                        .into_any()
+                                } else if is_folder {
+                                    view! {
+                                        <span class="text-xs uppercase tracking-wide text-muted-foreground">
+                                            {item_title}
+                                        </span>
                                     }
                                         .into_any()
                                 } else {
@@ -117,21 +178,26 @@ fn render_doc_sidebar_tree(
                                     }
                                         .into_any()
                                 }}
-
-                                <span class="text-[0.65rem] uppercase tracking-widest font-mono text-muted-foreground">
-                                    {kind}
-                                </span>
                             </div>
 
-                            {if has_children {
-                                view! {
-                                    <div class="mt-1.5">
-                                        {render_doc_sidebar_tree(children, active_handle_next, depth + 1)}
-                                    </div>
+                            {move || {
+                                let is_open = depth == 0
+                                    || expanded_folders.with(|open| open.contains(&handle));
+                                if has_children && is_open {
+                                    view! {
+                                        <div class="mt-2">
+                                            {render_doc_sidebar_tree(
+                                                children.clone(),
+                                                active_handle_next.clone(),
+                                                depth + 1,
+                                                expanded_folders,
+                                            )}
+                                        </div>
+                                    }
+                                        .into_any()
+                                } else {
+                                    view! { <></> }.into_any()
                                 }
-                                    .into_any()
-                            } else {
-                                view! { <></> }.into_any()
                             }}
                         </li>
                     }
@@ -139,6 +205,25 @@ fn render_doc_sidebar_tree(
                 .collect_view()}
         </ul>
     }
+}
+
+#[allow(dead_code)]
+fn collect_active_path_folders(
+    items: &[DocSidebarItemData],
+    active_handle: &str,
+    out: &mut HashSet<String>,
+) -> bool {
+    for item in items {
+        let self_matches = item.handle == active_handle;
+        let child_matches = collect_active_path_folders(&item.children, active_handle, out);
+        if self_matches || child_matches {
+            if !item.children.is_empty() {
+                out.insert(item.handle.clone());
+            }
+            return true;
+        }
+    }
+    false
 }
 
 #[component]
@@ -149,6 +234,7 @@ pub fn ContentHandlePage() -> impl IntoView {
     let loading = RwSignal::new(true);
     let fetch_error = RwSignal::new(false);
     let docs_nav: RwSignal<Vec<DocSidebarItemData>> = RwSignal::new(vec![]);
+    let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
 
     #[cfg(not(feature = "ssr"))]
     {
@@ -198,6 +284,19 @@ pub fn ContentHandlePage() -> impl IntoView {
                 docs_nav.set(load_docs_nav().await);
             });
         });
+
+        Effect::new(move |_| {
+            let handle = location.pathname.get().trim_start_matches('/').to_string();
+            let nav_data = docs_nav.get();
+            if !handle.starts_with("docs/") && handle != "docs" {
+                expanded_folders.set(HashSet::new());
+                return;
+            }
+
+            let mut open = HashSet::new();
+            collect_active_path_folders(&nav_data, &handle, &mut open);
+            expanded_folders.set(open);
+        });
     }
 
     view! {
@@ -221,7 +320,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                     </Card>
                 </Show>
 
-                <Show when=move || !loading.get() && !fetch_error.get()>
+                <Show when=move || {
+                    !loading.get() && !fetch_error.get()
+                }>
                     {move || {
                         page_data
                             .get()
@@ -238,7 +339,6 @@ pub fn ContentHandlePage() -> impl IntoView {
                                     reading_time_minutes,
                                     content,
                                 } = page;
-
                                 let kind_label = if blog {
                                     "blog"
                                 } else if project {
@@ -248,9 +348,6 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 } else {
                                     "content"
                                 };
-
-                                let content_pretty = serde_json::to_string_pretty(&content)
-                                    .unwrap_or_else(|_| String::from("{}"));
                                 let is_blog = blog;
                                 let is_doc = doc;
                                 let back_href = if is_blog { "/blog" } else { "/projects" };
@@ -259,6 +356,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 } else {
                                     "Back to projects"
                                 };
+
                                 view! {
                                     <SectionTitle>{title.clone()}</SectionTitle>
 
@@ -273,17 +371,23 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                         </p>
                                                         {move || {
                                                             render_doc_sidebar_tree(
-                                                                docs_nav.get(),
-                                                                handle_for_sidebar.clone(),
-                                                                0,
-                                                            )
+                                                                    docs_nav.get(),
+                                                                    handle_for_sidebar.clone(),
+                                                                    0,
+                                                                    expanded_folders,
+                                                                )
+                                                                .into_any()
                                                         }}
                                                     </Card>
                                                 </aside>
 
                                                 <Card class="p-5">
-                                                    <p class="text-sm text-muted-foreground mb-4">{description.clone()}</p>
-                                                    <p class="text-xs text-muted-foreground font-mono mb-3">{handle.clone()}</p>
+                                                    <p class="text-sm text-muted-foreground mb-4">
+                                                        {description.clone()}
+                                                    </p>
+                                                    <p class="text-xs text-muted-foreground font-mono mb-3">
+                                                        {handle.clone()}
+                                                    </p>
                                                     <p class="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-3">
                                                         {kind_label}
                                                     </p>
@@ -317,6 +421,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                         {format!("Reading time: {} min", reading_time_minutes)}
                                                     </p>
 
+                                                    <div class="mt-5 border-t border-border pt-4">
+                                                        <MarkdownFromValue value=content.clone() />
+                                                    </div>
+
                                                     <a
                                                         href=back_href
                                                         class="inline-flex mt-4 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
@@ -330,8 +438,12 @@ pub fn ContentHandlePage() -> impl IntoView {
                                     } else {
                                         view! {
                                             <Card class="p-5">
-                                                <p class="text-sm text-muted-foreground mb-4">{description}</p>
-                                                <p class="text-xs text-muted-foreground font-mono mb-3">{handle}</p>
+                                                <p class="text-sm text-muted-foreground mb-4">
+                                                    {description}
+                                                </p>
+                                                <p class="text-xs text-muted-foreground font-mono mb-3">
+                                                    {handle}
+                                                </p>
                                                 <p class="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-3">
                                                     {kind_label}
                                                 </p>
@@ -366,10 +478,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                 {if is_blog {
                                                     view! {
                                                         <div class="mt-5 border-t border-border pt-4">
-                                                            <p class="text-sm font-semibold mb-2">"Blog post content"</p>
-                                                            <pre class="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap bg-background/70 border border-border rounded p-3">
-                                                                {content_pretty}
-                                                            </pre>
+                                                            <MarkdownFromValue value=content />
                                                         </div>
                                                     }
                                                         .into_any()
