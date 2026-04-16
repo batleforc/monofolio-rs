@@ -1,4 +1,7 @@
+use icons::common::icon_type::IconType;
+use icons::leptos::icon_component::LeptosIcon;
 use leptos::prelude::*;
+use leptos_icons::Icon;
 use tw_merge::IntoTailwindClass;
 
 use crate::components::timeline::Timeline;
@@ -6,7 +9,7 @@ use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::i18n::{use_language, Language};
-use crate::pages::home::HomeData;
+use crate::pages::home::{HomeData, SocialLinkData};
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
@@ -30,6 +33,57 @@ fn resolve_cv_url(raw: &str) -> String {
         raw.to_string()
     } else {
         format!("/public/media/{}", raw.trim_start_matches("media#"))
+    }
+}
+
+enum SocialIconType {
+    Builtin(IconType),
+    Gitea,
+}
+
+fn social_icon_type(img_url: &str) -> SocialIconType {
+    match img_url {
+        "ico#github" => SocialIconType::Builtin(IconType::Github),
+        "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
+        "ico#gitea" => SocialIconType::Gitea,
+        _ => SocialIconType::Builtin(IconType::ExternalLink),
+    }
+}
+
+#[component]
+fn SocialTextLink(link: SocialLinkData) -> impl IntoView {
+    let icon = social_icon_type(&link.img_url);
+    let name_text = link.name.clone();
+    let name_title = link.name.clone();
+    let aria_label = link.name.clone();
+
+    view! {
+        <a
+            href=link.url
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+            title=name_title
+            aria-label=aria_label
+        >
+            {match icon {
+                SocialIconType::Builtin(icon) => {
+                    view! { <LeptosIcon icon class="w-4 h-4" /> }.into_any()
+                }
+                SocialIconType::Gitea => {
+                    view! {
+                        <Icon
+                            icon=icondata_si::SiGitea
+                            width="1rem"
+                            height="1rem"
+                            style="color: currentColor;"
+                        />
+                    }
+                        .into_any()
+                }
+            }}
+            <span>{name_text}</span>
+        </a>
     }
 }
 
@@ -100,7 +154,8 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
         .current_work
         .clone()
         .unwrap_or_else(|| "Ingénieur plateforme".to_string());
-    let social_links = data.url.clone();
+    let social_links_intro = data.url.clone();
+    let social_links_contact = data.url.clone();
 
     let cv_url = resolve_cv_url(&data.cv_url);
     let timeline_data = data.clone();
@@ -116,16 +171,29 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
                                 Language::Fr => presentation_fr.clone(),
                                 Language::En => presentation_en.clone(),
                             };
-                            text
-                                .lines()
+                            text.lines()
                                 .filter(|l| !l.trim().is_empty())
                                 .map(|line| {
                                     view! {
-                                        <p class="leading-7 text-muted-foreground">{line.to_string()}</p>
+                                        <p class="leading-7 text-muted-foreground">
+                                            {line.to_string()}
+                                        </p>
                                     }
                                 })
                                 .collect_view()
                         }}
+                    </div>
+                </Card>
+
+                <Card class="p-4 mt-4 max-w-4xl">
+                    <p class="text-foreground font-medium mb-2">{links_label}</p>
+                    <div class="flex flex-wrap gap-3">
+                        {social_links_intro
+                            .iter()
+                            .map(|link| {
+                                view! { <SocialTextLink link=link.clone() /> }
+                            })
+                            .collect_view()}
                     </div>
                 </Card>
             </SectionInner>
@@ -152,15 +220,21 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
                                 {contact_email.clone()}
                             </p>
                             <p>
-                                <span class="text-foreground font-medium">{move || format!("{}: ", location_label())}</span>
+                                <span class="text-foreground font-medium">
+                                    {move || format!("{}: ", location_label())}
+                                </span>
                                 {contact_location.clone()}
                             </p>
                             <p>
-                                <span class="text-foreground font-medium">{move || format!("{}: ", work_label())}</span>
+                                <span class="text-foreground font-medium">
+                                    {move || format!("{}: ", work_label())}
+                                </span>
                                 {current_work.clone()}
                             </p>
                             <p>
-                                <span class="text-foreground font-medium">{move || format!("{}: ", availability_label())}</span>
+                                <span class="text-foreground font-medium">
+                                    {move || format!("{}: ", availability_label())}
+                                </span>
                                 {move || {
                                     match lang.get() {
                                         Language::Fr => availability_fr.clone(),
@@ -172,19 +246,10 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
                             <div class="pt-2">
                                 <p class="text-foreground font-medium mb-1">{links_label}</p>
                                 <div class="flex flex-wrap gap-3">
-                                    {social_links
+                                    {social_links_contact
                                         .iter()
                                         .map(|link| {
-                                            view! {
-                                                <a
-                                                    href=link.url.clone()
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    class="text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                                                >
-                                                    {link.name.clone()}
-                                                </a>
-                                            }
+                                            view! { <SocialTextLink link=link.clone() /> }
                                         })
                                         .collect_view()}
                                 </div>
@@ -194,8 +259,6 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
                 </div>
             </SectionInner>
         </section>
-
-
     }
 }
 
@@ -246,8 +309,6 @@ pub fn AboutPage() -> impl IntoView {
 
         <Show when=move || {
             !loading.get() && !fetch_error.get()
-        }>
-            {move || home_data.get().map(|data| view! { <MoreAboutContent data=data /> })}
-        </Show>
+        }>{move || home_data.get().map(|data| view! { <MoreAboutContent data=data /> })}</Show>
     }
 }

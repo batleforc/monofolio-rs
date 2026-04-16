@@ -2,10 +2,10 @@
 # Name of the Leptos package inside the workspace
 name = "frontend"
 
-# Hydrate feature flag – compiled to WASM
+# Hydrate feature flag - compiled to WASM
 lib-features = ["hydrate"]
 
-# SSR feature flag – compiled to native
+# SSR feature flag - compiled to native
 bin-features = ["ssr"]
 
 # Output directory for generated artefacts

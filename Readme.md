@@ -78,7 +78,7 @@ The goal of this V2 is to strengthen is to redo the design, the codebase, the wa
 
 ---
 
-## Home Page – Developer Guide
+## Home Page - Developer Guide
 
 ### Architecture
 
