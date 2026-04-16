@@ -320,17 +320,111 @@ pub fn DocsReferencePage() -> impl IntoView {
                     let nav_data = docs_nav.get();
                     let mut index_sections: Vec<(DocSidebarItemData, Vec<DocSidebarItemData>)> = Vec::new();
                     collect_folder_with_index_sections(&nav_data, &mut index_sections);
+                    let nav_data_for_mobile = nav_data.clone();
+                    let nav_data_for_desktop = nav_data.clone();
+                    let index_sections_for_mobile = index_sections.clone();
 
                     view! {
+                        <div class="lg:hidden sticky top-14 z-40 mb-4">
+                            <Card class="p-2 border-border/80 bg-background/95 backdrop-blur-md">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <details>
+                                        <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                                            {move || sidebar_label()}
+                                        </summary>
+                                        <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
+                                            {move || {
+                                                render_doc_tree(
+                                                        nav_data_for_mobile.clone(),
+                                                        _location
+                                                            .pathname
+                                                            .get()
+                                                            .trim_start_matches('/')
+                                                            .to_string(),
+                                                        0,
+                                                        expanded_folders,
+                                                    )
+                                                    .into_any()
+                                            }}
+                                        </div>
+                                    </details>
+
+                                    <details>
+                                        <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                                            {move || index_label()}
+                                        </summary>
+                                        <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
+                                            {if index_sections_for_mobile.is_empty() {
+                                                view! {
+                                                    <p class="text-sm text-muted-foreground">
+                                                        {move || index_empty()}
+                                                    </p>
+                                                }
+                                                    .into_any()
+                                            } else {
+                                                view! {
+                                                    <div class="flex flex-col gap-4">
+                                                        {index_sections_for_mobile
+                                                            .clone()
+                                                            .into_iter()
+                                                            .map(|(section, entries)| {
+                                                                let section_href = format!(
+                                                                    "/{}",
+                                                                    section.handle.trim_start_matches('/'),
+                                                                );
+                                                                let section_title = section.title.clone();
+                                                                view! {
+                                                                    <div>
+                                                                        <a
+                                                                            href=section_href
+                                                                            class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                                                                        >
+                                                                            {section_title}
+                                                                        </a>
+                                                                        <div class="grid grid-cols-1 gap-1 mt-2">
+                                                                            {entries
+                                                                                .into_iter()
+                                                                                .take(16)
+                                                                                .map(|item| {
+                                                                                    let href = format!(
+                                                                                        "/{}",
+                                                                                        item.handle.trim_start_matches('/'),
+                                                                                    );
+                                                                                    let label = item.title.clone();
+                                                                                    view! {
+                                                                                        <a
+                                                                                            href=href
+                                                                                            class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline truncate"
+                                                                                        >
+                                                                                            {label}
+                                                                                        </a>
+                                                                                    }
+                                                                                })
+                                                                                .collect_view()}
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            })
+                                                            .collect_view()}
+                                                    </div>
+                                                }
+                                                    .into_any()
+                                            }}
+                                        </div>
+                                    </details>
+                                </div>
+                            </Card>
+                        </div>
+
                         <div class="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-5">
-                            <aside class="lg:sticky lg:top-16 self-start">
+                            <aside class="hidden lg:block lg:sticky lg:top-16 self-start">
                                 <Card class="p-4 max-h-[calc(100svh-6rem)] overflow-auto">
                                     <p class="text-xs uppercase tracking-widest font-mono text-muted-foreground mb-3">
                                         {move || sidebar_label()}
                                     </p>
                                     {move || {
                                         render_doc_tree(
-                                                nav_data.clone(),
+                                                nav_data_for_desktop.clone(),
                                                 _location
                                                     .pathname
                                                     .get()

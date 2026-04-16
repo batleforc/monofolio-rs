@@ -5,8 +5,9 @@ use leptos_router::hooks::use_location;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::components::markdown::MarkdownFromValue;
-use crate::components::ui::{Card, SectionInner, SectionTitle};
+use crate::components::markdown::toc::{extract_headings, TableOfContents};
+use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
+use crate::components::ui::{Card, SectionTitle};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 struct DocSidebarItemData {
@@ -301,7 +302,7 @@ pub fn ContentHandlePage() -> impl IntoView {
 
     view! {
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
-            <SectionInner>
+            <div class="max-w-7xl mx-auto px-5 py-16">
                 <Show when=move || loading.get()>
                     <Card class="p-5">
                         <p class="text-sm text-muted-foreground">"Loading page..."</p>
@@ -362,7 +363,58 @@ pub fn ContentHandlePage() -> impl IntoView {
 
                                     {if is_doc {
                                         let handle_for_sidebar = handle.clone();
+                                        let handle_for_mobile_sidebar = handle.clone();
+                                        let toc_entries = serde_json::from_value::<
+                                            MarkdownContent,
+                                        >(content.clone())
+                                            .map(|markdown| extract_headings(&markdown.nodes))
+                                            .unwrap_or_default();
+                                        let has_toc_entries = !toc_entries.is_empty();
                                         view! {
+                                            <div class="lg:hidden sticky top-14 z-40 mb-4">
+                                                <Card class="p-2 border-border/80 bg-background/95 backdrop-blur-md">
+                                                    <div class="grid grid-cols-2 gap-2">
+                                                        <details>
+                                                            <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                                                                "Navigation"
+                                                            </summary>
+                                                            <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
+                                                                {move || {
+                                                                    render_doc_sidebar_tree(
+                                                                            docs_nav.get(),
+                                                                            handle_for_mobile_sidebar.clone(),
+                                                                            0,
+                                                                            expanded_folders,
+                                                                        )
+                                                                        .into_any()
+                                                                }}
+                                                            </div>
+                                                        </details>
+
+                                                        {if has_toc_entries {
+                                                            view! {
+                                                                <details>
+                                                                    <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                                                                        "Sommaire"
+                                                                    </summary>
+                                                                    <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
+                                                                        <TableOfContents entries=toc_entries.clone() />
+                                                                    </div>
+                                                                </details>
+                                                            }
+                                                                .into_any()
+                                                        } else {
+                                                            view! {
+                                                                <div class="rounded border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                                                                    "Pas de sommaire"
+                                                                </div>
+                                                            }
+                                                                .into_any()
+                                                        }}
+                                                    </div>
+                                                </Card>
+                                            </div>
+
                                             <div class="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-5">
                                                 <aside class="lg:sticky lg:top-16 self-start">
                                                     <Card class="p-4 max-h-[calc(100svh-6rem)] overflow-auto">
@@ -500,7 +552,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                             })
                     }}
                 </Show>
-            </SectionInner>
+            </div>
         </section>
     }
 }
