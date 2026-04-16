@@ -17,7 +17,7 @@ pub fn provide_i18n() {
 /// Panics if `provide_i18n` was not called in an ancestor.
 pub fn use_language() -> RwSignal<Language> {
     use_context::<RwSignal<Language>>()
-        .expect("i18n context not found – call provide_i18n() in an ancestor component")
+        .expect("i18n context not found - call provide_i18n() in an ancestor component")
 }
 
 /// Returns a derived signal that tracks the current [`Translations`] set.

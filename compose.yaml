@@ -1,0 +1,14 @@
+services:
+  monofolio:
+    image: monofolio:latest
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: monofolio
+    ports:
+      - "3000:3000"
+    environment:
+      LEPTOS_SITE_ADDR: "0.0.0.0:3000"
+      CONTENT_DB_PATH: "target/content-build"
+      MEDIA_PATH: "contents/media"
+    restart: unless-stopped

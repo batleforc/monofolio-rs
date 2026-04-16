@@ -198,7 +198,10 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                 let tags = project.tags.clone();
                                 let techno = project.techno.clone();
                                 let project_handle = project.handle.clone();
-                                let project_url = format!("/{}", project.handle.trim_start_matches('/'));
+                                let project_url = format!(
+                                    "/{}",
+                                    project.handle.trim_start_matches('/'),
+                                );
                                 view! {
                                     <Card class="p-4">
                                         <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
@@ -212,7 +215,9 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                                 {title}
                                             </a>
                                         </h3>
-                                        <p class="text-sm text-muted-foreground line-clamp-3">{description}</p>
+                                        <p class="text-sm text-muted-foreground line-clamp-3">
+                                            {description}
+                                        </p>
                                         <div class="flex flex-wrap gap-1.5 mt-3">
                                             {techno
                                                 .into_iter()
@@ -238,7 +243,9 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                                 .collect_view()}
                                         </div>
                                         <div class="mt-3 flex items-center justify-between gap-2">
-                                            <p class="text-xs text-muted-foreground font-mono truncate">{project_handle}</p>
+                                            <p class="text-xs text-muted-foreground font-mono truncate">
+                                                {project_handle}
+                                            </p>
                                             <a
                                                 href=project_url
                                                 class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
@@ -285,7 +292,7 @@ fn HomeContent(data: HomeData, projects: Vec<ProjectSummaryData>) -> impl IntoVi
 
 // ── Home page component ───────────────────────────────────────────────────
 
-/// Home page – 100% client-hydrated.
+/// Home page - 100% client-hydrated.
 ///
 /// Data is fetched from `/api/v1/home` on the client after hydration.
 /// The server sends a loading skeleton; the client fills in the content.
@@ -340,11 +347,8 @@ pub fn HomePage() -> impl IntoView {
                 {move || {
                     home_data
                         .get()
-                        .map(|data| view! {
-                            <HomeContent
-                                data=data
-                                projects=projects_data.get()
-                            />
+                        .map(|data| {
+                            view! { <HomeContent data=data projects=projects_data.get() /> }
                         })
                 }}
             </Show>
