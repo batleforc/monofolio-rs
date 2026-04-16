@@ -37,6 +37,16 @@ tasks:
 
   gen:
     desc: "Generate the content database and the sidebar data"
+    deps:
+      - gen:shiki
+      - gen:content
+
+  gen:shiki:
+    desc: "Generate shiki import content"
+    cmds:
+      - pnpm run langs:codeblock && pnpm run build:shiki
+  gen:content:
+    desc: "Generate only the content database and sidebar data"
     cmds:
       - cargo run --package content --bin content-build
 
