@@ -146,12 +146,12 @@ fn reading_time_minutes(markdown: &str) -> usize {
 
 fn parse_frontmatter_and_content(input: &str) -> (MarkdownMeta, String) {
     let matter = gray_matter::Matter::<gray_matter::engine::YAML>::new();
-    let result = matter.parse(input);
+    let (raw_meta, content) = match matter.parse::<MarkdownMeta>(input) {
+        Ok(parsed) => (parsed.data, parsed.content),
+        Err(_) => (None, input.to_string()),
+    };
 
-    let mut meta: MarkdownMeta = result
-        .data
-        .and_then(|d| d.deserialize().ok())
-        .unwrap_or_default();
+    let mut meta: MarkdownMeta = raw_meta.unwrap_or_default();
 
     meta.image = resolve_handle(&meta.image);
     meta.links = meta
@@ -163,7 +163,7 @@ fn parse_frontmatter_and_content(input: &str) -> (MarkdownMeta, String) {
         })
         .collect();
 
-    (meta, normalize_handles(&result.content))
+    (meta, normalize_handles(&content))
 }
 
 fn parser_options() -> Options {
@@ -316,6 +316,8 @@ fn ast_node_from_tag(tag: Tag<'_>) -> MarkdownNode {
         Tag::DefinitionList => container_node("definition_list"),
         Tag::DefinitionListTitle => container_node("definition_title"),
         Tag::DefinitionListDefinition => container_node("definition_body"),
+        Tag::Superscript => container_node("superscript"),
+        Tag::Subscript => container_node("subscript"),
     };
 
     if node.kind == "image" {
