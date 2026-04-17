@@ -391,32 +391,33 @@ pub fn ContentHandlePage() -> impl IntoView {
     view! {
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <div class="max-w-7xl mx-auto px-5 py-16">
-                <Show when=move || page_data.get().is_none()>
-                    <Card class="p-5">
-                        <p class="text-sm text-muted-foreground">"Loading page..."</p>
-                    </Card>
-                </Show>
-
-                <Show when=move || page_data.get().is_some() && page_data.get().flatten().is_none()>
-                    <Card class="p-5">
-                        <p class="text-sm text-muted-foreground">"Unable to load this page."</p>
-                        <a
-                            href="/projects"
-                            class="inline-flex mt-3 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                        >
-                            "Back to projects"
-                        </a>
-                    </Card>
-                </Show>
-
-                <Show when=move || {
-                    page_data.get().flatten().is_some()
+                <Suspense fallback=move || {
+                    view! {
+                        <Card class="p-5">
+                            <p class="text-sm text-muted-foreground">"Loading page..."</p>
+                        </Card>
+                    }
                 }>
-                    {move || {
-                        page_data
-                            .get()
-                            .flatten()
-                            .map(|page| {
+                    <Show when=move || page_data.get().is_some() && page_data.get().flatten().is_none()>
+                        <Card class="p-5">
+                            <p class="text-sm text-muted-foreground">"Unable to load this page."</p>
+                            <a
+                                href="/projects"
+                                class="inline-flex mt-3 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                            >
+                                "Back to projects"
+                            </a>
+                        </Card>
+                    </Show>
+
+                    <Show when=move || {
+                        page_data.get().flatten().is_some()
+                    }>
+                        {move || {
+                            page_data
+                                .get()
+                                .flatten()
+                                .map(|page| {
                                 let PageData {
                                     title,
                                     description,
@@ -673,9 +674,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                             .into_any()
                                     }}
                                 }
-                            })
-                    }}
-                </Show>
+                                })
+                        }}
+                    </Show>
+                </Suspense>
             </div>
         </section>
     }
