@@ -97,6 +97,8 @@ async fn main() -> anyhow::Result<()> {
     let conf = leptos::config::get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
     let routes = generate_route_list(frontend::App);
+    let tracking_script_src = std::env::var("TRACKING_SCRIPT_SRC").ok();
+    let tracking_site_id = std::env::var("TRACKING_SITE_ID").ok();
 
     let mut api_doc = ApiDoc::openapi();
     api_doc.info.version = env!("CARGO_PKG_VERSION").to_string();
@@ -106,6 +108,8 @@ async fn main() -> anyhow::Result<()> {
         let site_root = leptos_options.site_root.clone();
         let media_path =
             std::env::var("MEDIA_PATH").unwrap_or_else(|_| "contents/media".to_string());
+        let tracking_script_src = tracking_script_src.clone();
+        let tracking_site_id = tracking_site_id.clone();
 
         let (app, api) = App::new()
             .into_utoipa_app()
@@ -158,6 +162,25 @@ async fn main() -> anyhow::Result<()> {
                                 />
                                 <Link rel="manifest" href="/assets/manifest.json" />
                                 <leptos_meta::MetaTags />
+                                {
+                                    let tracking_script_src = tracking_script_src.clone();
+                                    let tracking_site_id = tracking_site_id.clone();
+                                    move || {
+                                        match (
+                                            tracking_script_src.clone(),
+                                            tracking_site_id.clone(),
+                                        ) {
+                                            (Some(src), Some(site_id)) => {
+                                                Some(
+                                                    view! {
+                                                        <script src=src data-site-id=site_id defer></script>
+                                                    },
+                                                )
+                                            }
+                                            _ => None,
+                                        }
+                                    }
+                                }
                                 <AutoReload options=leptos_options.clone() />
                                 <HydrationScripts options=leptos_options.clone() />
                             </head>
