@@ -15,7 +15,7 @@ pub fn render_link(node: MarkdownNode) -> impl IntoView {
         <a
             href=href
             title=title
-            class="text-primary hover:text-primary/80 underline underline-offset-2"
+            class="text-primary hover:text-primary/80 underline underline-offset-2 break-all"
         >
             {render_children(node.children)}
         </a>
