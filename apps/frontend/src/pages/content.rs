@@ -319,6 +319,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                 let content_db = content_db.clone();
                 async move {
                     let handle = pathname.trim_start_matches('/').to_string();
+                    if !pathname.starts_with("/blogs/") && !pathname.starts_with("/docs/") {
+                        return None;
+                    }
                     #[cfg(not(feature = "ssr"))]
                     {
                         load_page_data_send_safe(handle).await
