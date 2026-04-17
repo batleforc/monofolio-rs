@@ -74,6 +74,24 @@ async fn load_docs_nav() -> Vec<DocSidebarItemData> {
     }
 }
 
+#[cfg(not(feature = "ssr"))]
+async fn load_page_data_send_safe(handle: String) -> Option<PageData> {
+    let (tx, rx) = futures::channel::oneshot::channel::<Option<PageData>>();
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = tx.send(load_page_data(handle).await);
+    });
+    rx.await.ok().flatten()
+}
+
+#[cfg(not(feature = "ssr"))]
+async fn load_docs_nav_send_safe() -> Vec<DocSidebarItemData> {
+    let (tx, rx) = futures::channel::oneshot::channel::<Vec<DocSidebarItemData>>();
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = tx.send(load_docs_nav().await);
+    });
+    rx.await.unwrap_or_default()
+}
+
 #[cfg(feature = "ssr")]
 impl From<&ContentEntry> for PageData {
     fn from(entry: &ContentEntry) -> Self {
@@ -279,70 +297,67 @@ pub fn ContentHandlePage() -> impl IntoView {
     #[cfg(feature = "ssr")]
     let content_db = use_context::<ContentDatabase>();
 
-    #[cfg(not(feature = "ssr"))]
-    let page_data = LocalResource::new(move || {
-        let pathname = location.pathname.get();
-        async move {
-            let handle = pathname.trim_start_matches('/').to_string();
-            load_page_data(handle).await
-        }
-    });
-    #[cfg(feature = "ssr")]
     let page_data = Resource::new(
         move || location.pathname.get(),
         {
+            #[cfg(feature = "ssr")]
             let content_db = content_db.clone();
             move |pathname: String| {
+                #[cfg(feature = "ssr")]
                 let content_db = content_db.clone();
                 async move {
                     let handle = pathname.trim_start_matches('/').to_string();
-                    content_db.and_then(|db| {
-                        db.entries
-                            .iter()
-                            .find(|entry| entry.handle == handle)
-                            .map(PageData::from)
-                    })
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_page_data_send_safe(handle).await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        content_db.and_then(|db| {
+                            db.entries
+                                .iter()
+                                .find(|entry| entry.handle == handle)
+                                .map(PageData::from)
+                        })
+                    }
                 }
             }
         },
     );
-    #[cfg(not(feature = "ssr"))]
-    let docs_nav = LocalResource::new(move || {
-        let pathname = location.pathname.get();
-        async move {
-            let handle = pathname.trim_start_matches('/').to_string();
-            if !handle.starts_with("docs/") && handle != "docs" {
-                return vec![];
-            }
-            load_docs_nav().await
-        }
-    });
-    #[cfg(feature = "ssr")]
     let docs_nav = Resource::new(
         move || location.pathname.get(),
         {
+            #[cfg(feature = "ssr")]
             let content_db = content_db.clone();
             move |pathname: String| {
+                #[cfg(feature = "ssr")]
                 let content_db = content_db.clone();
                 async move {
                     let handle = pathname.trim_start_matches('/').to_string();
                     if !handle.starts_with("docs/") && handle != "docs" {
                         return vec![];
                     }
-                    content_db
-                        .map(|db| {
-                            let known_doc_handles: HashSet<String> = db
-                                .entries
-                                .iter()
-                                .filter(|entry| entry.kind.doc)
-                                .map(|entry| entry.handle.clone())
-                                .collect();
-                            db.sidebar
-                                .iter()
-                                .map(|item| map_sidebar_item(item, &known_doc_handles))
-                                .collect()
-                        })
-                        .unwrap_or_default()
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_docs_nav_send_safe().await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        content_db
+                            .map(|db| {
+                                let known_doc_handles: HashSet<String> = db
+                                    .entries
+                                    .iter()
+                                    .filter(|entry| entry.kind.doc)
+                                    .map(|entry| entry.handle.clone())
+                                    .collect();
+                                db.sidebar
+                                    .iter()
+                                    .map(|item| map_sidebar_item(item, &known_doc_handles))
+                                    .collect()
+                            })
+                            .unwrap_or_default()
+                    }
                 }
             }
         },

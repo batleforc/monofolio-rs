@@ -177,6 +177,24 @@ async fn load_projects_data() -> Vec<ProjectSummaryData> {
 }
 
 #[cfg(not(feature = "ssr"))]
+async fn load_home_data_send_safe() -> Option<HomeData> {
+    let (tx, rx) = futures::channel::oneshot::channel::<Option<HomeData>>();
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = tx.send(load_home_data().await);
+    });
+    rx.await.ok().flatten()
+}
+
+#[cfg(not(feature = "ssr"))]
+async fn load_projects_data_send_safe() -> Vec<ProjectSummaryData> {
+    let (tx, rx) = futures::channel::oneshot::channel::<Vec<ProjectSummaryData>>();
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = tx.send(load_projects_data().await);
+    });
+    rx.await.unwrap_or_default()
+}
+
+#[cfg(not(feature = "ssr"))]
 async fn fetch_home_from_api() -> Option<HomeData> {
     let resp = gloo_net::http::Request::get("/api/v1/home")
         .send()
@@ -378,44 +396,52 @@ pub fn HomePage() -> impl IntoView {
     let home_config = use_context::<HomeConfig>();
     #[cfg(feature = "ssr")]
     let content_database = use_context::<content::ContentDatabase>();
-    #[cfg(not(feature = "ssr"))]
-    let home_data = LocalResource::new(move || {
-        let _pathname = location.pathname.get();
-        load_home_data()
-    });
-    #[cfg(feature = "ssr")]
     let home_data = Resource::new(
         move || location.pathname.get(),
         {
+            #[cfg(feature = "ssr")]
             let home_config = home_config.clone();
             move |_| {
+                #[cfg(feature = "ssr")]
                 let home_config = home_config.clone();
-                async move { home_config.map(HomeData::from) }
+                async move {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_home_data_send_safe().await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        home_config.map(HomeData::from)
+                    }
+                }
             }
         },
     );
-    #[cfg(not(feature = "ssr"))]
-    let projects_data = LocalResource::new(move || {
-        let _pathname = location.pathname.get();
-        load_projects_data()
-    });
-    #[cfg(feature = "ssr")]
     let projects_data = Resource::new(
         move || location.pathname.get(),
         {
+            #[cfg(feature = "ssr")]
             let content_database = content_database.clone();
             move |_| {
+                #[cfg(feature = "ssr")]
                 let content_database = content_database.clone();
                 async move {
-                    content_database
-                        .map(|db| {
-                            db.entries
-                                .iter()
-                                .filter(|entry| entry.kind.project)
-                                .map(ProjectSummaryData::from)
-                                .collect()
-                        })
-                        .unwrap_or_default()
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_projects_data_send_safe().await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        content_database
+                            .map(|db| {
+                                db.entries
+                                    .iter()
+                                    .filter(|entry| entry.kind.project)
+                                    .map(ProjectSummaryData::from)
+                                    .collect()
+                            })
+                            .unwrap_or_default()
+                    }
                 }
             }
         },
