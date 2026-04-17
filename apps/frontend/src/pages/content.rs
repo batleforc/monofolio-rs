@@ -426,10 +426,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 let canonical = canonical_url(&handle);
                                 let image_url = if image.trim().is_empty() {
                                     DEFAULT_OG_IMAGE.to_string()
-                                } else if image.starts_with("http://")
-                                    || image.starts_with("https://")
-                                {
+                                } else if image.starts_with("https://") {
                                     image
+                                } else if image.starts_with("http://") {
+                                    format!("https://{}", image.trim_start_matches("http://"))
                                 } else if let Some(file_name) = image.strip_prefix("media#") {
                                     canonical_url(&format!("/media/{file_name}"))
                                 } else {
