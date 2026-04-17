@@ -1,2 +1,4 @@
 [target.x86_64-unknown-linux-gnu]
+# Workaround: rust-lld can crash with a bus error while linking the frontend SSR binary
+# in CI for this repository. Force GNU bfd linker on Linux until toolchain issue is fixed.
 rustflags = ["-C", "link-arg=-fuse-ld=bfd"]
