@@ -1,5 +1,59 @@
 #![recursion_limit = "512"]
 #[cfg(feature = "ssr")]
+use actix_web::{get, web::Data, HttpResponse, Responder};
+#[cfg(feature = "ssr")]
+use content::ContentDatabase;
+
+#[cfg(feature = "ssr")]
+fn escape_xml(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
+#[cfg(feature = "ssr")]
+fn build_sitemap_xml(database: &ContentDatabase) -> String {
+    let mut urls: Vec<String> = vec![
+        "https://maxleriche.net/".to_string(),
+        "https://maxleriche.net/about".to_string(),
+        "https://maxleriche.net/projects".to_string(),
+        "https://maxleriche.net/blog".to_string(),
+        "https://maxleriche.net/docs".to_string(),
+        "https://maxleriche.net/contact".to_string(),
+    ];
+    urls.extend(database.entries.iter().map(|entry| {
+        format!(
+            "https://maxleriche.net/{}",
+            entry.handle.trim_start_matches('/')
+        )
+    }));
+    urls.sort();
+    urls.dedup();
+
+    let mut xml = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">"#,
+    );
+    for url in urls {
+        xml.push_str("<url><loc>");
+        xml.push_str(&escape_xml(&url));
+        xml.push_str("</loc></url>");
+    }
+    xml.push_str("</urlset>");
+    xml
+}
+
+#[cfg(feature = "ssr")]
+#[get("/sitemap.xml")]
+async fn get_sitemap(database: Data<ContentDatabase>) -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/xml; charset=utf-8")
+        .body(build_sitemap_xml(database.get_ref()))
+}
+
+#[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     use actix_files::Files;
@@ -69,13 +123,18 @@ async fn main() -> anyhow::Result<()> {
 
         app.service(public_scope())
             .service(Scalar::with_url("/api/docs", api))
+            .service(get_sitemap)
             .leptos_routes(routes.clone(), {
                 let leptos_options = leptos_options.clone();
+                let home_config = home_config.clone();
+                let content_database = content_database.clone();
                 move || {
                     use frontend::App;
+                    provide_context(home_config.clone());
+                    provide_context(content_database.clone());
                     view! {
                         <!DOCTYPE html>
-                        <html lang="en">
+                        <html lang="fr">
                             <head>
                                 <Meta
                                     name="viewport"
@@ -121,6 +180,52 @@ async fn main() -> anyhow::Result<()> {
         eprintln!("Error during shutdown of tracing: {e}");
     }
     Ok(())
+}
+
+#[cfg(all(test, feature = "ssr"))]
+mod tests {
+    use super::build_sitemap_xml;
+    use content::{ContentDatabase, ContentDates, ContentEntry, ContentKind, MarkdownContent};
+
+    #[test]
+    fn sitemap_contains_static_and_content_urls() {
+        let database = ContentDatabase {
+            generated_at_unix: 0,
+            entries: vec![ContentEntry {
+                title: "Post".to_string(),
+                description: String::new(),
+                handle: "blogs/test".to_string(),
+                source_path: "blogs/test.md".to_string(),
+                kind: ContentKind {
+                    blog: true,
+                    project: false,
+                    doc: false,
+                },
+                dates: ContentDates {
+                    created_at: "2024-01-01T00:00:00Z".to_string(),
+                    updated_at_unix: 0,
+                    released_at: "2024-01-01".to_string(),
+                },
+                draft: false,
+                tags: vec![],
+                techno: vec![],
+                image: String::new(),
+                reading_time_minutes: 1,
+                toc: vec![],
+                content: MarkdownContent {
+                    format: "markdown_ast".to_string(),
+                    nodes: vec![],
+                },
+            }],
+            sidebar: vec![],
+            blog_timeline: vec![],
+        };
+
+        let xml = build_sitemap_xml(&database);
+        assert!(xml.contains("<loc>https://maxleriche.net/</loc>"));
+        assert!(xml.contains("<loc>https://maxleriche.net/about</loc>"));
+        assert!(xml.contains("<loc>https://maxleriche.net/blogs/test</loc>"));
+    }
 }
 
 #[cfg(not(feature = "ssr"))]

@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::i18n::{use_language, Language};
+use crate::seo::StaticPageSeo;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 struct BlogEntryData {
@@ -108,6 +109,11 @@ pub fn BlogReferencePage() -> impl IntoView {
     };
 
     view! {
+        <StaticPageSeo
+            title="Blog | Maxime Leriche"
+            description="Articles techniques et retours d'expérience autour du développement logiciel."
+            path="/blog"
+        />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
                 <SectionTitle>{move || title()}</SectionTitle>

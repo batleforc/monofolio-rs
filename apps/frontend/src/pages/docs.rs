@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::i18n::{use_language, Language};
+use crate::seo::StaticPageSeo;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 struct DocSidebarItemData {
@@ -290,6 +291,11 @@ pub fn DocsReferencePage() -> impl IntoView {
     };
 
     view! {
+        <StaticPageSeo
+            title="Documentation | Maxime Leriche"
+            description="Index de la documentation technique et navigation rapide."
+            path="/docs"
+        />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
                 <SectionTitle>{move || title()}</SectionTitle>

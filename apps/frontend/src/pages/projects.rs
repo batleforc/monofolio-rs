@@ -9,6 +9,7 @@ use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::i18n::{use_language, Language};
+use crate::seo::StaticPageSeo;
 
 const PROJECTS_PER_PAGE: usize = 6;
 
@@ -393,6 +394,11 @@ pub fn ProjectsPage() -> impl IntoView {
     let next_disabled = move || current_page.get() >= total_pages.get();
 
     view! {
+        <StaticPageSeo
+            title="Projets | Maxime Leriche"
+            description="Sélection de projets, réalisations et expérimentations techniques."
+            path="/projects"
+        />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
                 <SectionTitle>{page_title}</SectionTitle>
