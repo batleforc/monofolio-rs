@@ -182,7 +182,13 @@ async fn load_home_data_send_safe() -> Option<HomeData> {
     wasm_bindgen_futures::spawn_local(async move {
         let _ = tx.send(load_home_data().await);
     });
-    rx.await.ok().flatten()
+    match rx.await {
+        Ok(data) => data,
+        Err(err) => {
+            tracing::warn!("oneshot receiver canceled in send-safe fetch: {err}");
+            None
+        }
+    }
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -191,7 +197,13 @@ async fn load_projects_data_send_safe() -> Vec<ProjectSummaryData> {
     wasm_bindgen_futures::spawn_local(async move {
         let _ = tx.send(load_projects_data().await);
     });
-    rx.await.unwrap_or_default()
+    match rx.await {
+        Ok(data) => data,
+        Err(err) => {
+            tracing::warn!("oneshot receiver canceled in send-safe fetch: {err}");
+            Vec::new()
+        }
+    }
 }
 
 #[cfg(not(feature = "ssr"))]
