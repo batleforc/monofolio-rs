@@ -443,29 +443,23 @@ pub fn HomePage() -> impl IntoView {
                 description="Portfolio de Maxime Leriche : projets, expériences, articles et contact."
                 path="/"
             />
-            <Show when=move || home_data.get().is_none()>
-                <LoadingScreen />
-            </Show>
-            <Show when=move || home_data.get().is_some() && home_data.get().flatten().is_none()>
-                <ErrorScreen on_retry=retry />
-            </Show>
-            <Show when=move || {
-                home_data.get().flatten().is_some()
-            }>
+            <Suspense fallback=move || view! { <LoadingScreen /> }>
                 {move || {
-                    home_data
-                        .get()
-                        .flatten()
-                        .map(|data| {
+                    match home_data.get() {
+                        Some(Some(data)) => {
                             view! {
                                 <HomeContent
                                     data=data
                                     projects=projects_data.get().unwrap_or_default()
                                 />
                             }
-                        })
+                                .into_any()
+                        }
+                        Some(None) => view! { <ErrorScreen on_retry=retry /> }.into_any(),
+                        None => view! { <LoadingScreen /> }.into_any(),
+                    }
                 }}
-            </Show>
+            </Suspense>
         </div>
     }
 }
