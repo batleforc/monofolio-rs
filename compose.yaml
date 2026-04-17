@@ -11,4 +11,6 @@ services:
       LEPTOS_SITE_ADDR: "0.0.0.0:3000"
       CONTENT_DB_PATH: "target/content-build"
       MEDIA_PATH: "contents/media"
+      TRACKING_SCRIPT_SRC: "http://localhost:3000/api/script.js"
+      TRACKING_SITE_ID: "fAcKiD"
     restart: unless-stopped

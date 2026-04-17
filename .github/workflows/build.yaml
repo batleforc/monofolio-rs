@@ -114,7 +114,6 @@ jobs:
       matrix:
         include:
           - artifact_name: trivy-backend
-          - artifact_name: trivy-frontend
     permissions:
       contents: read
       security-events: write
