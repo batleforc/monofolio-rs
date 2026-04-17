@@ -263,8 +263,8 @@ pub fn NavBar() -> impl IntoView {
                                                                 class="block px-4 py-3 hover:bg-primary/5 transition-colors"
                                                                 on:click=move |_| search_query.set(String::new())
                                                             >
-                                                                <div class="flex items-center justify-between gap-3">
-                                                                    <p class="text-sm font-semibold text-foreground truncate">
+                                                                <div class="flex min-w-0 items-center justify-between gap-3">
+                                                                    <p class="min-w-0 text-sm font-semibold text-foreground truncate">
                                                                         {title}
                                                                     </p>
                                                                     <span class="text-[0.65rem] uppercase tracking-widest font-mono text-muted-foreground">
@@ -309,45 +309,45 @@ pub fn NavBar() -> impl IntoView {
             <Show when=move || mobile_menu_open.get()>
                 <div class="md:hidden border-t border-border bg-background/95 backdrop-blur-md">
                     <div class="max-w-5xl mx-auto px-5 py-4 flex flex-col gap-4">
-                        <nav class="flex flex-col gap-2" aria-label="Mobile navigation">
+                        <nav class="flex min-w-0 flex-col gap-2" aria-label="Mobile navigation">
                             <a
                                 href="/"
-                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_home}
                             </a>
                             <a
                                 href="/contact"
-                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_contact}
                             </a>
                             <a
                                 href="/projects"
-                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_projects}
                             </a>
                             <a
                                 href="/blog"
-                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_blog}
                             </a>
                             <a
                                 href="/docs"
-                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_docs}
                             </a>
                             <a
                                 href="/about"
-                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_about}
@@ -409,8 +409,8 @@ pub fn NavBar() -> impl IntoView {
                                                                             mobile_menu_open.set(false);
                                                                         }
                                                                     >
-                                                                        <div class="flex items-center justify-between gap-3">
-                                                                            <p class="text-sm font-semibold text-foreground truncate">
+                                                                        <div class="flex min-w-0 items-center justify-between gap-3">
+                                                                            <p class="min-w-0 text-sm font-semibold text-foreground truncate">
                                                                                 {title}
                                                                             </p>
                                                                             <span class="text-[0.65rem] uppercase tracking-widest font-mono text-muted-foreground">
