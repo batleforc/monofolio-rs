@@ -279,67 +279,70 @@ pub fn ContentHandlePage() -> impl IntoView {
     #[cfg(feature = "ssr")]
     let content_db = use_context::<ContentDatabase>();
 
+    #[cfg(not(feature = "ssr"))]
+    let page_data = LocalResource::new(move || {
+        let pathname = location.pathname.get();
+        async move {
+            let handle = pathname.trim_start_matches('/').to_string();
+            load_page_data(handle).await
+        }
+    });
+    #[cfg(feature = "ssr")]
     let page_data = Resource::new(
         move || location.pathname.get(),
         {
-            #[cfg(feature = "ssr")]
             let content_db = content_db.clone();
             move |pathname: String| {
-                #[cfg(feature = "ssr")]
                 let content_db = content_db.clone();
                 async move {
                     let handle = pathname.trim_start_matches('/').to_string();
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_page_data(handle).await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        content_db.and_then(|db| {
-                            db.entries
-                                .iter()
-                                .find(|entry| entry.handle == handle)
-                                .map(PageData::from)
-                        })
-                    }
+                    content_db.and_then(|db| {
+                        db.entries
+                            .iter()
+                            .find(|entry| entry.handle == handle)
+                            .map(PageData::from)
+                    })
                 }
             }
         },
     );
+    #[cfg(not(feature = "ssr"))]
+    let docs_nav = LocalResource::new(move || {
+        let pathname = location.pathname.get();
+        async move {
+            let handle = pathname.trim_start_matches('/').to_string();
+            if !handle.starts_with("docs/") && handle != "docs" {
+                return vec![];
+            }
+            load_docs_nav().await
+        }
+    });
+    #[cfg(feature = "ssr")]
     let docs_nav = Resource::new(
         move || location.pathname.get(),
         {
-            #[cfg(feature = "ssr")]
             let content_db = content_db.clone();
             move |pathname: String| {
-                #[cfg(feature = "ssr")]
                 let content_db = content_db.clone();
                 async move {
                     let handle = pathname.trim_start_matches('/').to_string();
                     if !handle.starts_with("docs/") && handle != "docs" {
                         return vec![];
                     }
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_docs_nav().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        content_db
-                            .map(|db| {
-                                let known_doc_handles: HashSet<String> = db
-                                    .entries
-                                    .iter()
-                                    .filter(|entry| entry.kind.doc)
-                                    .map(|entry| entry.handle.clone())
-                                    .collect();
-                                db.sidebar
-                                    .iter()
-                                    .map(|item| map_sidebar_item(item, &known_doc_handles))
-                                    .collect()
-                            })
-                            .unwrap_or_default()
-                    }
+                    content_db
+                        .map(|db| {
+                            let known_doc_handles: HashSet<String> = db
+                                .entries
+                                .iter()
+                                .filter(|entry| entry.kind.doc)
+                                .map(|entry| entry.handle.clone())
+                                .collect();
+                            db.sidebar
+                                .iter()
+                                .map(|item| map_sidebar_item(item, &known_doc_handles))
+                                .collect()
+                        })
+                        .unwrap_or_default()
                 }
             }
         },

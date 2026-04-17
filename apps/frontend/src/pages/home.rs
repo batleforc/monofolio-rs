@@ -378,52 +378,44 @@ pub fn HomePage() -> impl IntoView {
     let home_config = use_context::<HomeConfig>();
     #[cfg(feature = "ssr")]
     let content_database = use_context::<content::ContentDatabase>();
+    #[cfg(not(feature = "ssr"))]
+    let home_data = LocalResource::new(move || {
+        let _pathname = location.pathname.get();
+        load_home_data()
+    });
+    #[cfg(feature = "ssr")]
     let home_data = Resource::new(
         move || location.pathname.get(),
         {
-            #[cfg(feature = "ssr")]
             let home_config = home_config.clone();
             move |_| {
-                #[cfg(feature = "ssr")]
                 let home_config = home_config.clone();
-                async move {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_home_data().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        home_config.map(HomeData::from)
-                    }
-                }
+                async move { home_config.map(HomeData::from) }
             }
         },
     );
+    #[cfg(not(feature = "ssr"))]
+    let projects_data = LocalResource::new(move || {
+        let _pathname = location.pathname.get();
+        load_projects_data()
+    });
+    #[cfg(feature = "ssr")]
     let projects_data = Resource::new(
         move || location.pathname.get(),
         {
-            #[cfg(feature = "ssr")]
             let content_database = content_database.clone();
             move |_| {
-                #[cfg(feature = "ssr")]
                 let content_database = content_database.clone();
                 async move {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_projects_data().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        content_database
-                            .map(|db| {
-                                db.entries
-                                    .iter()
-                                    .filter(|entry| entry.kind.project)
-                                    .map(ProjectSummaryData::from)
-                                    .collect()
-                            })
-                            .unwrap_or_default()
-                    }
+                    content_database
+                        .map(|db| {
+                            db.entries
+                                .iter()
+                                .filter(|entry| entry.kind.project)
+                                .map(ProjectSummaryData::from)
+                                .collect()
+                        })
+                        .unwrap_or_default()
                 }
             }
         },
