@@ -118,6 +118,7 @@ pub fn NavBar() -> impl IntoView {
     let search_query = RwSignal::new(String::new());
     let search_index: RwSignal<Vec<SearchEntryData>> = RwSignal::new(vec![]);
     let search_loading = RwSignal::new(true);
+    let mobile_menu_open = RwSignal::new(false);
     #[cfg(not(feature = "ssr"))]
     let did_init = RwSignal::new(false);
 
@@ -171,7 +172,7 @@ pub fn NavBar() -> impl IntoView {
                     "Max."
                 </a>
 
-                <nav class="flex gap-6 flex-1 min-w-0" aria-label="Main navigation">
+                <nav class="hidden md:flex gap-6 flex-1 min-w-0" aria-label="Main navigation">
                     <a
                         href="/"
                         class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
@@ -210,7 +211,7 @@ pub fn NavBar() -> impl IntoView {
                     </a>
                 </nav>
 
-                <div class="relative w-72 shrink-0">
+                <div class="relative w-72 shrink-0 hidden md:block">
                     <input
                         type="search"
                         prop:value=move || search_query.get()
@@ -289,13 +290,161 @@ pub fn NavBar() -> impl IntoView {
                 </div>
 
                 <button
-                    class=lang_btn_class
+                    class=tw_merge!(lang_btn_class.clone(), "hidden md:inline-flex")
                     aria-label="Toggle language"
                     on:click=move |_| toggle_language(lang)
                 >
                     {move || lang.get().toggle_label()}
                 </button>
+
+                <button
+                    class="md:hidden inline-flex items-center justify-center rounded border border-border px-2 py-1 text-sm font-mono tracking-wide text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                    aria-label="Toggle menu"
+                    on:click=move |_| mobile_menu_open.update(|open| *open = !*open)
+                >
+                    {move || if mobile_menu_open.get() { "✕" } else { "☰" }}
+                </button>
             </div>
+
+            <Show when=move || mobile_menu_open.get()>
+                <div class="md:hidden border-t border-border bg-background/95 backdrop-blur-md">
+                    <div class="max-w-5xl mx-auto px-5 py-4 flex flex-col gap-4">
+                        <nav class="flex flex-col gap-2" aria-label="Mobile navigation">
+                            <a
+                                href="/"
+                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_home}
+                            </a>
+                            <a
+                                href="/contact"
+                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_contact}
+                            </a>
+                            <a
+                                href="/projects"
+                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_projects}
+                            </a>
+                            <a
+                                href="/blog"
+                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_blog}
+                            </a>
+                            <a
+                                href="/docs"
+                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_docs}
+                            </a>
+                            <a
+                                href="/about"
+                                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_about}
+                            </a>
+                        </nav>
+
+                        <div class="relative w-full">
+                            <input
+                                type="search"
+                                prop:value=move || search_query.get()
+                                on:input=move |ev| search_query.set(event_target_value(&ev))
+                                placeholder=move || search_placeholder()
+                                class="w-full rounded border border-border bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                            />
+
+                            {move || {
+                                let query = search_query.get();
+                                if query.trim().is_empty() {
+                                    return view! { <></> }.into_any();
+                                }
+                                let mut all_items = search_index.get();
+                                all_items.extend(static_search_entries(lang.get(), t.get()));
+                                let results = filter_search_results(&all_items, &query);
+                                let is_loading = search_loading.get() && search_index.get().is_empty();
+
+                                view! {
+                                    <div class="absolute left-0 right-0 top-full mt-2 w-full rounded border border-border bg-card text-card-foreground shadow-lg overflow-hidden">
+                                        {if is_loading {
+                                            view! {
+                                                <p class="px-4 py-3 text-sm text-muted-foreground">
+                                                    {move || search_loading_label()}
+                                                </p>
+                                            }
+                                                .into_any()
+                                        } else if results.is_empty() {
+                                            view! {
+                                                <p class="px-4 py-3 text-sm text-muted-foreground">
+                                                    {move || search_empty()}
+                                                </p>
+                                            }
+                                                .into_any()
+                                        } else {
+                                            view! {
+                                                <ul class="max-h-[26rem] overflow-auto">
+                                                    {results
+                                                        .into_iter()
+                                                        .map(|item| {
+                                                            let title = item.title.clone();
+                                                            let description = item.description.clone();
+                                                            let href = item.href.clone();
+                                                            let kind = item.kind.clone();
+                                                            view! {
+                                                                <li class="border-t border-border first:border-t-0">
+                                                                    <a
+                                                                        href=href
+                                                                        class="block px-4 py-3 hover:bg-primary/5 transition-colors"
+                                                                        on:click=move |_| {
+                                                                            search_query.set(String::new());
+                                                                            mobile_menu_open.set(false);
+                                                                        }
+                                                                    >
+                                                                        <div class="flex items-center justify-between gap-3">
+                                                                            <p class="text-sm font-semibold text-foreground truncate">
+                                                                                {title}
+                                                                            </p>
+                                                                            <span class="text-[0.65rem] uppercase tracking-widest font-mono text-muted-foreground">
+                                                                                {kind}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p class="mt-1 text-xs text-muted-foreground truncate">
+                                                                            {description}
+                                                                        </p>
+                                                                    </a>
+                                                                </li>
+                                                            }
+                                                        })
+                                                        .collect_view()}
+                                                </ul>
+                                            }
+                                                .into_any()
+                                        }}
+                                    </div>
+                                }
+                                    .into_any()
+                            }}
+                        </div>
+
+                        <button
+                            class=lang_btn_class.clone()
+                            aria-label="Toggle language"
+                            on:click=move |_| toggle_language(lang)
+                        >
+                            {move || lang.get().toggle_label()}
+                        </button>
+                    </div>
+                </div>
+            </Show>
         </header>
     }
 }
