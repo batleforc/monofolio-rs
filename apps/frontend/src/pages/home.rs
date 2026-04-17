@@ -456,7 +456,7 @@ pub fn HomePage() -> impl IntoView {
                                 .into_any()
                         }
                         Some(None) => view! { <ErrorScreen on_retry=retry /> }.into_any(),
-                        None => view! { <LoadingScreen /> }.into_any(),
+                        None => view! { <></> }.into_any(),
                     }
                 }}
             </Suspense>
