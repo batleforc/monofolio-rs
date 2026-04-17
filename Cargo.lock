@@ -1157,6 +1157,7 @@ dependencies = [
  "api",
  "console_error_panic_hook",
  "content",
+ "futures",
  "gloo-net 0.7.0",
  "icondata_si",
  "icons",
