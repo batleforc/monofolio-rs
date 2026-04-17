@@ -80,7 +80,13 @@ async fn load_page_data_send_safe(handle: String) -> Option<PageData> {
     wasm_bindgen_futures::spawn_local(async move {
         let _ = tx.send(load_page_data(handle).await);
     });
-    rx.await.ok().flatten()
+    match rx.await {
+        Ok(data) => data,
+        Err(err) => {
+            tracing::warn!("oneshot receiver canceled in send-safe fetch: {err}");
+            None
+        }
+    }
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -89,7 +95,13 @@ async fn load_docs_nav_send_safe() -> Vec<DocSidebarItemData> {
     wasm_bindgen_futures::spawn_local(async move {
         let _ = tx.send(load_docs_nav().await);
     });
-    rx.await.unwrap_or_default()
+    match rx.await {
+        Ok(data) => data,
+        Err(err) => {
+            tracing::warn!("oneshot receiver canceled in send-safe fetch: {err}");
+            Vec::new()
+        }
+    }
 }
 
 #[cfg(feature = "ssr")]
