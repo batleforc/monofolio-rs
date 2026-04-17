@@ -314,20 +314,26 @@ pub fn AboutPage() -> impl IntoView {
             description="Parcours, expériences et informations de contact de Maxime Leriche."
             path="/about"
         />
-        <Show when=move || home_data.get().is_none()>
-            <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
-                "Loading…"
-            </div>
-        </Show>
-
-        <Show when=move || home_data.get().is_some() && home_data.get().flatten().is_none()>
-            <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
-                "Unable to load data for this page."
-            </div>
-        </Show>
-
-        <Show when=move || {
-            home_data.get().flatten().is_some()
-        }>{move || home_data.get().flatten().map(|data| view! { <MoreAboutContent data=data /> })}</Show>
+        <Suspense fallback=move || {
+            view! {
+                <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
+                    "Loading…"
+                </div>
+            }
+        }>
+            {move || {
+                match home_data.get().flatten() {
+                    Some(data) => view! { <MoreAboutContent data=data /> }.into_any(),
+                    None => {
+                        view! {
+                            <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
+                                "Unable to load data for this page."
+                            </div>
+                        }
+                        .into_any()
+                    }
+                }
+            }}
+        </Suspense>
     }
 }
