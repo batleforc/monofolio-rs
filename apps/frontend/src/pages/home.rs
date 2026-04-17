@@ -1,12 +1,16 @@
 use leptos::prelude::*;
+use leptos_router::hooks::use_location;
 use serde::{Deserialize, Serialize};
 use tw_merge::IntoTailwindClass;
+#[cfg(feature = "ssr")]
+use content::{ContentEntry, HomeConfig};
 
 use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::components::{about::About, hero::Hero};
 use crate::i18n::{use_language, use_translations, Language};
+use crate::seo::StaticPageSeo;
 
 const LAST_PROJECTS_COUNT: usize = 6;
 
@@ -62,6 +66,77 @@ struct ProjectSummaryData {
     techno: Vec<String>,
     image: String,
     released_at: String,
+}
+
+#[cfg(feature = "ssr")]
+impl From<HomeConfig> for HomeData {
+    fn from(cfg: HomeConfig) -> Self {
+        Self {
+            name: cfg.name,
+            presentation: cfg.presentation,
+            presentation_en: cfg.presentation_en,
+            short_description: cfg.short_description,
+            short_description_en: cfg.short_description_en,
+            cover_title: cfg.cover_title,
+            cover_title_en: cfg.cover_title_en,
+            cv_url: cfg.cv_url,
+            contact_email: cfg.contact_email,
+            contact_location: cfg.contact_location,
+            current_work: cfg.current_work,
+            contact_availability: cfg.contact_availability,
+            contact_availability_en: cfg.contact_availability_en,
+            url: cfg
+                .url
+                .into_iter()
+                .map(|link| SocialLinkData {
+                    name: link.name,
+                    url: link.url,
+                    primaire: link.primaire,
+                    img_url: link.img_url,
+                })
+                .collect(),
+            history: cfg
+                .history
+                .into_iter()
+                .map(|entry| HistoryEntryData {
+                    title: entry.title,
+                    title_en: entry.title_en,
+                    lieux: entry.lieux,
+                    date: entry.date,
+                    weight: entry.weight,
+                    img_url: entry.img_url,
+                    ico_url: entry.ico_url,
+                    description: entry.description,
+                    description_en: entry.description_en,
+                    url: entry
+                        .url
+                        .into_iter()
+                        .map(|link| SocialLinkData {
+                            name: link.name,
+                            url: link.url,
+                            primaire: link.primaire,
+                            img_url: link.img_url,
+                        })
+                        .collect(),
+                })
+                .collect(),
+        }
+    }
+}
+
+#[cfg(feature = "ssr")]
+impl From<&ContentEntry> for ProjectSummaryData {
+    fn from(entry: &ContentEntry) -> Self {
+        Self {
+            title: entry.title.clone(),
+            description: entry.description.clone(),
+            handle: entry.handle.clone(),
+            tags: entry.tags.clone(),
+            techno: entry.techno.clone(),
+            image: entry.image.clone(),
+            released_at: entry.dates.released_at.clone(),
+        }
+    }
 }
 
 // ── Fetch (client-only) ───────────────────────────────────────────────────
@@ -298,57 +373,96 @@ fn HomeContent(data: HomeData, projects: Vec<ProjectSummaryData>) -> impl IntoVi
 /// The server sends a loading skeleton; the client fills in the content.
 #[component]
 pub fn HomePage() -> impl IntoView {
-    let home_data: RwSignal<Option<HomeData>> = RwSignal::new(None);
-    let projects_data: RwSignal<Vec<ProjectSummaryData>> = RwSignal::new(vec![]);
-    let loading = RwSignal::new(true);
-    let fetch_error = RwSignal::new(false);
-
-    let do_fetch = move || {
-        loading.set(true);
-        fetch_error.set(false);
-        #[cfg(not(feature = "ssr"))]
+    let location = use_location();
+    #[cfg(feature = "ssr")]
+    let home_config = use_context::<HomeConfig>();
+    #[cfg(feature = "ssr")]
+    let content_database = use_context::<content::ContentDatabase>();
+    let home_data = Resource::new(
+        move || location.pathname.get(),
         {
-            wasm_bindgen_futures::spawn_local(async move {
-                let projects = load_projects_data().await;
-                projects_data.set(projects);
-
-                match load_home_data().await {
-                    Some(data) => {
-                        home_data.set(Some(data));
-                        fetch_error.set(false);
+            #[cfg(feature = "ssr")]
+            let home_config = home_config.clone();
+            move |_| {
+                #[cfg(feature = "ssr")]
+                let home_config = home_config.clone();
+                async move {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_home_data().await
                     }
-                    None => {
-                        fetch_error.set(true);
+                    #[cfg(feature = "ssr")]
+                    {
+                        home_config.map(HomeData::from)
                     }
                 }
-                loading.set(false);
-            });
-        }
-    };
+            }
+        },
+    );
+    let projects_data = Resource::new(
+        move || location.pathname.get(),
+        {
+            #[cfg(feature = "ssr")]
+            let content_database = content_database.clone();
+            move |_| {
+                #[cfg(feature = "ssr")]
+                let content_database = content_database.clone();
+                async move {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_projects_data().await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        content_database
+                            .map(|db| {
+                                db.entries
+                                    .iter()
+                                    .filter(|entry| entry.kind.project)
+                                    .map(ProjectSummaryData::from)
+                                    .collect()
+                            })
+                            .unwrap_or_default()
+                    }
+                }
+            }
+        },
+    );
 
-    // Trigger initial fetch on mount (client-only); SSR keeps loading=true so
-    // the initial SSR HTML matches the WASM initial render.
-    #[cfg(not(feature = "ssr"))]
-    do_fetch();
-
-    let retry = Callback::new(move |_: ()| do_fetch());
+    let home_data_for_retry = home_data.clone();
+    let projects_data_for_retry = projects_data.clone();
+    let retry = Callback::new(move |_: ()| {
+        home_data_for_retry.refetch();
+        projects_data_for_retry.refetch();
+    });
 
     view! {
         <div class="home-page">
-            <Show when=move || loading.get()>
+            <StaticPageSeo
+                title="Maxime Leriche | Portfolio développeur Rust"
+                description="Portfolio de Maxime Leriche : projets, expériences, articles et contact."
+                path="/"
+            />
+            <Show when=move || home_data.get().is_none()>
                 <LoadingScreen />
             </Show>
-            <Show when=move || fetch_error.get() && !loading.get()>
+            <Show when=move || home_data.get().is_some() && home_data.get().flatten().is_none()>
                 <ErrorScreen on_retry=retry />
             </Show>
             <Show when=move || {
-                !loading.get() && !fetch_error.get()
+                home_data.get().flatten().is_some()
             }>
                 {move || {
                     home_data
                         .get()
+                        .flatten()
                         .map(|data| {
-                            view! { <HomeContent data=data projects=projects_data.get() /> }
+                            view! {
+                                <HomeContent
+                                    data=data
+                                    projects=projects_data.get().unwrap_or_default()
+                                />
+                            }
                         })
                 }}
             </Show>

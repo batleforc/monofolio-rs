@@ -1,15 +1,19 @@
 use std::collections::HashSet;
 
 use leptos::prelude::*;
+use leptos_meta::{Link, Meta, Title};
 use leptos_router::hooks::use_location;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(feature = "ssr")]
+use content::{ContentDatabase, ContentEntry, SidebarItem};
 
 use crate::components::markdown::toc::{extract_headings, TableOfContents};
 use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
 use crate::components::ui::{Card, SectionTitle};
+use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 struct DocSidebarItemData {
     title: String,
     handle: String,
@@ -18,7 +22,7 @@ struct DocSidebarItemData {
     children: Vec<DocSidebarItemData>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize)]
 struct PageData {
     title: String,
     description: String,
@@ -28,6 +32,7 @@ struct PageData {
     doc: bool,
     tags: Vec<String>,
     techno: Vec<String>,
+    image: String,
     reading_time_minutes: usize,
     content: Value,
 }
@@ -66,6 +71,47 @@ async fn load_docs_nav() -> Vec<DocSidebarItemData> {
     #[cfg(feature = "ssr")]
     {
         vec![]
+    }
+}
+
+#[cfg(feature = "ssr")]
+impl From<&ContentEntry> for PageData {
+    fn from(entry: &ContentEntry) -> Self {
+        Self {
+            title: entry.title.clone(),
+            description: entry.description.clone(),
+            handle: entry.handle.clone(),
+            blog: entry.kind.blog,
+            project: entry.kind.project,
+            doc: entry.kind.doc,
+            tags: entry.tags.clone(),
+            techno: entry.techno.clone(),
+            image: entry.image.clone(),
+            reading_time_minutes: entry.reading_time_minutes,
+            content: serde_json::to_value(&entry.content).unwrap_or(serde_json::Value::Null),
+        }
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn map_sidebar_item(item: &SidebarItem, known_doc_handles: &HashSet<String>) -> DocSidebarItemData {
+    let kind = if item.children.is_empty() {
+        "markdown".to_string()
+    } else if known_doc_handles.contains(&item.handle) {
+        "folder_with_index".to_string()
+    } else {
+        "folder".to_string()
+    };
+    DocSidebarItemData {
+        title: item.title.clone(),
+        handle: item.handle.clone(),
+        order: item.order as u64,
+        kind,
+        children: item
+            .children
+            .iter()
+            .map(|child| map_sidebar_item(child, known_doc_handles))
+            .collect(),
     }
 }
 
@@ -229,87 +275,99 @@ fn collect_active_path_folders(
 
 #[component]
 pub fn ContentHandlePage() -> impl IntoView {
-    #[allow(unused_variables)]
     let location = use_location();
-    let page_data: RwSignal<Option<PageData>> = RwSignal::new(None);
-    let loading = RwSignal::new(true);
-    let fetch_error = RwSignal::new(false);
-    let docs_nav: RwSignal<Vec<DocSidebarItemData>> = RwSignal::new(vec![]);
-    let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
+    #[cfg(feature = "ssr")]
+    let content_db = use_context::<ContentDatabase>();
 
-    #[cfg(not(feature = "ssr"))]
-    {
-        Effect::new(move |_| {
-            let handle = location.pathname.get().trim_start_matches('/').to_string();
-
-            // This page handles only content routes. During SPA transitions,
-            // the effect may observe intermediate pathnames (e.g. /projects).
-            // Guard to avoid bogus fetches like /api/v1/page/projects.
-            let is_supported_handle = handle.starts_with("docs/") || handle.starts_with("blogs/");
-            if !is_supported_handle {
-                return;
-            }
-
-            loading.set(true);
-            fetch_error.set(false);
-            page_data.set(None);
-
-            if handle.is_empty() {
-                fetch_error.set(true);
-                loading.set(false);
-                return;
-            }
-
-            wasm_bindgen_futures::spawn_local(async move {
-                match load_page_data(handle).await {
-                    Some(data) => {
-                        page_data.set(Some(data));
-                        fetch_error.set(false);
+    let page_data = Resource::new(
+        move || location.pathname.get(),
+        {
+            #[cfg(feature = "ssr")]
+            let content_db = content_db.clone();
+            move |pathname: String| {
+                #[cfg(feature = "ssr")]
+                let content_db = content_db.clone();
+                async move {
+                    let handle = pathname.trim_start_matches('/').to_string();
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_page_data(handle).await
                     }
-                    None => {
-                        fetch_error.set(true);
+                    #[cfg(feature = "ssr")]
+                    {
+                        content_db.and_then(|db| {
+                            db.entries
+                                .iter()
+                                .find(|entry| entry.handle == handle)
+                                .map(PageData::from)
+                        })
                     }
                 }
-                loading.set(false);
-            });
-        });
-
-        Effect::new(move |_| {
-            let handle = location.pathname.get().trim_start_matches('/').to_string();
-            if !handle.starts_with("docs/") {
-                docs_nav.set(vec![]);
-                return;
             }
-
-            wasm_bindgen_futures::spawn_local(async move {
-                docs_nav.set(load_docs_nav().await);
-            });
-        });
-
-        Effect::new(move |_| {
-            let handle = location.pathname.get().trim_start_matches('/').to_string();
-            let nav_data = docs_nav.get();
-            if !handle.starts_with("docs/") && handle != "docs" {
-                expanded_folders.set(HashSet::new());
-                return;
+        },
+    );
+    let docs_nav = Resource::new(
+        move || location.pathname.get(),
+        {
+            #[cfg(feature = "ssr")]
+            let content_db = content_db.clone();
+            move |pathname: String| {
+                #[cfg(feature = "ssr")]
+                let content_db = content_db.clone();
+                async move {
+                    let handle = pathname.trim_start_matches('/').to_string();
+                    if !handle.starts_with("docs/") && handle != "docs" {
+                        return vec![];
+                    }
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_docs_nav().await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        content_db
+                            .map(|db| {
+                                let known_doc_handles: HashSet<String> = db
+                                    .entries
+                                    .iter()
+                                    .filter(|entry| entry.kind.doc)
+                                    .map(|entry| entry.handle.clone())
+                                    .collect();
+                                db.sidebar
+                                    .iter()
+                                    .map(|item| map_sidebar_item(item, &known_doc_handles))
+                                    .collect()
+                            })
+                            .unwrap_or_default()
+                    }
+                }
             }
+        },
+    );
+    let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
+    Effect::new(move |_| {
+        let handle = location.pathname.get().trim_start_matches('/').to_string();
+        let nav_data = docs_nav.get().unwrap_or_default();
+        if !handle.starts_with("docs/") && handle != "docs" {
+            expanded_folders.set(HashSet::new());
+            return;
+        }
 
-            let mut open = HashSet::new();
-            collect_active_path_folders(&nav_data, &handle, &mut open);
-            expanded_folders.set(open);
-        });
-    }
+        let mut open = HashSet::new();
+        collect_active_path_folders(&nav_data, &handle, &mut open);
+        expanded_folders.set(open);
+    });
 
     view! {
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <div class="max-w-7xl mx-auto px-5 py-16">
-                <Show when=move || loading.get()>
+                <Show when=move || page_data.get().is_none()>
                     <Card class="p-5">
                         <p class="text-sm text-muted-foreground">"Loading page..."</p>
                     </Card>
                 </Show>
 
-                <Show when=move || fetch_error.get() && !loading.get()>
+                <Show when=move || page_data.get().is_some() && page_data.get().flatten().is_none()>
                     <Card class="p-5">
                         <p class="text-sm text-muted-foreground">"Unable to load this page."</p>
                         <a
@@ -322,11 +380,12 @@ pub fn ContentHandlePage() -> impl IntoView {
                 </Show>
 
                 <Show when=move || {
-                    !loading.get() && !fetch_error.get()
+                    page_data.get().flatten().is_some()
                 }>
                     {move || {
                         page_data
                             .get()
+                            .flatten()
                             .map(|page| {
                                 let PageData {
                                     title,
@@ -337,6 +396,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                     doc,
                                     tags,
                                     techno,
+                                    image,
                                     reading_time_minutes,
                                     content,
                                 } = page;
@@ -357,8 +417,38 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 } else {
                                     "Back to projects"
                                 };
+                                let page_title = format!("{title} | Maxime Leriche");
+                                let page_description = if description.trim().is_empty() {
+                                    "Page de contenu de Maxime Leriche".to_string()
+                                } else {
+                                    description.clone()
+                                };
+                                let canonical = canonical_url(&handle);
+                                let image_url = if image.trim().is_empty() {
+                                    DEFAULT_OG_IMAGE.to_string()
+                                } else if image.starts_with("http://")
+                                    || image.starts_with("https://")
+                                {
+                                    image
+                                } else if let Some(file_name) = image.strip_prefix("media#") {
+                                    canonical_url(&format!("/media/{file_name}"))
+                                } else {
+                                    canonical_url(&format!("/media/{}", image.trim_start_matches('/')))
+                                };
 
                                 view! {
+                                    <Title text=page_title.clone() />
+                                    <Meta name="description" content=page_description.clone() />
+                                    <Link rel="canonical" href=canonical.clone() />
+                                    <Meta property="og:type" content=if is_blog { "article" } else { "website" } />
+                                    <Meta property="og:title" content=page_title.clone() />
+                                    <Meta property="og:description" content=page_description.clone() />
+                                    <Meta property="og:url" content=canonical.clone() />
+                                    <Meta property="og:image" content=image_url.clone() />
+                                    <Meta name="twitter:card" content="summary_large_image" />
+                                    <Meta name="twitter:title" content=page_title.clone() />
+                                    <Meta name="twitter:description" content=page_description.clone() />
+                                    <Meta name="twitter:image" content=image_url.clone() />
                                     <SectionTitle>{title.clone()}</SectionTitle>
 
                                     {if is_doc {
@@ -381,7 +471,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
                                                                 {move || {
                                                                     render_doc_sidebar_tree(
-                                                                            docs_nav.get(),
+                                                                            docs_nav
+                                                                                .get()
+                                                                                .unwrap_or_default(),
                                                                             handle_for_mobile_sidebar.clone(),
                                                                             0,
                                                                             expanded_folders,
@@ -423,7 +515,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                         </p>
                                                         {move || {
                                                             render_doc_sidebar_tree(
-                                                                    docs_nav.get(),
+                                                                    docs_nav
+                                                                        .get()
+                                                                        .unwrap_or_default(),
                                                                     handle_for_sidebar.clone(),
                                                                     0,
                                                                     expanded_folders,
