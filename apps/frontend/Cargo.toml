@@ -38,6 +38,7 @@ web-sys = { version = "0.3", features = [
     "Clipboard",
 ], optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
+futures = { version = "0.3.32", optional = true }
 
 trace = { path = "../../libs/trace", optional = true }
 content = { path = "../../libs/content" }
@@ -57,6 +58,7 @@ hydrate = [
     "dep:gloo-net",
     "dep:web-sys",
     "dep:wasm-bindgen-futures",
+    "dep:futures",
     "leptos/hydrate",
 ]
 ssr = [

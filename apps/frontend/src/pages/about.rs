@@ -32,6 +32,15 @@ async fn load_home_data() -> Option<HomeData> {
     }
 }
 
+#[cfg(not(feature = "ssr"))]
+async fn load_home_data_send_safe() -> Option<HomeData> {
+    let (tx, rx) = futures::channel::oneshot::channel::<Option<HomeData>>();
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = tx.send(load_home_data().await);
+    });
+    rx.await.ok().flatten()
+}
+
 fn resolve_cv_url(raw: &str) -> String {
     if raw.starts_with("http://") || raw.starts_with("https://") {
         raw.to_string()
@@ -271,19 +280,24 @@ pub fn AboutPage() -> impl IntoView {
     let location = use_location();
     #[cfg(feature = "ssr")]
     let home_config = use_context::<HomeConfig>();
-    #[cfg(not(feature = "ssr"))]
-    let home_data = LocalResource::new(move || {
-        let _pathname = location.pathname.get();
-        load_home_data()
-    });
-    #[cfg(feature = "ssr")]
     let home_data = Resource::new(
         move || location.pathname.get(),
         {
+            #[cfg(feature = "ssr")]
             let home_config = home_config.clone();
             move |_| {
+                #[cfg(feature = "ssr")]
                 let home_config = home_config.clone();
-                async move { home_config.map(HomeData::from) }
+                async move {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_home_data_send_safe().await
+                    }
+                    #[cfg(feature = "ssr")]
+                    {
+                        home_config.map(HomeData::from)
+                    }
+                }
             }
         },
     );
