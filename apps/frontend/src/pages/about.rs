@@ -2,7 +2,10 @@ use icons::common::icon_type::IconType;
 use icons::leptos::icon_component::LeptosIcon;
 use leptos::prelude::*;
 use leptos_icons::Icon;
+use leptos_router::hooks::use_location;
 use tw_merge::IntoTailwindClass;
+#[cfg(feature = "ssr")]
+use content::HomeConfig;
 
 use crate::components::timeline::Timeline;
 use crate::components::ui::{
@@ -10,6 +13,7 @@ use crate::components::ui::{
 };
 use crate::i18n::{use_language, Language};
 use crate::pages::home::{HomeData, SocialLinkData};
+use crate::seo::StaticPageSeo;
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
@@ -264,51 +268,51 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
 
 #[component]
 pub fn AboutPage() -> impl IntoView {
-    let home_data: RwSignal<Option<HomeData>> = RwSignal::new(None);
-    let loading = RwSignal::new(true);
-    let fetch_error = RwSignal::new(false);
-
-    let do_fetch = move || {
-        loading.set(true);
-        fetch_error.set(false);
-        #[cfg(not(feature = "ssr"))]
+    let location = use_location();
+    #[cfg(feature = "ssr")]
+    let home_config = use_context::<HomeConfig>();
+    let home_data = Resource::new(
+        move || location.pathname.get(),
         {
-            wasm_bindgen_futures::spawn_local(async move {
-                match load_home_data().await {
-                    Some(data) => {
-                        home_data.set(Some(data));
-                        fetch_error.set(false);
+            #[cfg(feature = "ssr")]
+            let home_config = home_config.clone();
+            move |_| {
+                #[cfg(feature = "ssr")]
+                let home_config = home_config.clone();
+                async move {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                        load_home_data().await
                     }
-                    None => {
-                        fetch_error.set(true);
+                    #[cfg(feature = "ssr")]
+                    {
+                        home_config.map(HomeData::from)
                     }
                 }
-                loading.set(false);
-            });
-        }
-    };
-
-    #[cfg(feature = "ssr")]
-    let _ = &do_fetch;
-
-    #[cfg(not(feature = "ssr"))]
-    do_fetch();
+            }
+        },
+    );
 
     view! {
-        <Show when=move || loading.get()>
+        <StaticPageSeo
+            title="À propos | Maxime Leriche"
+            description="Parcours, expériences et informations de contact de Maxime Leriche."
+            path="/about"
+        />
+        <Show when=move || home_data.get().is_none()>
             <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
                 "Loading…"
             </div>
         </Show>
 
-        <Show when=move || fetch_error.get() && !loading.get()>
+        <Show when=move || home_data.get().is_some() && home_data.get().flatten().is_none()>
             <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
                 "Unable to load data for this page."
             </div>
         </Show>
 
         <Show when=move || {
-            !loading.get() && !fetch_error.get()
-        }>{move || home_data.get().map(|data| view! { <MoreAboutContent data=data /> })}</Show>
+            home_data.get().flatten().is_some()
+        }>{move || home_data.get().flatten().map(|data| view! { <MoreAboutContent data=data /> })}</Show>
     }
 }

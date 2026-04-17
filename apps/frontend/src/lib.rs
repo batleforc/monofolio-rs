@@ -1,6 +1,6 @@
 #![recursion_limit = "512"]
 use leptos::prelude::*;
-use leptos_meta::{provide_meta_context, Meta, Title};
+use leptos_meta::{provide_meta_context, Link, Meta, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     path,
@@ -9,6 +9,7 @@ use leptos_router::{
 mod components;
 mod i18n;
 mod pages;
+mod seo;
 
 use components::navbar::NavBar;
 use i18n::provide_i18n;
@@ -35,6 +36,7 @@ pub fn App() -> impl IntoView {
         <Title text="Maxime Leriche - Portfolio" />
         <Meta name="description" content="Maxime Leriche's portfolio website." />
         <Meta name="apple-mobile-web-app-title" content="Maxime Leriche Portfolio" />
+        <Link rel="alternate" type_="application/rss+xml" title="RSS" href="/rss.xml" />
         <Router>
             <NavBar />
             <main>
