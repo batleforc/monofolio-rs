@@ -271,24 +271,19 @@ pub fn AboutPage() -> impl IntoView {
     let location = use_location();
     #[cfg(feature = "ssr")]
     let home_config = use_context::<HomeConfig>();
+    #[cfg(not(feature = "ssr"))]
+    let home_data = LocalResource::new(move || {
+        let _pathname = location.pathname.get();
+        load_home_data()
+    });
+    #[cfg(feature = "ssr")]
     let home_data = Resource::new(
         move || location.pathname.get(),
         {
-            #[cfg(feature = "ssr")]
             let home_config = home_config.clone();
             move |_| {
-                #[cfg(feature = "ssr")]
                 let home_config = home_config.clone();
-                async move {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_home_data().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        home_config.map(HomeData::from)
-                    }
-                }
+                async move { home_config.map(HomeData::from) }
             }
         },
     );
