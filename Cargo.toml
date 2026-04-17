@@ -67,6 +67,7 @@ thiserror = "2"
 tw_merge = { version = "0.1.21", features = ["variant"] }
 icons = { version = "0.18.2", features = ["leptos"] }
 leptos_ui = "0.3.22"
+ureq = { version = "2", features = ["tls"] }
 
 [profile.release]
 lto = true

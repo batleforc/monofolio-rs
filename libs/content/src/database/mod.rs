@@ -12,8 +12,8 @@ mod types;
 #[cfg(test)]
 pub(crate) use assets::process_mermaid_codeblocks_for_bundle_with;
 pub use assets::{
-    process_home_yaml_media_for_bundle, process_markdown_media_for_bundle,
-    process_mermaid_codeblocks_for_bundle,
+    process_home_yaml_media_for_bundle, process_home_yaml_minia_for_bundle,
+    process_markdown_media_for_bundle, process_mermaid_codeblocks_for_bundle,
 };
 #[cfg(test)]
 pub(crate) use build::handle_from_relative_path;
@@ -58,6 +58,10 @@ pub(super) fn public_media_url(relative_path: &str) -> String {
 
 pub(super) fn public_mermaid_url(relative_path: &str) -> String {
     format!("/public/mermaid/{relative_path}")
+}
+
+pub(super) fn public_minia_url(relative_path: &str) -> String {
+    format!("/public/minia/{relative_path}")
 }
 
 pub(super) fn load_dir_meta(dir: &Path) -> Option<DirMeta> {

@@ -54,6 +54,7 @@ pub struct HomeData {
     pub contact_availability: Option<String>,
     pub contact_availability_en: Option<String>,
     pub url: Vec<SocialLinkData>,
+    pub useful_links: Vec<SocialLinkData>,
     pub history: Vec<HistoryEntryData>,
 }
 
@@ -87,6 +88,16 @@ impl From<HomeConfig> for HomeData {
             contact_availability_en: cfg.contact_availability_en,
             url: cfg
                 .url
+                .into_iter()
+                .map(|link| SocialLinkData {
+                    name: link.name,
+                    url: link.url,
+                    primaire: link.primaire,
+                    img_url: link.img_url,
+                })
+                .collect(),
+            useful_links: cfg
+                .useful_links
                 .into_iter()
                 .map(|link| SocialLinkData {
                     name: link.name,
@@ -473,7 +484,9 @@ pub fn HomePage() -> impl IntoView {
                 description="Portfolio de Maxime Leriche : projets, expériences, articles et contact."
                 path="/"
             />
-            <Suspense fallback=move || view! { <LoadingScreen /> }>
+            <Suspense fallback=move || {
+                view! { <LoadingScreen /> }
+            }>
                 {move || {
                     match home_data.get() {
                         Some(Some(data)) => {

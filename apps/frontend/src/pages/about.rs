@@ -1,11 +1,11 @@
+#[cfg(feature = "ssr")]
+use content::HomeConfig;
 use icons::common::icon_type::IconType;
 use icons::leptos::icon_component::LeptosIcon;
 use leptos::prelude::*;
 use leptos_icons::Icon;
 use leptos_router::hooks::use_location;
 use tw_merge::IntoTailwindClass;
-#[cfg(feature = "ssr")]
-use content::HomeConfig;
 
 use crate::components::timeline::Timeline;
 use crate::components::ui::{
@@ -58,6 +58,8 @@ fn resolve_cv_url(raw: &str) -> String {
 enum SocialIconType {
     Builtin(IconType),
     Gitea,
+    Minia(String),
+    Url(String),
 }
 
 fn social_icon_type(img_url: &str) -> SocialIconType {
@@ -65,6 +67,8 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#github" => SocialIconType::Builtin(IconType::Github),
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
+        _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
+        _ if img_url.starts_with("/") => SocialIconType::Url(img_url.to_string()),
         _ => SocialIconType::Builtin(IconType::ExternalLink),
     }
 }
@@ -97,6 +101,18 @@ fn SocialTextLink(link: SocialLinkData) -> impl IntoView {
                             height="1rem"
                             style="color: currentColor;"
                         />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Minia(url) => {
+                    view! {
+                        <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Url(url) => {
+                    view! {
+                        <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
                     }
                         .into_any()
                 }
@@ -150,6 +166,11 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
         Language::En => "Links",
     };
 
+    let useful_links_title = move || match lang.get() {
+        Language::Fr => "Liens utiles",
+        Language::En => "Useful links",
+    };
+
     let presentation_fr = data.presentation.clone();
     let presentation_en = data
         .presentation_en
@@ -175,6 +196,7 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
         .unwrap_or_else(|| "Ingénieur plateforme".to_string());
     let social_links_intro = data.url.clone();
     let social_links_contact = data.url.clone();
+    let useful_links = data.useful_links.clone();
 
     let cv_url = resolve_cv_url(&data.cv_url);
     let timeline_data = data.clone();
@@ -215,6 +237,24 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
                             .collect_view()}
                     </div>
                 </Card>
+            </SectionInner>
+        </section>
+
+        <section class="border-b border-border/70">
+            <SectionInner>
+                <SectionTitle>{useful_links_title}</SectionTitle>
+                <div class="flex flex-wrap gap-3">
+                    {useful_links
+                        .iter()
+                        .map(|link| {
+                            view! {
+                                <div class="rounded border border-border bg-card px-4 py-2 text-sm hover:border-primary transition-colors">
+                                    <SocialTextLink link=link.clone() />
+                                </div>
+                            }
+                        })
+                        .collect_view()}
+                </div>
             </SectionInner>
         </section>
 
@@ -286,27 +326,24 @@ pub fn AboutPage() -> impl IntoView {
     let location = use_location();
     #[cfg(feature = "ssr")]
     let home_config = use_context::<HomeConfig>();
-    let home_data = Resource::new(
-        move || location.pathname.get(),
-        {
+    let home_data = Resource::new(move || location.pathname.get(), {
+        #[cfg(feature = "ssr")]
+        let home_config = home_config.clone();
+        move |_| {
             #[cfg(feature = "ssr")]
             let home_config = home_config.clone();
-            move |_| {
+            async move {
+                #[cfg(not(feature = "ssr"))]
+                {
+                    load_home_data_send_safe().await
+                }
                 #[cfg(feature = "ssr")]
-                let home_config = home_config.clone();
-                async move {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_home_data_send_safe().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        home_config.map(HomeData::from)
-                    }
+                {
+                    home_config.map(HomeData::from)
                 }
             }
-        },
-    );
+        }
+    });
 
     view! {
         <StaticPageSeo
@@ -330,7 +367,7 @@ pub fn AboutPage() -> impl IntoView {
                                 "Unable to load data for this page."
                             </div>
                         }
-                        .into_any()
+                            .into_any()
                     }
                 }
             }}
