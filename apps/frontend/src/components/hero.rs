@@ -12,6 +12,7 @@ use crate::pages::home::{HomeData, SocialLinkData};
 enum SocialIconType {
     Builtin(IconType),
     Gitea,
+    Minia(String),
 }
 
 fn social_icon_type(img_url: &str) -> SocialIconType {
@@ -19,6 +20,7 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#github" => SocialIconType::Builtin(IconType::Github),
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
+        _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
         _ => SocialIconType::Builtin(IconType::ExternalLink),
     }
 }
@@ -53,6 +55,17 @@ fn SocialIconButton(link: SocialLinkData) -> impl IntoView {
                             width="1rem"
                             height="1rem"
                             style="color: currentColor;"
+                        />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Minia(url) => {
+                    view! {
+                        <img
+                            src=url
+                            class="w-4 h-4 object-contain"
+                            alt=""
+                            aria-hidden="true"
                         />
                     }
                         .into_any()

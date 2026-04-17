@@ -64,6 +64,8 @@ pub enum ContentDatabaseError {
     MermaidRender { path: String, message: String },
     #[error("failed to parse yaml file {path}: {message}")]
     ParseYaml { path: String, message: String },
+    #[error("failed to fetch favicon for {url}: {message}")]
+    FetchFavicon { url: String, message: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]

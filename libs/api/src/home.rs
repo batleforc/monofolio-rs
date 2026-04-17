@@ -73,6 +73,7 @@ pub struct HomeResponse {
     pub contact_availability: Option<String>,
     pub contact_availability_en: Option<String>,
     pub url: Vec<SocialLinkResponse>,
+    pub useful_links: Vec<SocialLinkResponse>,
     pub history: Vec<HistoryEntryResponse>,
 }
 
@@ -93,6 +94,7 @@ impl From<HomeConfig> for HomeResponse {
             contact_availability: cfg.contact_availability,
             contact_availability_en: cfg.contact_availability_en,
             url: cfg.url.into_iter().map(SocialLinkResponse::from).collect(),
+            useful_links: cfg.useful_links.into_iter().map(SocialLinkResponse::from).collect(),
             history: cfg
                 .history
                 .into_iter()
@@ -141,6 +143,7 @@ mod tests {
             contact_availability: Some("Disponible".to_string()),
             contact_availability_en: Some("Available".to_string()),
             url: vec![],
+            useful_links: vec![],
             history: vec![],
         }
     }

@@ -289,6 +289,24 @@ pub fn NavBar() -> impl IntoView {
                     }}
                 </div>
 
+                <a
+                    href="/rss.xml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="RSS feed"
+                    class="hidden md:inline-flex items-center justify-center rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z" />
+                    </svg>
+                </a>
+
                 <button
                     class=tw_merge!(lang_btn_class.clone(), "hidden md:inline-flex")
                     aria-label="Toggle language"
@@ -371,7 +389,8 @@ pub fn NavBar() -> impl IntoView {
                                 let mut all_items = search_index.get();
                                 all_items.extend(static_search_entries(lang.get(), t.get()));
                                 let results = filter_search_results(&all_items, &query);
-                                let is_loading = search_loading.get() && search_index.get().is_empty();
+                                let is_loading = search_loading.get()
+                                    && search_index.get().is_empty();
 
                                 view! {
                                     <div class="absolute left-0 right-0 top-full mt-2 w-full rounded border border-border bg-card text-card-foreground shadow-lg overflow-hidden">
@@ -434,6 +453,24 @@ pub fn NavBar() -> impl IntoView {
                                     .into_any()
                             }}
                         </div>
+
+                        <a
+                            href="/rss.xml"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="RSS feed"
+                            class="inline-flex items-center justify-center rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                            >
+                                <path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z" />
+                            </svg>
+                        </a>
 
                         <button
                             class=lang_btn_class.clone()

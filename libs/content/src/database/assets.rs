@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 use std::fs;
+#[cfg(not(target_arch = "wasm32"))]
+use std::io::Read;
 use std::path::Path;
 
 use image::codecs::jpeg::JpegEncoder;
@@ -11,7 +13,7 @@ use crate::markdown::MarkdownNode;
 
 use super::{
     copy_file_to_bundle, media_reference_to_relative_path, public_media_url, public_mermaid_url,
-    ContentDatabase, ContentDatabaseError, ContentOutputBundle,
+    public_minia_url, ContentDatabase, ContentDatabaseError, ContentOutputBundle,
 };
 
 fn rewrite_media_urls_in_nodes(
@@ -60,7 +62,6 @@ fn collect_media_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<Str
 }
 
 fn collect_cv_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<String>) {
-    // get cvUrl key (if any) and collect media refs from its value
     if let serde_yaml::Value::Mapping(map) = value {
         for (key, value) in map {
             if let serde_yaml::Value::String(key_str) = key {
@@ -72,6 +73,105 @@ fn collect_cv_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<String
             }
         }
     }
+}
+
+fn guess_extension_from_https_url(url: &str) -> &'static str {
+    let clean = url.split('?').next().unwrap_or(url);
+    let file = clean.rsplit('/').next().unwrap_or("");
+    if let Some(ext) = file.rsplit('.').next() {
+        match ext.to_ascii_lowercase().as_str() {
+            "png" => return "png",
+            "jpg" => return "jpg",
+            "jpeg" => return "jpeg",
+            "webp" => return "webp",
+            "svg" => return "svg",
+            "ico" => return "ico",
+            "gif" => return "gif",
+            "avif" => return "avif",
+            _ => {}
+        }
+    }
+    "png"
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn fetch_remote_media(url: &str) -> Option<Vec<u8>> {
+    let response = ureq::get(url)
+        .timeout(std::time::Duration::from_secs(12))
+        .call()
+        .ok()?;
+
+    if response.status() != 200 {
+        return None;
+    }
+
+    let mut bytes = Vec::new();
+    response.into_reader().read_to_end(&mut bytes).ok()?;
+    if bytes.is_empty() {
+        return None;
+    }
+    Some(bytes)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn fetch_remote_media(_url: &str) -> Option<Vec<u8>> {
+    None
+}
+
+fn rewrite_https_img_urls_in_yaml(
+    value: &mut serde_yaml::Value,
+    bundle_media_root: &Path,
+) -> Result<(), ContentDatabaseError> {
+    match value {
+        serde_yaml::Value::Mapping(map) => {
+            for (key, inner) in map.iter_mut() {
+                let is_img_url = matches!(key, serde_yaml::Value::String(k) if k == "imgUrl");
+                if is_img_url {
+                    if let serde_yaml::Value::String(raw) = inner {
+                        if raw.starts_with("https://") {
+                            let source_url = raw.clone();
+                            let ext = guess_extension_from_https_url(&source_url);
+                            let mut hasher = Sha256::new();
+                            hasher.update(source_url.as_bytes());
+                            let hash = hasher.finalize();
+                            let digest: String =
+                                hash.iter().map(|b| format!("{:02x}", b)).collect();
+                            let file_name = format!("remote-{}.{}", &digest[..16], ext);
+                            let target = bundle_media_root.join(&file_name);
+
+                            if !target.exists() {
+                                if let Some(bytes) = fetch_remote_media(&source_url) {
+                                    fs::write(&target, bytes).map_err(|source| {
+                                        ContentDatabaseError::WriteFile {
+                                            path: target.display().to_string(),
+                                            source,
+                                        }
+                                    })?;
+                                } else {
+                                    tracing::warn!(
+                                        "Could not download remote imgUrl {source_url}, keeping original URL"
+                                    );
+                                    continue;
+                                }
+                            }
+
+                            *raw = public_media_url(&file_name);
+                        }
+                    }
+                } else {
+                    rewrite_https_img_urls_in_yaml(inner, bundle_media_root)?;
+                }
+            }
+        }
+        serde_yaml::Value::Sequence(items) => {
+            for item in items {
+                rewrite_https_img_urls_in_yaml(item, bundle_media_root)?;
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
 }
 
 fn node_text(node: &MarkdownNode) -> String {
@@ -179,7 +279,6 @@ where
     Ok(())
 }
 
-/// Stage 1.6: translate mermaid code blocks into SVG files and update the AST.
 pub fn process_mermaid_codeblocks_for_bundle(
     bundle: &ContentOutputBundle,
     database: &mut ContentDatabase,
@@ -187,13 +286,6 @@ pub fn process_mermaid_codeblocks_for_bundle(
     process_mermaid_codeblocks_for_bundle_with(bundle, database, render_mermaid_with_renderer)
 }
 
-/// Stage 1.5: process markdown media references and populate `public/media`.
-///
-/// For every `image` or `link` node whose URL references `media#...`,
-/// `/media/...`, `media/...` or `/public/media/...`, this step:
-/// - optimizes/copies the file from `<content_root>/media/...`
-/// - writes it into `<bundle.public_dir>/media/...`
-/// - rewrites the AST URL to `/public/media/...`
 pub fn process_markdown_media_for_bundle(
     content_root: impl AsRef<Path>,
     bundle: &ContentOutputBundle,
@@ -231,11 +323,6 @@ pub fn process_markdown_media_for_bundle(
     Ok(())
 }
 
-/// Stage 1.55: copy media files referenced in `home.yaml` into `public/media`.
-///
-/// This scans all string values in the YAML document and resolves media
-/// references using the same conventions as markdown media handling:
-/// `media#...`, `/media/...`, `media/...`, `/public/media/...`.
 pub fn process_home_yaml_media_for_bundle(
     content_root: impl AsRef<Path>,
     bundle: &ContentOutputBundle,
@@ -254,7 +341,7 @@ pub fn process_home_yaml_media_for_bundle(
             source,
         })?;
 
-    let home_yaml: serde_yaml::Value =
+    let mut home_yaml: serde_yaml::Value =
         serde_yaml::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),
             message: error.to_string(),
@@ -269,6 +356,20 @@ pub fn process_home_yaml_media_for_bundle(
         let dst = bundle_media_root.join(&relative_path);
         optimize_or_copy_media_file(&src, &dst)?;
     }
+
+    // Convert remote `imgUrl: https://...` entries into bundled `/public/media/...` assets.
+    rewrite_https_img_urls_in_yaml(&mut home_yaml, &bundle_media_root)?;
+
+    let rewritten =
+        serde_yaml::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
+            path: bundle.home_path.display().to_string(),
+            message: error.to_string(),
+        })?;
+
+    fs::write(&bundle.home_path, rewritten).map_err(|source| ContentDatabaseError::WriteFile {
+        path: bundle.home_path.display().to_string(),
+        source,
+    })?;
 
     Ok(())
 }
@@ -338,4 +439,133 @@ pub(super) fn optimize_or_copy_media_file(
         }
         _ => copy_file_to_bundle(src, dst),
     }
+}
+
+fn minia_reference_to_site_url(raw: &str) -> Option<&str> {
+    raw.strip_prefix("minia#")
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn fetch_favicon(site_url: &str) -> Option<(Vec<u8>, &'static str)> {
+    let base = site_url.trim_end_matches('/');
+
+    for (path, ext) in [("/favicon.ico", "ico"), ("/favicon.png", "png")] {
+        let url = format!("{base}{path}");
+        let response = match ureq::get(&url)
+            .timeout(std::time::Duration::from_secs(10))
+            .call()
+        {
+            Ok(response) => response,
+            Err(_) => continue,
+        };
+
+        if response.status() != 200 {
+            continue;
+        }
+
+        let mut bytes = Vec::new();
+        if response.into_reader().read_to_end(&mut bytes).is_ok()
+            && !bytes.is_empty()
+            && !bytes.starts_with(b"<!")
+            && !bytes.starts_with(b"<h")
+        {
+            return Some((bytes, ext));
+        }
+    }
+
+    None
+}
+
+#[cfg(target_arch = "wasm32")]
+fn fetch_favicon(_site_url: &str) -> Option<(Vec<u8>, &'static str)> {
+    None
+}
+
+fn rewrite_minia_refs_in_yaml(
+    value: &mut serde_yaml::Value,
+    bundle_minia_root: &Path,
+) -> Result<(), ContentDatabaseError> {
+    match value {
+        serde_yaml::Value::String(raw) => {
+            if let Some(site_url) = minia_reference_to_site_url(raw) {
+                let site_url = site_url.to_string();
+
+                let mut hasher = Sha256::new();
+                hasher.update(site_url.as_bytes());
+                let hash = hasher.finalize();
+                let digest: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
+                let prefix = &digest[..16];
+
+                let cached_ext = ["ico", "png"]
+                    .into_iter()
+                    .find(|ext| bundle_minia_root.join(format!("{prefix}.{ext}")).exists());
+
+                let ext = if let Some(ext) = cached_ext {
+                    ext
+                } else if let Some((bytes, ext)) = fetch_favicon(&site_url) {
+                    let path = bundle_minia_root.join(format!("{prefix}.{ext}"));
+                    fs::write(&path, bytes).map_err(|source| ContentDatabaseError::WriteFile {
+                        path: path.display().to_string(),
+                        source,
+                    })?;
+                    ext
+                } else {
+                    tracing::warn!("Could not fetch favicon for {site_url}, keeping minia ref");
+                    return Ok(());
+                };
+
+                *raw = public_minia_url(&format!("{prefix}.{ext}"));
+            }
+        }
+        serde_yaml::Value::Sequence(items) => {
+            for item in items {
+                rewrite_minia_refs_in_yaml(item, bundle_minia_root)?;
+            }
+        }
+        serde_yaml::Value::Mapping(map) => {
+            for value in map.values_mut() {
+                rewrite_minia_refs_in_yaml(value, bundle_minia_root)?;
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+pub fn process_home_yaml_minia_for_bundle(
+    bundle: &ContentOutputBundle,
+) -> Result<(), ContentDatabaseError> {
+    let minia_root = bundle.public_dir.join("minia");
+    fs::create_dir_all(&minia_root).map_err(|source| ContentDatabaseError::CreateDir {
+        path: minia_root.display().to_string(),
+        source,
+    })?;
+
+    let home_content =
+        fs::read_to_string(&bundle.home_path).map_err(|source| ContentDatabaseError::ReadFile {
+            path: bundle.home_path.display().to_string(),
+            source,
+        })?;
+
+    let mut home_yaml: serde_yaml::Value =
+        serde_yaml::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
+            path: bundle.home_path.display().to_string(),
+            message: error.to_string(),
+        })?;
+
+    rewrite_minia_refs_in_yaml(&mut home_yaml, &minia_root)?;
+
+    let rewritten =
+        serde_yaml::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
+            path: bundle.home_path.display().to_string(),
+            message: error.to_string(),
+        })?;
+
+    fs::write(&bundle.home_path, rewritten).map_err(|source| ContentDatabaseError::WriteFile {
+        path: bundle.home_path.display().to_string(),
+        source,
+    })?;
+
+    Ok(())
 }

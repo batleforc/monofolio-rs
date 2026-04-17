@@ -66,6 +66,9 @@ pub struct HomeConfig {
     pub current_work: Option<String>,
     #[serde(default)]
     pub url: Vec<SocialLink>,
+    /// Optional curated list of useful links shown on the About page.
+    #[serde(rename = "usefulLinks", default)]
+    pub useful_links: Vec<SocialLink>,
     #[serde(default)]
     pub history: Vec<HistoryEntry>,
 }
@@ -102,6 +105,7 @@ mod tests {
             contact_availability: Some("Disponible".to_string()),
             contact_availability_en: Some("Available".to_string()),
             url: vec![],
+            useful_links: vec![],
             history: vec![],
         };
         let yaml = serde_yaml::to_string(&config).unwrap();
