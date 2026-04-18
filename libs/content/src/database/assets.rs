@@ -6,7 +6,7 @@ use std::path::Path;
 
 use image::codecs::jpeg::JpegEncoder;
 use image::ImageReader;
-use mermaid_rs_renderer::render as render_mermaid_svg;
+use mermaid_rs_renderer::{render_with_options as render_mermaid_svg, RenderOptions};
 use sha2::{Digest, Sha256};
 
 use crate::markdown::MarkdownNode;
@@ -335,11 +335,15 @@ fn render_mermaid_with_renderer(
             source,
         })?;
     }
+    let opts = RenderOptions::mermaid_default()
+        .with_node_spacing(100.0)
+        .with_rank_spacing(100.0);
 
-    let svg = render_mermaid_svg(source).map_err(|error| ContentDatabaseError::MermaidRender {
-        path: output_path.display().to_string(),
-        message: error.to_string(),
-    })?;
+    let svg =
+        render_mermaid_svg(source, opts).map_err(|error| ContentDatabaseError::MermaidRender {
+            path: output_path.display().to_string(),
+            message: error.to_string(),
+        })?;
 
     fs::write(output_path, svg).map_err(|source| ContentDatabaseError::WriteFile {
         path: output_path.display().to_string(),
