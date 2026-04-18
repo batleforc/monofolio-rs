@@ -1,0 +1,15 @@
+.git
+.github
+.vscode
+target
+node_modules
+**/node_modules
+
+# Local/editor artifacts
+*.log
+.DS_Store
+
+# Environment and compose overrides
+.env
+.env.*
+compose*.override.yaml

@@ -40,7 +40,10 @@ fn rewrite_media_urls_in_nodes(
     Ok(())
 }
 
-fn collect_media_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<String>) {
+fn collect_non_history_media_refs_in_home_yaml(
+    value: &serde_yaml::Value,
+    refs: &mut BTreeSet<String>,
+) {
     match value {
         serde_yaml::Value::String(raw) => {
             if let Some(relative_path) = media_reference_to_relative_path(raw) {
@@ -49,12 +52,35 @@ fn collect_media_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<Str
         }
         serde_yaml::Value::Sequence(items) => {
             for item in items {
-                collect_media_refs_in_yaml(item, refs);
+                collect_non_history_media_refs_in_home_yaml(item, refs);
             }
         }
         serde_yaml::Value::Mapping(map) => {
-            for value in map.values() {
-                collect_media_refs_in_yaml(value, refs);
+            for (key, value) in map {
+                if let serde_yaml::Value::String(key_str) = key {
+                    if key_str == "history" {
+                        if let serde_yaml::Value::Sequence(entries) = value {
+                            for entry in entries {
+                                if let serde_yaml::Value::Mapping(entry_map) = entry {
+                                    for (entry_key, entry_value) in entry_map {
+                                        let is_img_url = matches!(
+                                            entry_key,
+                                            serde_yaml::Value::String(k) if k == "imgUrl"
+                                        );
+                                        if !is_img_url {
+                                            collect_non_history_media_refs_in_home_yaml(
+                                                entry_value,
+                                                refs,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        continue;
+                    }
+                }
+                collect_non_history_media_refs_in_home_yaml(value, refs);
             }
         }
         _ => {}
@@ -169,6 +195,76 @@ fn rewrite_https_img_urls_in_yaml(
             }
         }
         _ => {}
+    }
+
+    Ok(())
+}
+
+fn section_thumbnail_file_name(section_prefix: &str, relative_path: &str, ext: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(relative_path.as_bytes());
+    let hash = hasher.finalize();
+    let digest: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
+    format!("{section_prefix}-40x40-{}.{}", &digest[..16], ext)
+}
+
+fn rewrite_section_img_urls_to_thumbnails(
+    home_yaml: &mut serde_yaml::Value,
+    content_media_root: &Path,
+    bundle_media_root: &Path,
+    section_key: &str,
+    file_prefix: &str,
+) -> Result<(), ContentDatabaseError> {
+    let history_key = serde_yaml::Value::String(section_key.to_string());
+    let img_url_key = serde_yaml::Value::String("imgUrl".to_string());
+
+    let Some(root_map) = home_yaml.as_mapping_mut() else {
+        return Ok(());
+    };
+    let Some(serde_yaml::Value::Sequence(entries)) = root_map.get_mut(&history_key) else {
+        return Ok(());
+    };
+
+    for entry in entries {
+        let serde_yaml::Value::Mapping(entry_map) = entry else {
+            continue;
+        };
+        let Some(serde_yaml::Value::String(raw_url)) = entry_map.get_mut(&img_url_key) else {
+            continue;
+        };
+
+        let Some(relative_path) = media_reference_to_relative_path(raw_url) else {
+            continue;
+        };
+
+        let ext = Path::new(&relative_path)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.to_ascii_lowercase())
+            .unwrap_or_default();
+
+        let source_path = {
+            let bundled = bundle_media_root.join(&relative_path);
+            if bundled.exists() {
+                bundled
+            } else {
+                content_media_root.join(&relative_path)
+            }
+        };
+
+        match ext.as_str() {
+            "jpg" | "jpeg" | "png" | "webp" => {
+                let file_name = section_thumbnail_file_name(file_prefix, &relative_path, &ext);
+                let target_path = bundle_media_root.join(&file_name);
+                optimize_or_copy_media_file_with_max_size(&source_path, &target_path, Some(40))?;
+                *raw_url = format!("media#{file_name}");
+            }
+            _ => {
+                // Keep non-raster assets available for timeline entries.
+                let target_path = bundle_media_root.join(&relative_path);
+                optimize_or_copy_media_file(&source_path, &target_path)?;
+            }
+        }
     }
 
     Ok(())
@@ -347,18 +443,44 @@ pub fn process_home_yaml_media_for_bundle(
             message: error.to_string(),
         })?;
 
+    // Convert remote `imgUrl: https://...` entries into bundled `/public/media/...` assets.
+    rewrite_https_img_urls_in_yaml(&mut home_yaml, &bundle_media_root)?;
+
+    // Build 40x40 timeline icons and rewrite `history[].imgUrl` to these optimized assets.
+    rewrite_section_img_urls_to_thumbnails(
+        &mut home_yaml,
+        &content_media_root,
+        &bundle_media_root,
+        "history",
+        "timeline",
+    )?;
+
+    // Build 40x40 useful-links icons and rewrite `usefulLinks[].imgUrl` to optimized assets.
+    rewrite_section_img_urls_to_thumbnails(
+        &mut home_yaml,
+        &content_media_root,
+        &bundle_media_root,
+        "usefulLinks",
+        "useful-links",
+    )?;
+
     let mut refs = BTreeSet::new();
-    collect_media_refs_in_yaml(&home_yaml, &mut refs);
+    collect_non_history_media_refs_in_home_yaml(&home_yaml, &mut refs);
     collect_cv_refs_in_yaml(&home_yaml, &mut refs);
 
     for relative_path in refs {
-        let src = content_media_root.join(&relative_path);
+        let bundled_src = bundle_media_root.join(&relative_path);
+        let src = if bundled_src.exists() {
+            bundled_src
+        } else {
+            content_media_root.join(&relative_path)
+        };
         let dst = bundle_media_root.join(&relative_path);
+        if src == dst {
+            continue;
+        }
         optimize_or_copy_media_file(&src, &dst)?;
     }
-
-    // Convert remote `imgUrl: https://...` entries into bundled `/public/media/...` assets.
-    rewrite_https_img_urls_in_yaml(&mut home_yaml, &bundle_media_root)?;
 
     let rewritten =
         serde_yaml::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
@@ -378,6 +500,14 @@ pub(super) fn optimize_or_copy_media_file(
     src: &Path,
     dst: &Path,
 ) -> Result<(), ContentDatabaseError> {
+    optimize_or_copy_media_file_with_max_size(src, dst, None)
+}
+
+fn optimize_or_copy_media_file_with_max_size(
+    src: &Path,
+    dst: &Path,
+    max_size: Option<u32>,
+) -> Result<(), ContentDatabaseError> {
     if let Some(parent) = dst.parent() {
         fs::create_dir_all(parent).map_err(|source| ContentDatabaseError::CreateDir {
             path: parent.display().to_string(),
@@ -393,7 +523,7 @@ pub(super) fn optimize_or_copy_media_file(
 
     match ext.as_str() {
         "jpg" | "jpeg" => {
-            let image = ImageReader::open(src)
+            let mut image = ImageReader::open(src)
                 .map_err(|error| ContentDatabaseError::DecodeImage {
                     path: src.display().to_string(),
                     message: error.to_string(),
@@ -403,6 +533,10 @@ pub(super) fn optimize_or_copy_media_file(
                     path: src.display().to_string(),
                     message: error.to_string(),
                 })?;
+
+            if let Some(limit) = max_size {
+                image = image.thumbnail(limit, limit);
+            }
 
             let mut file =
                 fs::File::create(dst).map_err(|source| ContentDatabaseError::WriteFile {
@@ -419,7 +553,7 @@ pub(super) fn optimize_or_copy_media_file(
             Ok(())
         }
         "png" | "webp" => {
-            let image = ImageReader::open(src)
+            let mut image = ImageReader::open(src)
                 .map_err(|error| ContentDatabaseError::DecodeImage {
                     path: src.display().to_string(),
                     message: error.to_string(),
@@ -429,6 +563,10 @@ pub(super) fn optimize_or_copy_media_file(
                     path: src.display().to_string(),
                     message: error.to_string(),
                 })?;
+
+            if let Some(limit) = max_size {
+                image = image.thumbnail(limit, limit);
+            }
 
             image
                 .save(dst)
