@@ -1,5 +1,5 @@
 use actix_web::{get, HttpResponse, Responder};
-use tracing::{info, instrument};
+use tracing::info;
 
 /// Returns `200 OK` when the server is up.
 ///
@@ -12,7 +12,6 @@ use tracing::{info, instrument};
     )
 )]
 #[get("/health")]
-#[instrument(name = "health_check")]
 pub async fn health() -> impl Responder {
     info!("Health check OK");
     HttpResponse::Ok().body("OK")
