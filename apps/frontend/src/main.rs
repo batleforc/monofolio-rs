@@ -1,8 +1,10 @@
 #![recursion_limit = "512"]
+use actix_web::{dev::Service, http::header};
 #[cfg(feature = "ssr")]
 use actix_web::{get, web::Data, HttpResponse, Responder};
 #[cfg(feature = "ssr")]
 use content::ContentDatabase;
+use tracing_actix_web::RequestId;
 
 #[cfg(feature = "ssr")]
 fn escape_xml(value: &str) -> String {
@@ -114,6 +116,36 @@ async fn main() -> anyhow::Result<()> {
         let (app, api) = App::new()
             .into_utoipa_app()
             .openapi(api_doc.clone())
+            .map(|app| {
+                app.wrap_fn(|mut req, srv| {
+                    let request_id_asc = req.extract::<RequestId>();
+                    let is_https = req.connection_info().scheme() == "https";
+                    let fut = srv.call(req);
+                    async move {
+                        let mut res = fut.await?;
+                        let request_id: RequestId = request_id_asc.await.unwrap();
+                        let request_id_str = format!("{}", request_id);
+                        let headers = res.headers_mut();
+                        headers.insert(
+                            header::HeaderName::from_static("x-request-id"),
+                            header::HeaderValue::from_str(request_id_str.as_str()).unwrap(),
+                        );
+                        headers.insert(
+                            header::HeaderName::from_static("x-api-doc-version"),
+                            header::HeaderValue::from_str(env!("CARGO_PKG_VERSION")).unwrap(),
+                        );
+                        headers.insert(header::X_FRAME_OPTIONS, header::HeaderValue::from_static("SAMEORIGIN"));
+                        // headers.insert(header::CONTENT_SECURITY_POLICY, header::HeaderValue::from_static("default-src 'self' https:; img-src 'self'; script-src 'self' batleforc.fr; style-src 'self';"));
+                        if is_https {
+                            headers.insert(
+                                header::STRICT_TRANSPORT_SECURITY,
+                                header::HeaderValue::from_static("max-age=31536000; includeSubDomains; preload")
+                            );
+                        }
+                        Ok(res)
+                    }
+                })
+            })
             .map(|app| app.wrap(TracingLogger::default()))
             .map(|app| app.wrap(Compress::default()))
             .app_data(Data::new(home_config.clone()))
