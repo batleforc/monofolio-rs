@@ -5,7 +5,7 @@ description: |
     Monofolio CICD
 spec:
   blog: false
-  project: true
+  project: false
   doc: true
 tags:
  - project

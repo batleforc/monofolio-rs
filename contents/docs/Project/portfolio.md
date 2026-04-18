@@ -3,13 +3,14 @@ date: 2024-07-16T22:51:00Z
 title: "Portfolio"
 description: "Portfolio"
 spec:
-  blog: true
-  project: true
+  blog: false
+  project: false
   doc: true
 tags:
  - project
  - discovery
  - easteregg
+ - portfolio
 techno:
   - vue
   - rust
