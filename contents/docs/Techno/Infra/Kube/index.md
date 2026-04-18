@@ -14,7 +14,7 @@ tags:
   - "K8s"
   - "Kubernetes"
   - "Yaml"
-image: "ico#kubernetes"
+image: "icomoon#kubernetes"
 ---
 
 ## Kubernetes

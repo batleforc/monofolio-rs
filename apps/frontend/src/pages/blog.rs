@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use serde::Deserialize;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
+use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
 
@@ -131,16 +132,16 @@ pub fn BlogReferencePage() -> impl IntoView {
                                 </p>
                             </Card>
                         }
-                        .into_any();
+                            .into_any();
                     }
-
                     if blog_entries.get().is_empty() {
-                        return view! {
+                        return
+                        view! {
                             <Card class="p-5">
                                 <p class="text-sm text-muted-foreground">{move || empty_label()}</p>
                             </Card>
                         }
-                        .into_any();
+                            .into_any();
                     }
 
                     view! {
@@ -151,7 +152,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                                 .map(|entry| {
                                     let title = entry.title;
                                     let description = entry.description;
-                                    let date = entry.date;
+                                    let date_raw = entry.date;
                                     let handle = entry.handle;
                                     let image = resolve_blog_image(&entry.image);
                                     let tags = entry.tags;
@@ -173,9 +174,8 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                     }
                                                 })}
                                             <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
-                                                {date}
-                                            </span>
-                                            <h3 class="text-lg font-bold mt-1 mb-1">
+                                                {move || format_display_date(&date_raw, lang.get())}
+                                            </span> <h3 class="text-lg font-bold mt-1 mb-1">
                                                 <a
                                                     href=target_url.clone()
                                                     class="hover:text-primary transition-colors underline-offset-2 hover:underline"
@@ -183,8 +183,9 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                     {title}
                                                 </a>
                                             </h3>
-                                            <p class="text-sm text-muted-foreground line-clamp-3 mb-3">{description}</p>
-
+                                            <p class="text-sm text-muted-foreground line-clamp-3 mb-3">
+                                                {description}
+                                            </p>
                                             <div class="flex flex-wrap gap-1.5 mb-3">
                                                 {tags
                                                     .into_iter()
@@ -198,7 +199,6 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                     })
                                                     .collect_view()}
                                             </div>
-
                                             <div class="flex items-center justify-between gap-2">
                                                 <p class="text-xs text-muted-foreground">
                                                     {move || {
@@ -218,7 +218,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                                 .collect_view()}
                         </div>
                     }
-                    .into_any()
+                        .into_any()
                 }}
             </SectionInner>
         </section>

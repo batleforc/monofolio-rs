@@ -14,6 +14,10 @@ pub struct MarkdownSpec {
     pub doc: bool,
 }
 
+fn default_release_true() -> bool {
+    true
+}
+
 /// Generic named link declared in front-matter.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct MarkdownLink {
@@ -41,7 +45,7 @@ pub struct MarkdownMeta {
     pub techno: Vec<String>,
     #[serde(default)]
     pub image: String,
-    #[serde(default)]
+    #[serde(default = "default_release_true")]
     pub release: bool,
 }
 

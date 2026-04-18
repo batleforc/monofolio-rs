@@ -61,6 +61,16 @@ enum SocialIconType {
     Minia(String),
     Url(String),
     Media(String),
+    Icomoon(String),
+}
+
+fn resolve_icomoon_symbol(raw: &str) -> Option<String> {
+    let name = raw.strip_prefix("icomoon#")?.trim().to_ascii_lowercase();
+    if name.is_empty() {
+        None
+    } else {
+        Some(format!("/assets/icon/symbol-defs.svg#ico-{name}"))
+    }
 }
 
 fn social_icon_type(img_url: &str) -> SocialIconType {
@@ -71,7 +81,9 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
         _ if img_url.starts_with("media#") => SocialIconType::Media(img_url.to_string().replace("media#", "/public/media/")),
         _ if img_url.starts_with("/") => SocialIconType::Url(img_url.to_string()),
-        _ => SocialIconType::Builtin(IconType::ExternalLink),
+        _ => resolve_icomoon_symbol(img_url)
+            .map(SocialIconType::Icomoon)
+            .unwrap_or(SocialIconType::Builtin(IconType::ExternalLink)),
     }
 }
 
@@ -121,6 +133,14 @@ fn SocialTextLink(link: SocialLinkData) -> impl IntoView {
                 SocialIconType::Media(url) => {
                     view! {
                         <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Icomoon(href) => {
+                    view! {
+                        <svg class="w-4 h-4" aria-hidden="true" focusable="false">
+                            <use href=href></use>
+                        </svg>
                     }
                         .into_any()
                 }

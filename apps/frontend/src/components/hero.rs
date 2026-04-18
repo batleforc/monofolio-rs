@@ -13,6 +13,16 @@ enum SocialIconType {
     Builtin(IconType),
     Gitea,
     Minia(String),
+    Icomoon(String),
+}
+
+fn resolve_icomoon_symbol(raw: &str) -> Option<String> {
+    let name = raw.strip_prefix("icomoon#")?.trim().to_ascii_lowercase();
+    if name.is_empty() {
+        None
+    } else {
+        Some(format!("/assets/icon/symbol-defs.svg#ico-{name}"))
+    }
 }
 
 fn social_icon_type(img_url: &str) -> SocialIconType {
@@ -21,7 +31,9 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
         _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
-        _ => SocialIconType::Builtin(IconType::ExternalLink),
+        _ => resolve_icomoon_symbol(img_url)
+            .map(SocialIconType::Icomoon)
+            .unwrap_or(SocialIconType::Builtin(IconType::ExternalLink)),
     }
 }
 
@@ -61,12 +73,15 @@ fn SocialIconButton(link: SocialLinkData) -> impl IntoView {
                 }
                 SocialIconType::Minia(url) => {
                     view! {
-                        <img
-                            src=url
-                            class="w-4 h-4 object-contain"
-                            alt=""
-                            aria-hidden="true"
-                        />
+                        <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Icomoon(href) => {
+                    view! {
+                        <svg class="w-4 h-4" aria-hidden="true" focusable="false">
+                            <use href=href></use>
+                        </svg>
                     }
                         .into_any()
                 }
@@ -161,10 +176,7 @@ pub fn Hero(data: HomeData) -> impl IntoView {
                 </p>
 
                 <div class="flex flex-wrap items-center gap-4">
-                    <a
-                        href=about_url
-                        class=primary_btn_class
-                    >
+                    <a href=about_url class=primary_btn_class>
                         <LeptosIcon icon=IconType::ArrowRight class="w-4 h-4" />
                         {move || t.get().hero_cta_about}
                     </a>

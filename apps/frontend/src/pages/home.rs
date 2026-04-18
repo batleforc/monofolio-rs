@@ -9,6 +9,7 @@ use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::components::{about::About, hero::Hero};
+use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, use_translations, Language};
 use crate::seo::StaticPageSeo;
 
@@ -310,7 +311,7 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                             .map(|project| {
                                 let title = project.title.clone();
                                 let description = project.description.clone();
-                                let released_at = project.released_at.clone();
+                                let released_at_raw = project.released_at.clone();
                                 let tags = project.tags.clone();
                                 let techno = project.techno.clone();
                                 let project_handle = project.handle.clone();
@@ -321,7 +322,7 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                 view! {
                                     <Card class="p-4">
                                         <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
-                                            {released_at}
+                                            {move || format_display_date(&released_at_raw, lang.get())}
                                         </span>
                                         <h3 class="text-base font-bold mt-1 mb-1">
                                             <a
@@ -480,7 +481,7 @@ pub fn HomePage() -> impl IntoView {
     view! {
         <div class="home-page">
             <StaticPageSeo
-                title="Maxime Leriche | Portfolio développeur Rust"
+                title="Maxime Leriche | Portfolio DevOps passionné"
                 description="Portfolio de Maxime Leriche : projets, expériences, articles et contact."
                 path="/"
             />

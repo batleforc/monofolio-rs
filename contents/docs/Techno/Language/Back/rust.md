@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#rust"
+image: "icomoon#rust"
 links:
   - name: "Rust"
     url: "https://www.rust-lang.org/"

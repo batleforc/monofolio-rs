@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::markdown::{parse_markdown_document, MarkdownMeta};
@@ -117,6 +118,52 @@ fn collect_markdown_files(
     }
 
     Ok(())
+}
+
+fn git_history_dates(content_root: &Path, relative_path: &Path) -> Option<(String, String, u64)> {
+    let rel = relative_path.to_string_lossy().replace('\\', "/");
+
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(content_root)
+        .arg("log")
+        .arg("--follow")
+        .arg("--format=%ct|%aI")
+        .arg("--")
+        .arg(&rel)
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8(output.stdout).ok()?;
+    let mut lines = stdout
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|line| {
+            let mut parts = line.splitn(2, '|');
+            let unix = parts.next().unwrap_or_default().trim();
+            let iso = parts.next().unwrap_or_default().trim();
+            (unix.to_string(), iso.to_string())
+        })
+        .filter(|(_, iso)| !iso.is_empty())
+        .collect::<Vec<_>>();
+
+    if lines.is_empty() {
+        return None;
+    }
+
+    let latest = lines.remove(0);
+    let oldest_iso = lines
+        .last()
+        .map(|(_, iso)| iso.clone())
+        .unwrap_or_else(|| latest.1.clone());
+    let latest_unix = latest.0.parse::<u64>().ok().unwrap_or(0);
+
+    Some((oldest_iso, latest.1, latest_unix))
 }
 
 fn update_sidebar(sidebar_root: &mut SidebarNode, entry: &ContentEntry) {
@@ -242,19 +289,43 @@ pub fn build_content_database(
                 path: file_path.display().to_string(),
                 source,
             })?;
-        let updated_at_unix = metadata
+        let file_updated_at_unix = metadata
             .modified()
             .ok()
             .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
             .map(|duration| duration.as_secs())
             .unwrap_or(0);
 
+        let git_dates = git_history_dates(content_root, relative_path);
+        let created_at = if !doc.meta.date.trim().is_empty() {
+            doc.meta.date.clone()
+        } else {
+            git_dates
+                .as_ref()
+                .map(|(oldest, _, _)| oldest.clone())
+                .unwrap_or_default()
+        };
+        let updated_at = git_dates
+            .as_ref()
+            .map(|(_, latest, _)| latest.clone())
+            .unwrap_or_default();
+        let updated_at_unix = git_dates
+            .as_ref()
+            .map(|(_, _, latest_unix)| *latest_unix)
+            .filter(|unix| *unix > 0)
+            .unwrap_or(file_updated_at_unix);
+
         let kind = infer_kind(relative_path, &doc.meta);
         let dates = ContentDates {
-            created_at: doc.meta.date.clone(),
+            created_at: created_at.clone(),
+            updated_at,
             updated_at_unix,
             released_at: if doc.meta.release {
-                doc.meta.date.clone()
+                if !doc.meta.date.trim().is_empty() {
+                    doc.meta.date.clone()
+                } else {
+                    created_at
+                }
             } else {
                 String::new()
             },
@@ -287,7 +358,9 @@ pub fn build_content_database(
 
     let mut blog_timeline: Vec<BlogTimelineEntry> = entries
         .iter()
-        .filter(|entry| entry.kind.blog && !entry.draft)
+        .filter(|entry| {
+            entry.kind.blog && !entry.draft && !entry.dates.released_at.trim().is_empty()
+        })
         .map(|entry| BlogTimelineEntry {
             title: entry.title.clone(),
             description: entry.description.clone(),

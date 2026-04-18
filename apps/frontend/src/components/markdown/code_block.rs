@@ -1,9 +1,6 @@
 use leptos::prelude::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::MarkdownNode;
-
-static CODE_BLOCK_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 fn extract_code_title(raw: &str) -> Option<String> {
     for key in ["title=\"", "title='"] {
@@ -101,30 +98,19 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
     #[cfg(feature = "ssr")]
     let on_copy = move |_| {};
 
-    let block_id = format!(
-        "mf-code-block-{}",
-        CODE_BLOCK_COUNTER.fetch_add(1, Ordering::Relaxed)
-    );
-
     #[cfg(not(feature = "ssr"))]
     {
-        let block_id_for_effect = block_id.clone();
-        let language_for_effect = language.clone();
-                let shiki_bundle_version = env!("CARGO_PKG_VERSION").to_string();
+        let shiki_bundle_version = env!("CARGO_PKG_VERSION").to_string();
         Effect::new(move |_| {
-            let id_json =
-                serde_json::to_string(&block_id_for_effect).unwrap_or_else(|_| "\"\"".to_string());
-            let language_json =
-                serde_json::to_string(&language_for_effect).unwrap_or_else(|_| "\"\"".to_string());
-                        let version_json =
-                                serde_json::to_string(&shiki_bundle_version).unwrap_or_else(|_| "\"\"".to_string());
+            let version_json =
+                serde_json::to_string(&shiki_bundle_version).unwrap_or_else(|_| "\"\"".to_string());
 
             let script = format!(
                 r#"
                 (async () => {{
-                  const pre = document.getElementById({id_json});
-                  if (!pre || pre.dataset.shikiDone === '1') return;
-                  pre.dataset.shikiDone = '1';
+                  await new Promise((resolve) => requestAnimationFrame(() => resolve(true)));
+                  const blocks = Array.from(document.querySelectorAll('pre[data-language]:not([data-shiki-done="1"])'));
+                  if (!blocks.length) return;
 
                   const ensureBundle = () => new Promise((resolve, reject) => {{
                     if (window.__mfHighlightCode) return resolve(true);
@@ -198,8 +184,12 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
 
                   try {{
                     await ensureBundle();
-                    if (typeof window.__mfHighlightCode === 'function') {{
-                      await window.__mfHighlightCode(pre, {language_json});
+                                        if (typeof window.__mfHighlightCode === 'function') {{
+                                            for (const pre of blocks) {{
+                                                const language = pre.dataset.language || 'txt';
+                                                await window.__mfHighlightCode(pre, language);
+                                                pre.dataset.shikiDone = '1';
+                                            }}
                     }}
                   }} catch (_) {{
                     // Keep raw fallback rendering.
@@ -239,7 +229,6 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
             </div>
 
             <pre
-                id=block_id
                 data-language=language
                 class="mb-0 bg-muted rounded-b-lg p-4 overflow-x-auto"
             >

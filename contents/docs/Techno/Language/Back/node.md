@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#node-dot-js"
+image: "icomoon#node-dot-js"
 links:
   - name: "Node.js"
     url: "https://nodejs.org/"

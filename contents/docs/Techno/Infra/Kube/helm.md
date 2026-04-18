@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#helm"
+image: "icomoon#helm"
 links:
   - name: "Helm"
     url: "https://helm.sh/"

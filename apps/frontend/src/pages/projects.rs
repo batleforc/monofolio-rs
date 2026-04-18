@@ -8,6 +8,7 @@ use web_sys::js_sys;
 use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
+use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
 
@@ -430,7 +431,9 @@ pub fn ProjectsPage() -> impl IntoView {
                                     current_page.set(1);
                                 }
                             >
-                                <option value="all" selected=move || selected_tag.get() == "all">{all_label}</option>
+                                <option value="all" selected=move || selected_tag.get() == "all">
+                                    {all_label}
+                                </option>
                                 {move || {
                                     unique_tags
                                         .get()
@@ -462,10 +465,7 @@ pub fn ProjectsPage() -> impl IntoView {
                                     current_page.set(1);
                                 }
                             >
-                                <option
-                                    value="all"
-                                    selected=move || selected_techno.get() == "all"
-                                >
+                                <option value="all" selected=move || selected_techno.get() == "all">
                                     {all_label}
                                 </option>
                                 {move || {
@@ -506,9 +506,9 @@ pub fn ProjectsPage() -> impl IntoView {
                         }
                             .into_any();
                     }
-
                     if filtered_projects.get().is_empty() {
-                        return view! {
+                        return
+                        view! {
                             <Card class="p-5">
                                 <p class="text-sm text-muted-foreground">{no_result_label}</p>
                             </Card>
@@ -525,12 +525,15 @@ pub fn ProjectsPage() -> impl IntoView {
                                     .map(|project| {
                                         let title = project.title;
                                         let description = project.description;
-                                        let released_at = project.released_at;
+                                        let released_at_raw = project.released_at;
                                         let handle = project.handle;
                                         let tags = project.tags;
                                         let techno = project.techno;
                                         let image = resolve_project_image(&project.image);
-                                        let project_url = format!("/{}", handle.trim_start_matches('/'));
+                                        let project_url = format!(
+                                            "/{}",
+                                            handle.trim_start_matches('/'),
+                                        );
                                         view! {
                                             <Card class="p-4">
                                                 {image
@@ -547,9 +550,8 @@ pub fn ProjectsPage() -> impl IntoView {
                                                         }
                                                     })}
                                                 <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
-                                                    {released_at}
-                                                </span>
-                                                <h3 class="text-lg font-bold mt-1 mb-1">
+                                                    {move || format_display_date(&released_at_raw, lang.get())}
+                                                </span> <h3 class="text-lg font-bold mt-1 mb-1">
                                                     <a
                                                         href=project_url.clone()
                                                         class="hover:text-primary transition-colors underline-offset-2 hover:underline"
@@ -557,7 +559,9 @@ pub fn ProjectsPage() -> impl IntoView {
                                                         {title}
                                                     </a>
                                                 </h3>
-                                                <p class="text-sm text-muted-foreground line-clamp-3 mb-3">{description}</p>
+                                                <p class="text-sm text-muted-foreground line-clamp-3 mb-3">
+                                                    {description}
+                                                </p>
                                                 <div class="flex flex-wrap gap-1.5 mb-3">
                                                     {techno
                                                         .into_iter()
@@ -581,9 +585,10 @@ pub fn ProjectsPage() -> impl IntoView {
                                                             }
                                                         })
                                                         .collect_view()}
-                                                </div>
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <p class="text-xs text-muted-foreground font-mono truncate">{handle.clone()}</p>
+                                                </div> <div class="flex items-center justify-between gap-2">
+                                                    <p class="text-xs text-muted-foreground font-mono truncate">
+                                                        {handle.clone()}
+                                                    </p>
                                                     <a
                                                         href=project_url
                                                         class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"

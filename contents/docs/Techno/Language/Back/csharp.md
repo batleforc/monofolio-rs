@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#dot-net"
+image: "icomoon#dot-net"
 links:
   - name: "C#"
     url: "https://docs.microsoft.com/en-us/dotnet/csharp/"
