@@ -54,19 +54,18 @@ COPY libs/api/Cargo.toml libs/api/Cargo.toml
 COPY libs/content/Cargo.toml libs/content/Cargo.toml
 COPY libs/trace/Cargo.toml libs/trace/Cargo.toml
 
-# Warm Rust dependency cache with dummy sources. This layer is invalidated only
-# when manifests change, not on regular source edits.
+# Warm Rust dependency cache from manifests only. This avoids compiling with
+# temporary dummy sources that can drift from real project code.
 RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
-    mkdir -p apps/frontend/src libs/api/src libs/content/src/bin libs/trace/src \
-    && printf 'pub fn __dummy() {}\n' > apps/frontend/src/lib.rs \
-    && printf 'fn main() {}\n' > apps/frontend/src/main.rs \
-    && printf 'pub fn __dummy() {}\n' > libs/api/src/lib.rs \
-    && printf 'pub fn __dummy() {}\n' > libs/content/src/lib.rs \
-    && printf 'fn main() {}\n' > libs/content/src/bin/content-build.rs \
-    && printf 'pub fn __dummy() {}\n' > libs/trace/src/lib.rs \
-    && cargo build --release --workspace --locked \
-    && cargo build --release --package frontend --lib --target wasm32-unknown-unknown --no-default-features --features hydrate --locked
+    mkdir -p apps/frontend/src libs/api/src libs/content/src libs/trace/src \
+    && [ -f apps/frontend/src/lib.rs ] || printf 'pub fn __placeholder() {}\n' > apps/frontend/src/lib.rs \
+    && [ -f apps/frontend/src/main.rs ] || printf 'fn main() {}\n' > apps/frontend/src/main.rs \
+    && [ -f libs/api/src/lib.rs ] || printf 'pub fn __placeholder() {}\n' > libs/api/src/lib.rs \
+    && [ -f libs/content/src/lib.rs ] || printf 'pub fn __placeholder() {}\n' > libs/content/src/lib.rs \
+    && [ -f libs/trace/src/lib.rs ] || printf 'pub fn __placeholder() {}\n' > libs/trace/src/lib.rs \
+    && cargo fetch --locked \
+    && cargo fetch --locked --target wasm32-unknown-unknown
 
 # ── Copy workspace source ─────────────────────────────────────────────────────
 COPY apps/ apps/
