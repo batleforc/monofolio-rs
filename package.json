@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.25.9",
-    "shiki": "^1.29.2"
+    "shiki": "^4.0.2"
   },
   "type": "module"
 }
