@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#javascript"
+image: "icomoon#javascript"
 links:
   - name: "JavaScript"
     url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript"

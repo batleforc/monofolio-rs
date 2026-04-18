@@ -25,6 +25,33 @@ const LANGS = [langBash, langCpp, langCsharp, langGo, langJava, langJavascript, 
 
 const THEME = "vitesse-dark";
 
+const lineNumberTransformer = {
+  name: "line-numbers",
+  preprocess: (code) => {
+    if (code.endsWith("\n")) {
+      code = code.slice(0, -1);
+    }
+    return code;
+  },
+  line(node, line) {
+    node.children.unshift({
+      type: "element",
+      tagName: "span",
+      properties: {
+        className: [
+          "inline-block",
+          "min-w-10",
+          "mr-4",
+          "text-right",
+          "select-none",
+          "text-muted-foreground",
+        ],
+      },
+      children: [{ type: "text", value: String(line) }],
+    });
+  },
+};
+
 let highlighterPromise;
 
 function getHighlighter() {
@@ -47,7 +74,11 @@ window.__mfHighlightCode = async function __mfHighlightCode(preEl, language) {
 
   let html;
   try {
-    html = highlighter.codeToHtml(source, { lang, theme: THEME });
+    html = highlighter.codeToHtml(source, {
+      lang,
+      theme: THEME,
+      transformers: [lineNumberTransformer],
+    });
   } catch (_) {
     // Unknown language: render as plain text without syntax highlighting
     html = `<pre><code>${source.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`;

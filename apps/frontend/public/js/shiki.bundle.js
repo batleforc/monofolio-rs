@@ -10479,6 +10479,32 @@ XID_Start XIDS`.split(/\s/).map((p2) => [w2(p2), p2])
   // apps/frontend/shiki.entry.js
   var LANGS = [shellscript_default, cpp_default, csharp_default, go_default, java_default, javascript_default, jsx_default, php_default, python_default, rust_default, shellscript_default, svelte_default, typescript_default, vue_default];
   var THEME = "vitesse-dark";
+  var lineNumberTransformer = {
+    name: "line-numbers",
+    preprocess: (code) => {
+      if (code.endsWith("\n")) {
+        code = code.slice(0, -1);
+      }
+      return code;
+    },
+    line(node, line) {
+      node.children.unshift({
+        type: "element",
+        tagName: "span",
+        properties: {
+          className: [
+            "inline-block",
+            "min-w-10",
+            "mr-4",
+            "text-right",
+            "select-none",
+            "text-muted-foreground"
+          ]
+        },
+        children: [{ type: "text", value: String(line) }]
+      });
+    }
+  };
   var highlighterPromise;
   function getHighlighter() {
     if (!highlighterPromise) {
@@ -10497,7 +10523,11 @@ XID_Start XIDS`.split(/\s/).map((p2) => [w2(p2), p2])
     const lang29 = (language || preEl.dataset.language || "bash").toLowerCase();
     let html5;
     try {
-      html5 = highlighter.codeToHtml(source, { lang: lang29, theme: THEME });
+      html5 = highlighter.codeToHtml(source, {
+        lang: lang29,
+        theme: THEME,
+        transformers: [lineNumberTransformer]
+      });
     } catch (_3) {
       html5 = `<pre><code>${source.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`;
     }

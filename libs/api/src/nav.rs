@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
 
+fn is_nav_visible(entry: &ContentEntry) -> bool {
+    !entry.draft && !entry.dates.released_at.trim().is_empty()
+}
+
 /// A lightweight project summary derived from a [`ContentEntry`].
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq, Eq)]
 pub struct ProjectSummary {
@@ -115,7 +119,10 @@ pub struct DocSidebarItem {
     pub children: Vec<DocSidebarItem>,
 }
 
-fn doc_sidebar_item_from(item: &SidebarItem, known_handles: &HashSet<String>) -> DocSidebarItem {
+fn doc_sidebar_item_from(
+    item: &SidebarItem,
+    known_handles: &HashSet<String>,
+) -> Option<DocSidebarItem> {
     let kind = if item.children.is_empty() {
         DocSidebarItemKind::Markdown
     } else if known_handles.contains(&item.handle) {
@@ -123,31 +130,36 @@ fn doc_sidebar_item_from(item: &SidebarItem, known_handles: &HashSet<String>) ->
     } else {
         DocSidebarItemKind::Folder
     };
-    let children = item
+    let children: Vec<DocSidebarItem> = item
         .children
         .iter()
-        .map(|child| doc_sidebar_item_from(child, known_handles))
+        .filter_map(|child| doc_sidebar_item_from(child, known_handles))
         .collect();
-    DocSidebarItem {
+
+    if !known_handles.contains(&item.handle) && children.is_empty() {
+        return None;
+    }
+
+    Some(DocSidebarItem {
         title: item.title.clone(),
         handle: item.handle.clone(),
         order: item.order,
         kind,
         children,
-    }
+    })
 }
 
 fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
     let known_handles: HashSet<String> = database
         .entries
         .iter()
-        .filter(|e| e.kind.doc)
+        .filter(|e| e.kind.doc && is_nav_visible(e))
         .map(|e| e.handle.clone())
         .collect();
     database
         .sidebar
         .iter()
-        .map(|item| doc_sidebar_item_from(item, &known_handles))
+        .filter_map(|item| doc_sidebar_item_from(item, &known_handles))
         .collect()
 }
 
@@ -206,7 +218,7 @@ pub async fn get_projects_nav(database: Data<ContentDatabase>) -> impl Responder
     let projects: Vec<ProjectSummary> = database
         .entries
         .iter()
-        .filter(|e| e.kind.project)
+        .filter(|e| e.kind.project && is_nav_visible(e))
         .map(ProjectSummary::from)
         .collect();
     HttpResponse::Ok().json(projects)
@@ -224,7 +236,12 @@ pub async fn get_projects_nav(database: Data<ContentDatabase>) -> impl Responder
 #[instrument(name = "get_search_index", skip(database))]
 pub async fn get_search_index(database: Data<ContentDatabase>) -> impl Responder {
     info!("Serving search index");
-    let mut entries: Vec<SearchEntry> = database.entries.iter().map(SearchEntry::from).collect();
+    let mut entries: Vec<SearchEntry> = database
+        .entries
+        .iter()
+        .filter(|entry| is_nav_visible(entry))
+        .map(SearchEntry::from)
+        .collect();
     entries.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
     HttpResponse::Ok().json(entries)
 }
@@ -250,6 +267,7 @@ mod tests {
                     kind: ContentKind { blog: false, project: true, doc: false },
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
+                        updated_at: "2024-01-02T00:00:00Z".to_string(),
                         updated_at_unix: 0,
                         released_at: "2024-01-01".to_string(),
                     },
@@ -269,8 +287,9 @@ mod tests {
                     kind: ContentKind { blog: true, project: false, doc: false },
                     dates: ContentDates {
                         created_at: "2024-02-01T00:00:00Z".to_string(),
+                        updated_at: "2024-02-02T00:00:00Z".to_string(),
                         updated_at_unix: 0,
-                        released_at: "".to_string(),
+                        released_at: "2024-02-01".to_string(),
                     },
                     draft: false,
                     tags: vec![],
@@ -289,8 +308,9 @@ mod tests {
                     kind: ContentKind { blog: false, project: false, doc: true },
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
+                        updated_at: "2024-01-02T00:00:00Z".to_string(),
                         updated_at_unix: 0,
-                        released_at: "".to_string(),
+                        released_at: "2024-01-01".to_string(),
                     },
                     draft: false,
                     tags: vec![],

@@ -7,6 +7,7 @@ use leptos_router::{
 };
 
 mod components;
+mod date_utils;
 mod i18n;
 mod pages;
 mod seo;

@@ -3,6 +3,7 @@ use icons::leptos::icon_component::LeptosIcon;
 use leptos::prelude::*;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
+use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, use_translations, Language};
 use crate::pages::home::{HistoryEntryData, HomeData};
 
@@ -10,6 +11,15 @@ use crate::pages::home::{HistoryEntryData, HomeData};
 fn media_url(raw: &str) -> Option<String> {
     raw.strip_prefix("media#")
         .map(|filename| format!("/public/media/{}", filename))
+}
+
+fn resolve_icomoon_symbol(raw: &str) -> Option<String> {
+    let name = raw.strip_prefix("icomoon#")?.trim().to_ascii_lowercase();
+    if name.is_empty() {
+        None
+    } else {
+        Some(format!("/assets/icon/symbol-defs.svg#ico-{name}"))
+    }
 }
 
 /// Map a home.yaml `icoUrl` value to the appropriate `IconType`.
@@ -58,11 +68,12 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                         .into_iter()
                         .map(|entry| {
                             let icon = timeline_icon_type(&entry.ico_url);
+                            let icomoon_symbol = resolve_icomoon_symbol(&entry.ico_url);
                             let ico_url_norm = entry.ico_url.trim().to_ascii_lowercase();
                             let title_norm = entry.title.trim().to_ascii_lowercase();
                             let is_pacman = ico_url_norm.contains("pacman")
                                 || title_norm.contains("take over the world");
-                            let date = entry.date.clone();
+                            let date_raw = entry.date.clone();
                             let lieux = entry.lieux.clone();
                             let img = media_url(&entry.img_url);
                             let links = entry.url.clone();
@@ -149,25 +160,40 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                                             }
                                                 .into_any()
                                         } else {
-                                            view! {
-                                                <LeptosIcon icon class="w-3.5 h-3.5 stroke-current" />
+                                            if let Some(href) = icomoon_symbol.clone() {
+                                                view! {
+                                                    <svg
+                                                        class="w-3.5 h-3.5"
+                                                        aria-hidden="true"
+                                                        focusable="false"
+                                                    >
+                                                        <use href=href></use>
+                                                    </svg>
+                                                }
+                                                    .into_any()
+                                            } else {
+                                                view! {
+                                                    <LeptosIcon icon class="w-3.5 h-3.5 stroke-current" />
+                                                }
+                                                    .into_any()
                                             }
-                                                .into_any()
                                         }}
                                     </div>
                                     // Card body
                                     <Card class="flex-1 p-4">
                                         <div class="flex items-start gap-3">
-                                            {img.map(|src| view! {
-                                                <img
-                                                    src=src
-                                                    alt=""
-                                                    class="w-10 h-10 rounded object-contain shrink-0 bg-muted p-0.5"
-                                                />
-                                            })}
-                                            <div class="flex-1 min-w-0">
+                                            {img
+                                                .map(|src| {
+                                                    view! {
+                                                        <img
+                                                            src=src
+                                                            alt=""
+                                                            class="w-10 h-10 rounded object-contain shrink-0 bg-muted p-0.5"
+                                                        />
+                                                    }
+                                                })} <div class="flex-1 min-w-0">
                                                 <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
-                                                    {date}
+                                                    {move || format_display_date(&date_raw, lang.get())}
                                                 </span>
                                                 <h3 class="text-base font-bold mt-1 mb-0.5">
                                                     {move || entry_title(&entry_c, lang.get()).to_string()}
@@ -193,19 +219,28 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                                         {if !links.is_empty() {
                                             view! {
                                                 <div class="flex flex-wrap gap-2 mt-3">
-                                                    {links.into_iter().map(|link| view! {
-                                                        <a
-                                                            href=link.url
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline transition-colors"
-                                                        >
-                                                            <LeptosIcon icon=IconType::ExternalLink class="w-3 h-3 stroke-current" />
-                                                            {link.name}
-                                                        </a>
-                                                    }).collect_view()}
+                                                    {links
+                                                        .into_iter()
+                                                        .map(|link| {
+                                                            view! {
+                                                                <a
+                                                                    href=link.url
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline transition-colors"
+                                                                >
+                                                                    <LeptosIcon
+                                                                        icon=IconType::ExternalLink
+                                                                        class="w-3 h-3 stroke-current"
+                                                                    />
+                                                                    {link.name}
+                                                                </a>
+                                                            }
+                                                        })
+                                                        .collect_view()}
                                                 </div>
-                                            }.into_any()
+                                            }
+                                                .into_any()
                                         } else {
                                             view! { <></> }.into_any()
                                         }}

@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#svelte"
+image: "icomoon#svelte"
 links:
   - name: "Svelte"
     url: "https://svelte.dev/"

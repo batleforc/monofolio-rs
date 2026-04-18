@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#php"
+image: "icomoon#php"
 links:
   - name: "PHP"
     url: "https://www.php.net/"

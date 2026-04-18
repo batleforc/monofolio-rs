@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#vue-dot-js"
+image: "icomoon#vue-dot-js"
 links:
   - name: "Vue.js"
     url: "https://vuejs.org/"

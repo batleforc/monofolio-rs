@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#java"
+image: "icomoon#java"
 links:
   - name: "Java"
     url: "https://www.java.com/"

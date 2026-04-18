@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#python"
+image: "icomoon#python"
 links:
   - name: "Python"
     url: "https://www.python.org/"

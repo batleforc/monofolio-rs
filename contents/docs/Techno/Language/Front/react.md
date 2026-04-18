@@ -6,7 +6,7 @@ spec:
   blog: false
   project: false
   doc: true
-image: "ico#react"
+image: "icomoon#react"
 links:
   - name: "Reactjs"
     url: "https://reactjs.org/"

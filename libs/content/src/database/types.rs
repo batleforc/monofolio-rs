@@ -77,8 +77,13 @@ pub struct ContentKind {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct ContentDates {
+    #[serde(default)]
     pub created_at: String,
+    #[serde(default)]
+    pub updated_at: String,
+    #[serde(default)]
     pub updated_at_unix: u64,
+    #[serde(default)]
     pub released_at: String,
 }
 

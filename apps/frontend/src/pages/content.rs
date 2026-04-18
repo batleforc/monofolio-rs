@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+#[cfg(feature = "ssr")]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use leptos::prelude::*;
 use leptos_meta::{Link, Meta, Title};
@@ -11,6 +13,8 @@ use content::{ContentDatabase, ContentEntry, SidebarItem};
 use crate::components::markdown::toc::{extract_headings, TableOfContents};
 use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
 use crate::components::ui::{Card, SectionTitle};
+use crate::date_utils::format_display_date;
+use crate::i18n::use_language;
 use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -27,6 +31,9 @@ struct PageData {
     title: String,
     description: String,
     handle: String,
+    source_path: String,
+    created_at: String,
+    updated_at: String,
     blog: bool,
     project: bool,
     doc: bool,
@@ -35,6 +42,12 @@ struct PageData {
     image: String,
     reading_time_minutes: usize,
     content: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum HeaderImageSource {
+    Image(String),
+    Icomoon(String),
 }
 
 #[allow(dead_code)]
@@ -111,6 +124,9 @@ impl From<&ContentEntry> for PageData {
             title: entry.title.clone(),
             description: entry.description.clone(),
             handle: entry.handle.clone(),
+            source_path: entry.source_path.clone(),
+            created_at: entry.dates.created_at.clone(),
+            updated_at: entry.dates.updated_at.clone(),
             blog: entry.kind.blog,
             project: entry.kind.project,
             doc: entry.kind.doc,
@@ -120,6 +136,129 @@ impl From<&ContentEntry> for PageData {
             reading_time_minutes: entry.reading_time_minutes,
             content: serde_json::to_value(&entry.content).unwrap_or(serde_json::Value::Null),
         }
+    }
+}
+
+fn resolve_header_image(raw: &str) -> Option<HeaderImageSource> {
+    if raw.trim().is_empty() {
+        return None;
+    }
+    if raw.starts_with("http://") || raw.starts_with("https://") || raw.starts_with('/') {
+        return Some(HeaderImageSource::Image(raw.to_string()));
+    }
+    if let Some(file_name) = raw.strip_prefix("media#") {
+        return Some(HeaderImageSource::Image(format!("/public/media/{file_name}")));
+    }
+    if let Some(file_name) = raw.strip_prefix("icomoon#") {
+        return Some(HeaderImageSource::Icomoon(format!(
+            "/assets/icon/symbol-defs.svg#ico-{file_name}"
+        )));
+    }
+    Some(HeaderImageSource::Image(format!(
+        "/public/media/{}",
+        raw.trim_start_matches('/')
+    )))
+}
+
+fn render_header_image(image: HeaderImageSource) -> impl IntoView {
+    match image {
+        HeaderImageSource::Image(src) => view! {
+            <img
+                src=src
+                alt=""
+                class="w-full h-52 md:h-72 object-cover rounded border border-border mb-4"
+                loading="lazy"
+            />
+        }
+            .into_any(),
+        HeaderImageSource::Icomoon(href) => view! {
+            <div class="w-full h-52 md:h-72 rounded border border-border mb-4 bg-muted/30 flex items-center justify-center p-6 md:p-8">
+                <svg class="w-full h-full" aria-hidden="true" focusable="false" fill="#fff">
+                    <use href=href></use>
+                </svg>
+            </div>
+        }
+            .into_any(),
+    }
+}
+
+fn slugify_like_handle(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut previous_dash = false;
+
+    for ch in value.chars().flat_map(|c| c.to_lowercase()) {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch);
+            previous_dash = false;
+        } else if !previous_dash {
+            out.push('-');
+            previous_dash = true;
+        }
+    }
+
+    out.trim_matches('-').to_string()
+}
+
+fn flatten_doc_index(items: &[DocSidebarItemData], out: &mut Vec<(String, String)>) {
+    for item in items {
+        if item.kind != "folder" {
+            out.push((item.title.clone(), item.handle.clone()));
+        }
+        flatten_doc_index(&item.children, out);
+    }
+}
+
+fn find_doc_href_for_techno(techno: &str, docs_index: &[(String, String)]) -> Option<String> {
+    let needle = slugify_like_handle(techno);
+    if needle.is_empty() {
+        return None;
+    }
+
+    docs_index.iter().find_map(|(title, handle)| {
+        let title_slug = slugify_like_handle(title);
+        let handle_slug = handle
+            .split('/')
+            .next_back()
+            .map(slugify_like_handle)
+            .unwrap_or_default();
+
+        if needle == title_slug || needle == handle_slug {
+            Some(format!("/{}", handle.trim_start_matches('/')))
+        } else {
+            None
+        }
+    })
+}
+
+fn edit_in_git_url(source_path: &str) -> String {
+    format!(
+        "https://github.com/batleforc/monofolio-rs/edit/main/contents/{}",
+        source_path.trim_start_matches('/')
+    )
+}
+
+fn current_year_utc() -> i32 {
+    #[cfg(not(feature = "ssr"))]
+    {
+        return js_sys::Date::new_0().get_utc_full_year() as i32;
+    }
+
+    #[cfg(feature = "ssr")]
+    {
+    let unix_days = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs() as i64 / 86_400)
+        .unwrap_or(0);
+
+    let z = unix_days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let m = mp + if mp < 10 { 3 } else { -9 };
+    (y + if m <= 2 { 1 } else { 0 }) as i32
     }
 }
 
@@ -142,6 +281,30 @@ fn map_sidebar_item(item: &SidebarItem, known_doc_handles: &HashSet<String>) -> 
             .iter()
             .map(|child| map_sidebar_item(child, known_doc_handles))
             .collect(),
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn is_nav_visible(entry: &ContentEntry) -> bool {
+    !entry.draft && !entry.dates.released_at.trim().is_empty()
+}
+
+#[cfg(feature = "ssr")]
+fn map_sidebar_item_filtered(
+    item: &SidebarItem,
+    known_doc_handles: &HashSet<String>,
+) -> Option<DocSidebarItemData> {
+    let mut mapped = map_sidebar_item(item, known_doc_handles);
+    mapped.children = item
+        .children
+        .iter()
+        .filter_map(|child| map_sidebar_item_filtered(child, known_doc_handles))
+        .collect();
+
+    if known_doc_handles.contains(&mapped.handle) || !mapped.children.is_empty() {
+        Some(mapped)
+    } else {
+        None
     }
 }
 
@@ -306,6 +469,7 @@ fn collect_active_path_folders(
 #[component]
 pub fn ContentHandlePage() -> impl IntoView {
     let location = use_location();
+    let lang = use_language();
     #[cfg(feature = "ssr")]
     let content_db = use_context::<ContentDatabase>();
 
@@ -339,7 +503,7 @@ pub fn ContentHandlePage() -> impl IntoView {
             }
         },
     );
-    let docs_nav = Resource::new(
+    let docs_nav: Resource<Vec<DocSidebarItemData>> = Resource::new(
         move || location.pathname.get(),
         {
             #[cfg(feature = "ssr")]
@@ -348,10 +512,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                 #[cfg(feature = "ssr")]
                 let content_db = content_db.clone();
                 async move {
-                    let handle = pathname.trim_start_matches('/').to_string();
-                    if !handle.starts_with("docs/") && handle != "docs" {
-                        return vec![];
-                    }
+                    let _ = pathname;
                     #[cfg(not(feature = "ssr"))]
                     {
                         load_docs_nav_send_safe().await
@@ -363,13 +524,15 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 let known_doc_handles: HashSet<String> = db
                                     .entries
                                     .iter()
-                                    .filter(|entry| entry.kind.doc)
+                                    .filter(|entry| entry.kind.doc && is_nav_visible(entry))
                                     .map(|entry| entry.handle.clone())
                                     .collect();
                                 db.sidebar
                                     .iter()
-                                    .map(|item| map_sidebar_item(item, &known_doc_handles))
-                                    .collect()
+                                    .filter_map(|item| {
+                                        map_sidebar_item_filtered(item, &known_doc_handles)
+                                    })
+                                    .collect::<Vec<DocSidebarItemData>>()
                             })
                             .unwrap_or_default()
                     }
@@ -401,7 +564,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                         </Card>
                     }
                 }>
-                    <Show when=move || page_data.get().is_some() && page_data.get().flatten().is_none()>
+                    <Show when=move || {
+                        page_data.get().is_some() && page_data.get().flatten().is_none()
+                    }>
                         <Card class="p-5">
                             <p class="text-sm text-muted-foreground">"Unable to load this page."</p>
                             <a
@@ -421,171 +586,344 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 .get()
                                 .flatten()
                                 .map(|page| {
-                                let PageData {
-                                    title,
-                                    description,
-                                    handle,
-                                    blog,
-                                    project,
-                                    doc,
-                                    tags,
-                                    techno,
-                                    image,
-                                    reading_time_minutes,
-                                    content,
-                                } = page;
-                                let kind_label = if blog {
-                                    "blog"
-                                } else if project {
-                                    "project"
-                                } else if doc {
-                                    "doc"
-                                } else {
-                                    "content"
-                                };
-                                let is_blog = blog;
-                                let is_doc = doc;
-                                let back_href = if is_blog { "/blog" } else { "/projects" };
-                                let back_label = if is_blog {
-                                    "Back to blog"
-                                } else {
-                                    "Back to projects"
-                                };
-                                let page_title = format!("{title} | Maxime Leriche");
-                                let page_description = if description.trim().is_empty() {
-                                    "Page de contenu de Maxime Leriche".to_string()
-                                } else {
-                                    description.clone()
-                                };
-                                let canonical = canonical_url(&handle);
-                                let image_url = if image.trim().is_empty() {
-                                    DEFAULT_OG_IMAGE.to_string()
-                                } else if image.starts_with("https://") {
-                                    image
-                                } else if image.starts_with("http://") {
-                                    format!("https://{}", image.trim_start_matches("http://"))
-                                } else if let Some(file_name) = image.strip_prefix("media#") {
-                                    canonical_url(&format!("/media/{file_name}"))
-                                } else {
-                                    canonical_url(&format!("/media/{}", image.trim_start_matches('/')))
-                                };
+                                    let PageData {
+                                        title,
+                                        description,
+                                        handle,
+                                        source_path,
+                                        created_at,
+                                        updated_at,
+                                        blog,
+                                        project,
+                                        doc,
+                                        tags,
+                                        techno,
+                                        image,
+                                        reading_time_minutes,
+                                        content,
+                                    } = page;
+                                    let kind_label = if blog {
+                                        "blog"
+                                    } else if project {
+                                        "project"
+                                    } else if doc {
+                                        "doc"
+                                    } else {
+                                        "content"
+                                    };
+                                    let docs_index = {
+                                        let mut out = Vec::new();
+                                        let nav = docs_nav.get().unwrap_or_default();
+                                        flatten_doc_index(&nav, &mut out);
+                                        out
+                                    };
+                                    let is_blog = blog;
+                                    let is_doc = doc;
+                                    let back_href = if is_blog { "/blog" } else { "/projects" };
+                                    let back_label = if is_blog {
+                                        "Back to blog"
+                                    } else {
+                                        "Back to projects"
+                                    };
+                                    let header_image = resolve_header_image(&image);
+                                    let edit_url = edit_in_git_url(&source_path);
+                                    let footer_note = format!(
+                                        "Since 2000 - {} with love and coffee",
+                                        current_year_utc(),
+                                    );
+                                    let created_at_raw_doc = created_at.clone();
+                                    let updated_at_raw_doc = updated_at.clone();
+                                    let created_at_raw_default = created_at.clone();
+                                    let updated_at_raw_default = updated_at.clone();
+                                    let page_title = format!("{title} | Maxime Leriche");
+                                    let page_description = if description.trim().is_empty() {
+                                        "Page de contenu de Maxime Leriche".to_string()
+                                    } else {
+                                        description.clone()
+                                    };
+                                    let canonical = canonical_url(&handle);
+                                    let image_url = if image.trim().is_empty() {
+                                        DEFAULT_OG_IMAGE.to_string()
+                                    } else if image.starts_with("https://") {
+                                        image
+                                    } else if image.starts_with("http://") {
+                                        format!("https://{}", image.trim_start_matches("http://"))
+                                    } else if let Some(file_name) = image.strip_prefix("media#") {
+                                        canonical_url(&format!("/media/{file_name}"))
+                                    } else {
+                                        canonical_url(
+                                            &format!("/media/{}", image.trim_start_matches('/')),
+                                        )
+                                    };
 
-                                view! {
-                                    <Title text=page_title.clone() />
-                                    <Meta name="description" content=page_description.clone() />
-                                    <Link rel="canonical" href=canonical.clone() />
-                                    <Meta property="og:type" content=if is_blog { "article" } else { "website" } />
-                                    <Meta property="og:title" content=page_title.clone() />
-                                    <Meta property="og:description" content=page_description.clone() />
-                                    <Meta property="og:url" content=canonical.clone() />
-                                    <Meta property="og:image" content=image_url.clone() />
-                                    <Meta name="twitter:card" content="summary_large_image" />
-                                    <Meta name="twitter:title" content=page_title.clone() />
-                                    <Meta name="twitter:description" content=page_description.clone() />
-                                    <Meta name="twitter:image" content=image_url.clone() />
-                                    <SectionTitle>{title.clone()}</SectionTitle>
+                                    view! {
+                                        <Title text=page_title.clone() />
+                                        <Meta name="description" content=page_description.clone() />
+                                        <Link rel="canonical" href=canonical.clone() />
+                                        <Meta
+                                            property="og:type"
+                                            content=if is_blog { "article" } else { "website" }
+                                        />
+                                        <Meta property="og:title" content=page_title.clone() />
+                                        <Meta
+                                            property="og:description"
+                                            content=page_description.clone()
+                                        />
+                                        <Meta property="og:url" content=canonical.clone() />
+                                        <Meta property="og:image" content=image_url.clone() />
+                                        <Meta name="twitter:card" content="summary_large_image" />
+                                        <Meta name="twitter:title" content=page_title.clone() />
+                                        <Meta
+                                            name="twitter:description"
+                                            content=page_description.clone()
+                                        />
+                                        <Meta name="twitter:image" content=image_url.clone() />
+                                        <SectionTitle>{title.clone()}</SectionTitle>
 
-                                    {if is_doc {
-                                        let handle_for_sidebar = handle.clone();
-                                        let handle_for_mobile_sidebar = handle.clone();
-                                        let toc_entries = serde_json::from_value::<
-                                            MarkdownContent,
-                                        >(content.clone())
-                                            .map(|markdown| extract_headings(&markdown.nodes))
-                                            .unwrap_or_default();
-                                        let has_toc_entries = !toc_entries.is_empty();
-                                        view! {
-                                            <div class="lg:hidden sticky top-14 z-40 mb-4">
-                                                <Card class="p-2 border-border/80 bg-background/95 backdrop-blur-md">
-                                                    <div class="grid grid-cols-2 gap-2">
-                                                        <details>
-                                                            <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-                                                                "Navigation"
-                                                            </summary>
-                                                            <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
-                                                                {move || {
-                                                                    render_doc_sidebar_tree(
-                                                                            docs_nav
-                                                                                .get()
-                                                                                .unwrap_or_default(),
-                                                                            handle_for_mobile_sidebar.clone(),
-                                                                            0,
-                                                                            expanded_folders,
-                                                                        )
-                                                                        .into_any()
-                                                                }}
-                                                            </div>
-                                                        </details>
-
-                                                        {if has_toc_entries {
-                                                            view! {
-                                                                <details>
-                                                                    <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-                                                                        "Sommaire"
-                                                                    </summary>
-                                                                    <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
-                                                                        <TableOfContents entries=toc_entries.clone() />
-                                                                    </div>
-                                                                </details>
-                                                            }
-                                                                .into_any()
-                                                        } else {
-                                                            view! {
-                                                                <div class="rounded border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                                                                    "Pas de sommaire"
+                                        {if is_doc {
+                                            let handle_for_sidebar = handle.clone();
+                                            let handle_for_mobile_sidebar = handle.clone();
+                                            let toc_entries = serde_json::from_value::<
+                                                MarkdownContent,
+                                            >(content.clone())
+                                                .map(|markdown| extract_headings(&markdown.nodes))
+                                                .unwrap_or_default();
+                                            let has_toc_entries = !toc_entries.is_empty();
+                                            view! {
+                                                <div class="lg:hidden sticky top-14 z-40 mb-4">
+                                                    <Card class="p-2 border-border/80 bg-background/95 backdrop-blur-md">
+                                                        <div class="grid grid-cols-2 gap-2">
+                                                            <details>
+                                                                <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                                                                    "Navigation"
+                                                                </summary>
+                                                                <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
+                                                                    {move || {
+                                                                        render_doc_sidebar_tree(
+                                                                                docs_nav.get().unwrap_or_default(),
+                                                                                handle_for_mobile_sidebar.clone(),
+                                                                                0,
+                                                                                expanded_folders,
+                                                                            )
+                                                                            .into_any()
+                                                                    }}
                                                                 </div>
-                                                            }
-                                                                .into_any()
-                                                        }}
-                                                    </div>
-                                                </Card>
-                                            </div>
+                                                            </details>
 
-                                            <div class="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-5">
-                                                <aside class="lg:sticky lg:top-16 self-start">
-                                                    <Card class="p-4 max-h-[calc(100svh-6rem)] overflow-auto">
-                                                        <p class="text-xs uppercase tracking-widest font-mono text-muted-foreground mb-3">
-                                                            "Docs navigation"
-                                                        </p>
-                                                        {move || {
-                                                            render_doc_sidebar_tree(
-                                                                    docs_nav
-                                                                        .get()
-                                                                        .unwrap_or_default(),
-                                                                    handle_for_sidebar.clone(),
-                                                                    0,
-                                                                    expanded_folders,
-                                                                )
-                                                                .into_any()
-                                                        }}
+                                                            {if has_toc_entries {
+                                                                view! {
+                                                                    <details>
+                                                                        <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                                                                            "Sommaire"
+                                                                        </summary>
+                                                                        <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
+                                                                            <TableOfContents entries=toc_entries.clone() />
+                                                                        </div>
+                                                                    </details>
+                                                                }
+                                                                    .into_any()
+                                                            } else {
+                                                                view! {
+                                                                    <div class="rounded border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
+                                                                        "Pas de sommaire"
+                                                                    </div>
+                                                                }
+                                                                    .into_any()
+                                                            }}
+                                                        </div>
                                                     </Card>
-                                                </aside>
+                                                </div>
 
+                                                <div class="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-5">
+                                                    <aside class="lg:sticky lg:top-16 self-start">
+                                                        <Card class="p-4 max-h-[calc(100svh-6rem)] overflow-auto">
+                                                            <p class="text-xs uppercase tracking-widest font-mono text-muted-foreground mb-3">
+                                                                "Docs navigation"
+                                                            </p>
+                                                            {move || {
+                                                                render_doc_sidebar_tree(
+                                                                        docs_nav.get().unwrap_or_default(),
+                                                                        handle_for_sidebar.clone(),
+                                                                        0,
+                                                                        expanded_folders,
+                                                                    )
+                                                                    .into_any()
+                                                            }}
+                                                        </Card>
+                                                    </aside>
+
+                                                    <Card class="p-5">
+                                                        {header_image.clone().map(render_header_image)}
+                                                        <p class="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-2">
+                                                            {kind_label}
+                                                        </p>
+                                                        <p class="text-base md:text-lg font-medium text-foreground mb-2">
+                                                            {description.clone()}
+                                                        </p>
+                                                        <div class="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs text-muted-foreground">
+                                                            {move || {
+                                                                let created_at_display = format_display_date(
+                                                                    &created_at_raw_doc,
+                                                                    lang.get(),
+                                                                );
+                                                                if !created_at_display.is_empty() {
+                                                                    view! {
+                                                                        <span>{format!("Published: {}", created_at_display)}</span>
+                                                                    }
+                                                                        .into_any()
+                                                                } else {
+                                                                    view! { <></> }.into_any()
+                                                                }
+                                                            }}
+                                                            {move || {
+                                                                let updated_at_display = format_display_date(
+                                                                    &updated_at_raw_doc,
+                                                                    lang.get(),
+                                                                );
+                                                                if !updated_at_display.is_empty() {
+                                                                    view! {
+                                                                        <span>{format!("Updated: {}", updated_at_display)}</span>
+                                                                    }
+                                                                        .into_any()
+                                                                } else {
+                                                                    view! { <></> }.into_any()
+                                                                }
+                                                            }}
+                                                        </div>
+                                                        <div class="flex flex-wrap gap-1.5 mb-3">
+                                                            {techno
+                                                                .clone()
+                                                                .into_iter()
+                                                                .map(|item| {
+                                                                    let doc_href = find_doc_href_for_techno(&item, &docs_index);
+                                                                    view! {
+                                                                        {if let Some(href) = doc_href {
+                                                                            view! {
+                                                                                <a
+                                                                                    href=href
+                                                                                    class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors underline-offset-2 hover:underline"
+                                                                                >
+                                                                                    {item}
+                                                                                </a>
+                                                                            }
+                                                                                .into_any()
+                                                                        } else {
+                                                                            view! {
+                                                                                <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
+                                                                                    {item}
+                                                                                </span>
+                                                                            }
+                                                                                .into_any()
+                                                                        }}
+                                                                    }
+                                                                })
+                                                                .collect_view()}
+                                                            {tags
+                                                                .clone()
+                                                                .into_iter()
+                                                                .map(|item| {
+                                                                    view! {
+                                                                        <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
+                                                                            {format!("#{}", item)}
+                                                                        </span>
+                                                                    }
+                                                                })
+                                                                .collect_view()}
+                                                        </div>
+                                                        <p class="text-xs text-muted-foreground">
+                                                            {format!("Reading time: {} min", reading_time_minutes)}
+                                                        </p> <div class="mt-5 border-t border-border pt-4">
+                                                            <MarkdownFromValue value=content.clone() />
+                                                        </div>
+                                                        <a
+                                                            href=back_href
+                                                            class="inline-flex mt-4 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                        >
+                                                            {back_label}
+                                                        </a>
+                                                        <a
+                                                            href=edit_url.clone()
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            class="inline-flex mt-2 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                        >
+                                                            "Edit in Git"
+                                                        </a>
+                                                        <p class="mt-6 text-xs text-muted-foreground">
+                                                            {footer_note.clone()}
+                                                        </p>
+                                                    </Card>
+                                                </div>
+                                            }
+                                                .into_any()
+                                        } else {
+                                            view! {
                                                 <Card class="p-5">
-                                                    <p class="text-sm text-muted-foreground mb-4">
-                                                        {description.clone()}
-                                                    </p>
-                                                    <p class="text-xs text-muted-foreground font-mono mb-3">
-                                                        {handle.clone()}
-                                                    </p>
+                                                    {header_image.map(render_header_image)}
                                                     <p class="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-3">
                                                         {kind_label}
                                                     </p>
-
+                                                    <p class="text-base md:text-lg font-medium text-foreground mb-2">
+                                                        {description}
+                                                    </p>
+                                                    <div class="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-xs text-muted-foreground">
+                                                        {move || {
+                                                            let created_at_display = format_display_date(
+                                                                &created_at_raw_default,
+                                                                lang.get(),
+                                                            );
+                                                            if !created_at_display.is_empty() {
+                                                                view! {
+                                                                    <span>{format!("Published: {}", created_at_display)}</span>
+                                                                }
+                                                                    .into_any()
+                                                            } else {
+                                                                view! { <></> }.into_any()
+                                                            }
+                                                        }}
+                                                        {move || {
+                                                            let updated_at_display = format_display_date(
+                                                                &updated_at_raw_default,
+                                                                lang.get(),
+                                                            );
+                                                            if !updated_at_display.is_empty() {
+                                                                view! {
+                                                                    <span>{format!("Updated: {}", updated_at_display)}</span>
+                                                                }
+                                                                    .into_any()
+                                                            } else {
+                                                                view! { <></> }.into_any()
+                                                            }
+                                                        }}
+                                                    </div>
                                                     <div class="flex flex-wrap gap-1.5 mb-3">
                                                         {techno
-                                                            .clone()
                                                             .into_iter()
                                                             .map(|item| {
+                                                                let doc_href = find_doc_href_for_techno(&item, &docs_index);
                                                                 view! {
-                                                                    <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
-                                                                        {item}
-                                                                    </span>
+                                                                    {if let Some(href) = doc_href {
+                                                                        view! {
+                                                                            <a
+                                                                                href=href
+                                                                                class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors underline-offset-2 hover:underline"
+                                                                            >
+                                                                                {item}
+                                                                            </a>
+                                                                        }
+                                                                            .into_any()
+                                                                    } else {
+                                                                        view! {
+                                                                            <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
+                                                                                {item}
+                                                                            </span>
+                                                                        }
+                                                                            .into_any()
+                                                                    }}
                                                                 }
                                                             })
                                                             .collect_view()}
                                                         {tags
-                                                            .clone()
                                                             .into_iter()
                                                             .map(|item| {
                                                                 view! {
@@ -596,87 +934,41 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             })
                                                             .collect_view()}
                                                     </div>
-
                                                     <p class="text-xs text-muted-foreground">
                                                         {format!("Reading time: {} min", reading_time_minutes)}
                                                     </p>
-
-                                                    <div class="mt-5 border-t border-border pt-4">
-                                                        <MarkdownFromValue value=content.clone() />
-                                                    </div>
-
+                                                    {if is_blog {
+                                                        view! {
+                                                            <div class="mt-5 border-t border-border pt-4">
+                                                                <MarkdownFromValue value=content />
+                                                            </div>
+                                                        }
+                                                            .into_any()
+                                                    } else {
+                                                        view! { <></> }.into_any()
+                                                    }}
                                                     <a
                                                         href=back_href
                                                         class="inline-flex mt-4 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
                                                     >
                                                         {back_label}
                                                     </a>
+                                                    <a
+                                                        href=edit_url
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="inline-flex mt-2 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                    >
+                                                        "Edit in Git"
+                                                    </a>
+                                                    <p class="mt-6 text-xs text-muted-foreground">
+                                                        {footer_note}
+                                                    </p>
                                                 </Card>
-                                            </div>
-                                        }
-                                            .into_any()
-                                    } else {
-                                        view! {
-                                            <Card class="p-5">
-                                                <p class="text-sm text-muted-foreground mb-4">
-                                                    {description}
-                                                </p>
-                                                <p class="text-xs text-muted-foreground font-mono mb-3">
-                                                    {handle}
-                                                </p>
-                                                <p class="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-3">
-                                                    {kind_label}
-                                                </p>
-
-                                                <div class="flex flex-wrap gap-1.5 mb-3">
-                                                    {techno
-                                                        .into_iter()
-                                                        .map(|item| {
-                                                            view! {
-                                                                <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
-                                                                    {item}
-                                                                </span>
-                                                            }
-                                                        })
-                                                        .collect_view()}
-                                                    {tags
-                                                        .into_iter()
-                                                        .map(|item| {
-                                                            view! {
-                                                                <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
-                                                                    {format!("#{}", item)}
-                                                                </span>
-                                                            }
-                                                        })
-                                                        .collect_view()}
-                                                </div>
-
-                                                <p class="text-xs text-muted-foreground">
-                                                    {format!("Reading time: {} min", reading_time_minutes)}
-                                                </p>
-
-                                                {if is_blog {
-                                                    view! {
-                                                        <div class="mt-5 border-t border-border pt-4">
-                                                            <MarkdownFromValue value=content />
-                                                        </div>
-                                                    }
-                                                        .into_any()
-                                                } else {
-                                                    view! { <></> }.into_any()
-                                                }}
-
-                                                <a
-                                                    href=back_href
-                                                    class="inline-flex mt-4 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                                                >
-                                                    {back_label}
-                                                </a>
-                                            </Card>
-                                        }
-                                            .into_any()
-                                    }}
-                                }
+                                            }
+                                                .into_any()
+                                        }}
+                                    }
                                 })
                         }}
                     </Show>
