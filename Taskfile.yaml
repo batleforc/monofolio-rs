@@ -28,7 +28,8 @@ tasks:
     cmds:
       - cargo check --workspace --exclude frontend
       - cargo check --package frontend --features ssr
-      - cargo check --package frontend --features hydrate --target wasm32-unknown-unknown
+      - cargo check --package frontend --features hydrate --target
+        wasm32-unknown-unknown
 
   build:
     desc: "Build the server binary (SSR)"
@@ -49,22 +50,6 @@ tasks:
     desc: "Generate only the content database and sidebar data"
     cmds:
       - cargo run --package content --bin content-build
-
-  gen:watch:
-    desc: "Watch contents/ and rebuild generated content on every change"
-    cmds:
-      - |
-        if command -v inotifywait >/dev/null 2>&1; then
-          echo "Watching contents/ for changes..."
-          cargo run --package content --bin content-build
-          while inotifywait -r -e modify,create,delete,move contents; do
-            cargo run --package content --bin content-build
-          done
-        else
-          echo "inotifywait is required (install inotify-tools)."
-          echo "Fallback: run 'task gen' manually after content edits."
-          exit 1
-        fi
 
   dev:
     desc: "Start development server with hot-reloading (requires cargo-leptos)"
