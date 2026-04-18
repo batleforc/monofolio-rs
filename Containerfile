@@ -66,7 +66,7 @@ RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     && printf 'fn main() {}\n' > libs/content/src/bin/content-build.rs \
     && printf 'pub fn __dummy() {}\n' > libs/trace/src/lib.rs \
     && cargo build --release --workspace --locked \
-    && cargo build --release --package frontend --lib --target wasm32-unknown-unknown --features hydrate --locked
+    && cargo build --release --package frontend --lib --target wasm32-unknown-unknown --no-default-features --features hydrate --locked
 
 # ── Copy workspace source ─────────────────────────────────────────────────────
 COPY apps/ apps/
