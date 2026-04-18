@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # =============================================================================
 # Stage 1 - node-builder: bundle Shiki (syntax highlighting)
 # =============================================================================
@@ -5,7 +6,9 @@ FROM docker.io/node:lts-bookworm-slim AS node-builder
 WORKDIR /build
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable && corepack prepare pnpm@latest --activate \
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    corepack enable && corepack prepare pnpm@latest --activate \
+    && pnpm config set store-dir /pnpm/store \
     && pnpm install --frozen-lockfile
 
 COPY apps/frontend/shiki.entry.js apps/frontend/shiki.entry.js
@@ -33,14 +36,39 @@ RUN rustup target add wasm32-unknown-unknown
 
 # cargo-leptos is the build orchestrator for Leptos SSR projects.
 # --locked ensures the version pinned in its Cargo.lock is used.
-RUN cargo install cargo-leptos --locked
+RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
+    cargo install cargo-leptos --locked
 
 # ── Node dependencies (Tailwind CSS + dev tools) ─────────────────────────────
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm config set store-dir /pnpm/store \
+    && pnpm install --frozen-lockfile
+
+# ── Copy manifests first to maximize dependency layer cache hits ─────────────
+COPY Cargo.toml Cargo.lock Leptos.toml ./
+COPY .cargo .cargo
+COPY apps/frontend/Cargo.toml apps/frontend/Cargo.toml
+COPY libs/api/Cargo.toml libs/api/Cargo.toml
+COPY libs/content/Cargo.toml libs/content/Cargo.toml
+COPY libs/trace/Cargo.toml libs/trace/Cargo.toml
+
+# Warm Rust dependency cache with dummy sources. This layer is invalidated only
+# when manifests change, not on regular source edits.
+RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
+    mkdir -p apps/frontend/src libs/api/src libs/content/src/bin libs/trace/src \
+    && printf 'pub fn __dummy() {}\n' > apps/frontend/src/lib.rs \
+    && printf 'fn main() {}\n' > apps/frontend/src/main.rs \
+    && printf 'pub fn __dummy() {}\n' > libs/api/src/lib.rs \
+    && printf 'pub fn __dummy() {}\n' > libs/content/src/lib.rs \
+    && printf 'fn main() {}\n' > libs/content/src/bin/content-build.rs \
+    && printf 'pub fn __dummy() {}\n' > libs/trace/src/lib.rs \
+    && cargo build --release --workspace --locked \
+    && cargo build --release --package frontend --lib --target wasm32-unknown-unknown --features hydrate --locked
 
 # ── Copy workspace source ─────────────────────────────────────────────────────
-COPY Cargo.toml Leptos.toml ./
 COPY apps/ apps/
 COPY libs/ libs/
 COPY contents/ contents/
@@ -58,13 +86,17 @@ RUN mkdir -p target/tmp \
     --minify
 
 # ── Generate content database (db.json, home.yaml, rss.xml, public/ media) ───
-RUN cargo run --release --package content --bin content-build
+RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
+    cargo run --release --package content --bin content-build
 
 # ── Build Leptos app: SSR binary + WASM/CSS assets ───────────────────────────
 # Outputs:
 #   target/release/frontend   - SSR server binary
 #   target/site/              - static assets, WASM bundle, compiled CSS
-RUN cargo leptos build --release --project frontend
+RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
+    cargo leptos build --release --project frontend
 
 # =============================================================================
 # Stage 3 - runtime: minimal image with only what the server needs at runtime

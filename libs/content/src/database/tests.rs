@@ -3,6 +3,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use image::{ImageBuffer, Rgba};
+
 use crate::markdown::{MarkdownContent, MarkdownNode};
 
 use super::*;
@@ -310,6 +312,174 @@ fn processes_media_references_in_home_yaml_and_writes_public_media() {
     process_home_yaml_media_for_bundle(&root, &bundle).expect("process home media");
 
     assert!(bundle.public_dir.join("media/timeline.svg").exists());
+
+    fs::remove_dir_all(root).expect("cleanup root");
+    fs::remove_dir_all(output).expect("cleanup output");
+}
+
+#[test]
+fn rewrites_history_img_url_to_40x40_thumbnail_in_bundle() {
+    let root = temporary_directory();
+    let output = temporary_directory();
+
+    fs::create_dir_all(root.join("docs")).expect("create docs");
+    fs::create_dir_all(root.join("media")).expect("create media");
+    fs::write(root.join("config.yaml"), "port: 3000\nenv: test\n").expect("config");
+    fs::write(
+        root.join("home.yaml"),
+        "name: Test\npresentation: Hi\nshortDescription: SD\nhistory:\n  - title: T\n    lieux: L\n    date: D\n    weight: 1\n    imgUrl: media#timeline.png\n",
+    )
+    .expect("home");
+    ImageBuffer::<Rgba<u8>, Vec<u8>>::from_pixel(320, 160, Rgba([255, 0, 0, 255]))
+        .save(root.join("media/timeline.png"))
+        .expect("write png");
+    fs::write(
+        root.join("docs/index.md"),
+        "---\ntitle: Docs\nspec:\n  doc: true\n---\nHome",
+    )
+    .expect("doc");
+
+    let (_db, bundle) = build_content_database_and_prepare_bundle(&root, &output).expect("stage1");
+    process_home_yaml_media_for_bundle(&root, &bundle).expect("process home media");
+
+    let rewritten_home = fs::read_to_string(&bundle.home_path).expect("read rewritten home");
+    let home_yaml: serde_yaml::Value = serde_yaml::from_str(&rewritten_home).expect("parse home");
+    let img_url = home_yaml
+        .get("history")
+        .and_then(|v| v.as_sequence())
+        .and_then(|v| v.first())
+        .and_then(|v| v.get("imgUrl"))
+        .and_then(|v| v.as_str())
+        .expect("timeline imgUrl");
+
+    assert!(
+        img_url.starts_with("media#timeline-40x40-"),
+        "history imgUrl should be rewritten to bundled 40x40 timeline asset"
+    );
+
+    let relative = img_url.trim_start_matches("media#");
+    let thumb_path = bundle.public_dir.join("media").join(relative);
+    assert!(
+        thumb_path.exists(),
+        "timeline thumbnail should exist in bundle"
+    );
+
+    let thumb = image::ImageReader::open(&thumb_path)
+        .expect("open thumb")
+        .decode()
+        .expect("decode thumb");
+    assert!(thumb.width() <= 40, "thumbnail width should be <= 40");
+    assert!(thumb.height() <= 40, "thumbnail height should be <= 40");
+
+    fs::remove_dir_all(root).expect("cleanup root");
+    fs::remove_dir_all(output).expect("cleanup output");
+}
+
+#[test]
+fn reuses_already_bundled_remote_home_img_url_assets() {
+    let root = temporary_directory();
+    let output = temporary_directory();
+
+    fs::create_dir_all(root.join("docs")).expect("create docs");
+    fs::create_dir_all(root.join("media")).expect("create media");
+    fs::write(root.join("config.yaml"), "port: 3000\nenv: test\n").expect("config");
+    fs::write(
+        root.join("home.yaml"),
+        "name: Test\npresentation: Hi\nshortDescription: SD\nusefulLinks:\n  - name: Remote\n    url: https://example.test\n    imgUrl: https://example.test/logo.png\n",
+    )
+    .expect("home");
+    fs::write(
+        root.join("docs/index.md"),
+        "---\ntitle: Docs\nspec:\n  doc: true\n---\nHome",
+    )
+    .expect("doc");
+
+    let (_db, bundle) = build_content_database_and_prepare_bundle(&root, &output).expect("stage1");
+
+    fs::create_dir_all(bundle.public_dir.join("media")).expect("create bundle media");
+    let remote_path = bundle.public_dir.join("media/remote-4feef726406519c3.png");
+    ImageBuffer::<Rgba<u8>, Vec<u8>>::from_pixel(32, 32, Rgba([0, 255, 0, 255]))
+        .save(&remote_path)
+        .expect("write cached remote png");
+    fs::write(
+        &bundle.home_path,
+        "name: Test\npresentation: Hi\nshortDescription: SD\nusefulLinks:\n  - name: Remote\n    url: https://example.test\n    imgUrl: /public/media/remote-4feef726406519c3.png\n",
+    )
+    .expect("rewrite staged home");
+
+    process_home_yaml_media_for_bundle(&root, &bundle).expect("process home media");
+
+    assert!(
+        remote_path.exists(),
+        "cached remote image should remain available in bundle"
+    );
+
+    fs::remove_dir_all(root).expect("cleanup root");
+    fs::remove_dir_all(output).expect("cleanup output");
+}
+
+#[test]
+fn rewrites_useful_links_img_url_to_40x40_thumbnail_in_bundle() {
+    let root = temporary_directory();
+    let output = temporary_directory();
+
+    fs::create_dir_all(root.join("docs")).expect("create docs");
+    fs::create_dir_all(root.join("media")).expect("create media");
+    fs::write(root.join("config.yaml"), "port: 3000\nenv: test\n").expect("config");
+    fs::write(
+        root.join("home.yaml"),
+        "name: Test\npresentation: Hi\nshortDescription: SD\nusefulLinks:\n  - name: Remote\n    url: https://example.test\n    imgUrl: https://example.test/logo.png\n",
+    )
+    .expect("home");
+    fs::write(
+        root.join("docs/index.md"),
+        "---\ntitle: Docs\nspec:\n  doc: true\n---\nHome",
+    )
+    .expect("doc");
+
+    let (_db, bundle) = build_content_database_and_prepare_bundle(&root, &output).expect("stage1");
+
+    fs::create_dir_all(bundle.public_dir.join("media")).expect("create bundle media");
+    let remote_path = bundle.public_dir.join("media/remote-4feef726406519c3.png");
+    ImageBuffer::<Rgba<u8>, Vec<u8>>::from_pixel(160, 80, Rgba([0, 255, 0, 255]))
+        .save(&remote_path)
+        .expect("write cached remote png");
+    fs::write(
+        &bundle.home_path,
+        "name: Test\npresentation: Hi\nshortDescription: SD\nusefulLinks:\n  - name: Remote\n    url: https://example.test\n    imgUrl: /public/media/remote-4feef726406519c3.png\n",
+    )
+    .expect("rewrite staged home");
+
+    process_home_yaml_media_for_bundle(&root, &bundle).expect("process home media");
+
+    let rewritten_home = fs::read_to_string(&bundle.home_path).expect("read rewritten home");
+    let home_yaml: serde_yaml::Value = serde_yaml::from_str(&rewritten_home).expect("parse home");
+    let img_url = home_yaml
+        .get("usefulLinks")
+        .and_then(|v| v.as_sequence())
+        .and_then(|v| v.first())
+        .and_then(|v| v.get("imgUrl"))
+        .and_then(|v| v.as_str())
+        .expect("useful link imgUrl");
+
+    assert!(
+        img_url.starts_with("media#useful-links-40x40-"),
+        "usefulLinks imgUrl should be rewritten to bundled 40x40 useful-links asset"
+    );
+
+    let relative = img_url.trim_start_matches("media#");
+    let thumb_path = bundle.public_dir.join("media").join(relative);
+    assert!(
+        thumb_path.exists(),
+        "useful-links thumbnail should exist in bundle"
+    );
+
+    let thumb = image::ImageReader::open(&thumb_path)
+        .expect("open thumb")
+        .decode()
+        .expect("decode thumb");
+    assert!(thumb.width() <= 40, "thumbnail width should be <= 40");
+    assert!(thumb.height() <= 40, "thumbnail height should be <= 40");
 
     fs::remove_dir_all(root).expect("cleanup root");
     fs::remove_dir_all(output).expect("cleanup output");

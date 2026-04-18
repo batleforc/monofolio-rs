@@ -2,7 +2,7 @@ name: Container Build and Report CVE
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "**/*.rs"
       - "**/*.css"
@@ -10,12 +10,14 @@ on:
       - "**/*.toml"
       - "**/*.yaml"
       - "**/*.json"
+      - "Cargo.lock"
+      - ".dockerignore"
       - "apps/frontend/public/**"
       - "contents/**"
       - "Containerfile"
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "**/*.rs"
       - "**/*.css"
@@ -23,6 +25,8 @@ on:
       - "**/*.toml"
       - "**/*.yaml"
       - "**/*.json"
+      - "Cargo.lock"
+      - ".dockerignore"
       - "apps/frontend/public/**"
       - "contents/**"
       - "Containerfile"
@@ -51,7 +55,8 @@ jobs:
       contents: read
       packages: write
     outputs:
-      image_backend: ${{ env.REGISTRY }}/${{ github.repository_owner }}/monofolio-rs:${{ github.sha }}
+      image_backend: ${{ env.REGISTRY }}/${{ github.repository_owner
+        }}/monofolio-rs:${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -67,8 +72,13 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_SHA}"
           IMAGE_TAG_BRANCH="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_REF_NAME}"
+          CACHE_SCOPE_MAIN="monofolio-rs-container-main"
+          CACHE_SCOPE_REF="monofolio-rs-container-${GITHUB_REF_NAME//\//-}"
           docker buildx build \
             --platform linux/amd64 \
+            --cache-from type=gha,scope=$CACHE_SCOPE_MAIN \
+            --cache-from type=gha,scope=$CACHE_SCOPE_REF \
+            --cache-to type=gha,scope=$CACHE_SCOPE_REF,mode=max \
             --tag $IMAGE_TAG \
             --tag $IMAGE_TAG_BRANCH \
             --file ${{ matrix.dockerfile }} \

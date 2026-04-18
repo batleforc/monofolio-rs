@@ -60,6 +60,7 @@ enum SocialIconType {
     Gitea,
     Minia(String),
     Url(String),
+    Media(String),
 }
 
 fn social_icon_type(img_url: &str) -> SocialIconType {
@@ -68,6 +69,7 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
         _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
+        _ if img_url.starts_with("media#") => SocialIconType::Media(img_url.to_string().replace("media#", "/public/media/")),
         _ if img_url.starts_with("/") => SocialIconType::Url(img_url.to_string()),
         _ => SocialIconType::Builtin(IconType::ExternalLink),
     }
@@ -111,6 +113,12 @@ fn SocialTextLink(link: SocialLinkData) -> impl IntoView {
                         .into_any()
                 }
                 SocialIconType::Url(url) => {
+                    view! {
+                        <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Media(url) => {
                     view! {
                         <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
                     }
