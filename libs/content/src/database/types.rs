@@ -62,6 +62,8 @@ pub enum ContentDatabaseError {
     EncodeImage { path: String, message: String },
     #[error("failed to render mermaid diagram to {path}: {message}")]
     MermaidRender { path: String, message: String },
+    #[error("failed to render miniature to {path}: {message}")]
+    MiniatureRender { path: String, message: String },
     #[error("failed to parse yaml file {path}: {message}")]
     ParseYaml { path: String, message: String },
     #[error("failed to fetch favicon for {url}: {message}")]
@@ -119,6 +121,7 @@ pub struct ContentEntry {
     pub tags: Vec<String>,
     pub techno: Vec<String>,
     pub image: String,
+    pub minia: Option<String>,
     pub reading_time_minutes: usize,
     pub toc: Vec<MarkdownHeading>,
     pub content: MarkdownContent,

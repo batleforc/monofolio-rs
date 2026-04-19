@@ -40,6 +40,7 @@ struct PageData {
     tags: Vec<String>,
     techno: Vec<String>,
     image: String,
+    minia: Option<String>,
     reading_time_minutes: usize,
     content: Value,
 }
@@ -133,6 +134,7 @@ impl From<&ContentEntry> for PageData {
             tags: entry.tags.clone(),
             techno: entry.techno.clone(),
             image: entry.image.clone(),
+            minia: entry.minia.clone(),
             reading_time_minutes: entry.reading_time_minutes,
             content: serde_json::to_value(&entry.content).unwrap_or(serde_json::Value::Null),
         }
@@ -601,6 +603,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                         image,
                                         reading_time_minutes,
                                         content,
+                                        minia,
                                     } = page;
                                     let kind_label = if blog {
                                         "blog"
@@ -670,7 +673,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                             content=page_description.clone()
                                         />
                                         <Meta property="og:url" content=canonical.clone() />
-                                        <Meta property="og:image" content=image_url.clone() />
+                                        <Meta
+                                            property="og:image"
+                                            content=minia.clone().unwrap_or(image_url.clone())
+                                        />
                                         <Meta name="twitter:card" content="summary_large_image" />
                                         <Meta name="twitter:title" content=page_title.clone() />
                                         <Meta

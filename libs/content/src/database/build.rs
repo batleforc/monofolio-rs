@@ -342,6 +342,7 @@ pub fn build_content_database(
             tags: doc.meta.tags.clone(),
             techno: doc.meta.techno.clone(),
             image: doc.meta.image.clone(),
+            minia: None,
             reading_time_minutes: doc.reading_time_minutes,
             toc: doc.headings,
             content: doc.content,

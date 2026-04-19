@@ -11,6 +11,15 @@ pub fn canonical_url(path: &str) -> String {
     format!("{SITE_URL}/{}", path.trim_start_matches('/'))
 }
 
+pub fn og_minia_url(path: &str) -> String {
+    let path = if path.is_empty() || path == "/" {
+        "home".to_string()
+    } else {
+        path.trim_start_matches('/').replace("/", "_")
+    };
+    format!("{SITE_URL}/public/minia/{}.webp", path)
+}
+
 #[component]
 pub fn StaticPageSeo(
     #[prop(into)] title: String,
@@ -26,11 +35,11 @@ pub fn StaticPageSeo(
         <Meta property="og:title" content=title.clone() />
         <Meta property="og:description" content=description.clone() />
         <Meta property="og:url" content=canonical.clone() />
-        <Meta property="og:image" content=DEFAULT_OG_IMAGE />
+        <Meta property="og:image" content=og_minia_url(&path) />
         <Meta name="twitter:card" content="summary_large_image" />
         <Meta name="twitter:title" content=title.clone() />
         <Meta name="twitter:description" content=description.clone() />
-        <Meta name="twitter:image" content=DEFAULT_OG_IMAGE />
+        <Meta name="twitter:image" content=og_minia_url(&path) />
     }
 }
 
@@ -42,6 +51,9 @@ mod tests {
     fn canonical_url_handles_root_and_paths() {
         assert_eq!(canonical_url("/"), "https://maxleriche.net");
         assert_eq!(canonical_url("about"), "https://maxleriche.net/about");
-        assert_eq!(canonical_url("/docs/test"), "https://maxleriche.net/docs/test");
+        assert_eq!(
+            canonical_url("/docs/test"),
+            "https://maxleriche.net/docs/test"
+        );
     }
 }
