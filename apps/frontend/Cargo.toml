@@ -19,7 +19,7 @@ actix-web = { workspace = true, optional = true }
 actix-files = { workspace = true, optional = true }
 utoipa = { workspace = true, optional = true }
 utoipa-actix-web = { workspace = true, optional = true }
-utoipa-scalar = { version = "0.3", features = ["actix-web"], optional = true }
+utoipa-scalar = { workspace = true, optional = true }
 tracing = { workspace = true }
 tracing-actix-web = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
