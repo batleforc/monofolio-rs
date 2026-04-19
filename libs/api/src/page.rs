@@ -96,6 +96,7 @@ mod tests {
                 description: "A page".to_string(),
                 handle: "docs/guide/getting-started".to_string(),
                 source_path: "docs/guide/getting-started.md".to_string(),
+                minia: None,
                 kind: ContentKind {
                     blog: false,
                     project: false,

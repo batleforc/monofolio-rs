@@ -7,6 +7,7 @@ use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant};
 use crate::i18n::{use_language, Language};
 use crate::pages::home::HomeData;
+use crate::seo::StaticPageSeo;
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
@@ -96,6 +97,11 @@ pub fn ContactPage() -> impl IntoView {
     };
 
     view! {
+        <StaticPageSeo
+            title="Contact | Maxime Leriche"
+            description="Page de contact pour échanger sur des sujets Dev, Ops, architecture et plateformes."
+            path="/contact"
+        />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
                 <SectionTitle>{page_title}</SectionTitle>

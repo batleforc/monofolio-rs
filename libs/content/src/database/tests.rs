@@ -564,6 +564,7 @@ fn rewrites_mermaid_codeblocks_to_svg_images() {
             draft: false,
             tags: vec![],
             techno: vec![],
+            minia: None,
             image: String::new(),
             reading_time_minutes: 1,
             toc: vec![],

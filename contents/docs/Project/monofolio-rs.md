@@ -25,3 +25,26 @@ Monofolio-rs est le digne successeur d'un ensemble de projets dont deux ont fini
 Chaque projet avait pour but d'expérimenter de nouvelles technologies et approches de concept variées, mais tous avaient pour but finalement de partager un peu de mon monde. Le premier public ([Portfolio](https://github.com/batleforc/portfolio)) était un portfolio classique voué a découvrir les technologies web comme les [SPA](https://en.wikipedia.org/wiki/Single-page_application) ainsi que les [PWA](https://en.wikipedia.org/wiki/Progressive_web_application). Le deuxième, qui est le plus orienté vers la production de contenu et l'utilisation de nouvelles technologies de rendu ([Monofolio](https://github.com/batleforc/monofolio)), avait pour but d'apprendre [Rust](https://www.rust-lang.org/) et [Vue](https://vuejs.org/), de créer un site que je pourrais faire évoluer au fil du temps et m'amuser à ajouter de nouvelles fonctionnalités.
 
 Monofolio-rs est le petit dernier de la famille, il a pour but de parachever le but de monofolio tout en découvrant le développement web en Rust avec [Leptos](https://leptos.dev/). Le projet est encore en développement, mais, si vous me lisez, c'est que vous vous trouvez sur le site de production. N'hésitez pas à explorer le site plus en profondeur et à me faire part de vos commentaires. Je suis toujours preneur de feedbacks constructifs pour améliorer le projet.
+
+## Architecture
+
+Monofolio-rs est organisé en trois parties principales :
+
+- **Frontend** : Utilise Leptos et hydrater par Actix, le frontend est le site web que vous visitez actuellement. Il est responsable de l'affichage du contenu et de l'interaction avec les utilisateurs.
+- **Backend**: Utilise Actix, le backend est responsable de la gestion des données. Il expose une API REST pour que le frontend puisse interagir avec les données. Il exposera également a terme le nécessaire a certains EasterEggs.
+- **Content**: C'est la partie qui gère la création du "bundle" de contenu. C'est une crate en rust qui s'occupe de transformer les fichiers markdown et les assets en un format facilement consommable par le backend et le frontend. C'est également la partie qui gère la génération des images à partir de diagrammes Mermaid ou la compression des images.
+
+```mermaid
+graph TD
+    subgraph Frontend
+        A[Leptos]
+    end
+    subgraph Backend
+        C[Actix] --> D[API REST]
+    end
+    subgraph "Content"
+        E[Markdown & Assets] --> F[Bundle du contenu a la compilation]
+    end
+    D --> F
+    C -->|Hydratation| A
+```

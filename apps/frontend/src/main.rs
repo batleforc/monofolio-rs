@@ -251,6 +251,7 @@ mod tests {
                 description: String::new(),
                 handle: "blogs/test".to_string(),
                 source_path: "blogs/test.md".to_string(),
+                minia: None,
                 kind: ContentKind {
                     blog: true,
                     project: false,

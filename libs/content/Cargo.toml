@@ -7,6 +7,7 @@ edition = "2021"
 serde = { workspace = true }
 serde_yaml = { workspace = true }
 serde_json = { workspace = true }
+regex = { workspace = true }
 pulldown-cmark = { workspace = true }
 gray_matter = { workspace = true }
 thiserror = { workspace = true }
@@ -14,6 +15,7 @@ tracing = { workspace = true }
 image = { workspace = true }
 mermaid-rs-renderer = { workspace = true }
 sha2 = { workspace = true }
+takumi = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq = { workspace = true }

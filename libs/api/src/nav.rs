@@ -265,6 +265,7 @@ mod tests {
                     handle: "project/my-project".to_string(),
                     source_path: "project/my-project.md".to_string(),
                     kind: ContentKind { blog: false, project: true, doc: false },
+                    minia: None,
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
                         updated_at: "2024-01-02T00:00:00Z".to_string(),
@@ -283,6 +284,7 @@ mod tests {
                     title: "My Blog Post".to_string(),
                     description: "".to_string(),
                     handle: "blogs/first".to_string(),
+                    minia: None,
                     source_path: "blogs/first.md".to_string(),
                     kind: ContentKind { blog: true, project: false, doc: false },
                     dates: ContentDates {
@@ -306,6 +308,7 @@ mod tests {
                     handle: "docs".to_string(),
                     source_path: "docs/index.md".to_string(),
                     kind: ContentKind { blog: false, project: false, doc: true },
+                    minia: None,
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
                         updated_at: "2024-01-02T00:00:00Z".to_string(),
