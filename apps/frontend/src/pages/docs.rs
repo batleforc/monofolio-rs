@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::i18n::{use_language, Language};
+use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
@@ -19,22 +20,7 @@ struct DocSidebarItemData {
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_docs_nav() -> Vec<DocSidebarItemData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        let resp = match gloo_net::http::Request::get("/api/v1/nav/doc").send().await {
-            Ok(resp) => resp,
-            Err(_) => return vec![],
-        };
-        let text = match resp.text().await {
-            Ok(text) => text,
-            Err(_) => return vec![],
-        };
-        serde_json::from_str::<Vec<DocSidebarItemData>>(&text).unwrap_or_default()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        vec![]
-    }
+    fetch_json("/api/v1/nav/doc").await.unwrap_or_default()
 }
 
 #[allow(dead_code)]

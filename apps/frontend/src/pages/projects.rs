@@ -9,6 +9,7 @@ use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::date_utils::format_display_date;
+use crate::services::api::fetch_json;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
 
@@ -27,25 +28,7 @@ struct ProjectSummaryData {
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_projects_data() -> Vec<ProjectSummaryData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        let resp = match gloo_net::http::Request::get("/api/v1/nav/projects")
-            .send()
-            .await
-        {
-            Ok(resp) => resp,
-            Err(_) => return vec![],
-        };
-        let text = match resp.text().await {
-            Ok(text) => text,
-            Err(_) => return vec![],
-        };
-        serde_json::from_str::<Vec<ProjectSummaryData>>(&text).unwrap_or_default()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        vec![]
-    }
+    fetch_json("/api/v1/nav/projects").await.unwrap_or_default()
 }
 
 fn resolve_project_image(raw: &str) -> Option<String> {

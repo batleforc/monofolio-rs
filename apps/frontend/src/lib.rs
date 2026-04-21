@@ -11,6 +11,7 @@ mod date_utils;
 mod i18n;
 mod pages;
 mod seo;
+mod services;
 
 use components::navbar::NavBar;
 use i18n::provide_i18n;
