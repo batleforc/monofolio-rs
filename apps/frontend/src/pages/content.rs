@@ -12,10 +12,9 @@ use content::{ContentDatabase, ContentEntry, SidebarItem};
 
 use crate::components::markdown::toc::{extract_headings, TableOfContents};
 use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
-use crate::components::ui::{Card, SectionTitle};
+use crate::components::ui::{Card, SectionTitle, TagBadge};
 use crate::date_utils::format_display_date;
-use crate::i18n::use_language;
-use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
+use crate::i18n::use_language;use crate::services::api::fetch_json;use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 struct DocSidebarItemData {
@@ -57,9 +56,7 @@ async fn load_page_data(_handle: String) -> Option<PageData> {
     {
         let handle = _handle;
         let endpoint = format!("/api/v1/page/{}", handle.trim_start_matches('/'));
-        let resp = gloo_net::http::Request::get(&endpoint).send().await.ok()?;
-        let text = resp.text().await.ok()?;
-        serde_json::from_str::<PageData>(&text).ok()
+        fetch_json(&endpoint).await
     }
     #[cfg(feature = "ssr")]
     {
@@ -70,22 +67,7 @@ async fn load_page_data(_handle: String) -> Option<PageData> {
 
 #[allow(dead_code)]
 async fn load_docs_nav() -> Vec<DocSidebarItemData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        let resp = match gloo_net::http::Request::get("/api/v1/nav/doc").send().await {
-            Ok(resp) => resp,
-            Err(_) => return vec![],
-        };
-        let text = match resp.text().await {
-            Ok(text) => text,
-            Err(_) => return vec![],
-        };
-        serde_json::from_str::<Vec<DocSidebarItemData>>(&text).unwrap_or_default()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        vec![]
-    }
+    fetch_json("/api/v1/nav/doc").await.unwrap_or_default()
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -829,9 +811,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                 .into_iter()
                                                                 .map(|item| {
                                                                     view! {
-                                                                        <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
+                                                                        <TagBadge class="border-primary/30 text-primary">
                                                                             {format!("#{}", item)}
-                                                                        </span>
+                                                                        </TagBadge>
                                                                     }
                                                                 })
                                                                 .collect_view()}
@@ -933,9 +915,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             .into_iter()
                                                             .map(|item| {
                                                                 view! {
-                                                                    <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
+                                                                    <TagBadge class="border-primary/30 text-primary">
                                                                         {format!("#{}", item)}
-                                                                    </span>
+                                                                    </TagBadge>
                                                                 }
                                                             })
                                                             .collect_view()}

@@ -4,6 +4,7 @@ use serde::Deserialize;
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
+use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
@@ -20,25 +21,7 @@ struct BlogEntryData {
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_blog_entries() -> Vec<BlogEntryData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        let resp = match gloo_net::http::Request::get("/api/v1/nav/blog")
-            .send()
-            .await
-        {
-            Ok(resp) => resp,
-            Err(_) => return vec![],
-        };
-        let text = match resp.text().await {
-            Ok(text) => text,
-            Err(_) => return vec![],
-        };
-        serde_json::from_str::<Vec<BlogEntryData>>(&text).unwrap_or_default()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        vec![]
-    }
+    fetch_json("/api/v1/nav/blog").await.unwrap_or_default()
 }
 
 fn resolve_blog_image(raw: &str) -> Option<String> {
@@ -135,8 +118,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                             .into_any();
                     }
                     if blog_entries.get().is_empty() {
-                        return
-                        view! {
+                        return view! {
                             <Card class="p-5">
                                 <p class="text-sm text-muted-foreground">{move || empty_label()}</p>
                             </Card>
@@ -198,8 +180,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                         }
                                                     })
                                                     .collect_view()}
-                                            </div>
-                                            <div class="flex items-center justify-between gap-2">
+                                            </div> <div class="flex items-center justify-between gap-2">
                                                 <p class="text-xs text-muted-foreground">
                                                     {move || {
                                                         format!("{} {}", reading_time, reading_time_label())
