@@ -130,15 +130,12 @@ fn doc_sidebar_item_from(
     } else {
         DocSidebarItemKind::Folder
     };
+
     let children: Vec<DocSidebarItem> = item
         .children
         .iter()
         .filter_map(|child| doc_sidebar_item_from(child, known_handles))
         .collect();
-
-    if !known_handles.contains(&item.handle) && children.is_empty() {
-        return None;
-    }
 
     Some(DocSidebarItem {
         title: item.title.clone(),
@@ -242,7 +239,17 @@ pub async fn get_search_index(database: Data<ContentDatabase>) -> impl Responder
         .filter(|entry| is_nav_visible(entry))
         .map(SearchEntry::from)
         .collect();
-    entries.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+    entries.sort_by(|a, b| {
+        let kind_order = |kind: &str| match kind {
+            "blog" => 0,
+            "doc" => 1,
+            "project" => 2,
+            _ => 3,
+        };
+        kind_order(&a.kind)
+            .cmp(&kind_order(&b.kind))
+            .then_with(|| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
+    });
     HttpResponse::Ok().json(entries)
 }
 
