@@ -194,16 +194,6 @@ async fn load_projects_data_send_safe() -> Vec<ProjectSummaryData> {
     }
 }
 
-#[cfg(not(feature = "ssr"))]
-async fn fetch_home_from_api() -> Option<HomeData> {
-    let resp = gloo_net::http::Request::get("/api/v1/home")
-        .send()
-        .await
-        .ok()?;
-    let text = resp.text().await.ok()?;
-    serde_json::from_str::<HomeData>(&text).ok()
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────
 
 #[component]
