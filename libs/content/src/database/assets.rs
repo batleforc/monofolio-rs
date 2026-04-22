@@ -122,8 +122,10 @@ fn guess_extension_from_https_url(url: &str) -> &'static str {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn fetch_remote_media(url: &str) -> Option<Vec<u8>> {
-    let response = ureq::get(url)
-        .timeout(std::time::Duration::from_secs(12))
+    let mut response = ureq::get(url)
+        .config()
+        .timeout_global(Some(std::time::Duration::from_secs(12)))
+        .build()
         .call()
         .ok()?;
 
@@ -132,7 +134,11 @@ fn fetch_remote_media(url: &str) -> Option<Vec<u8>> {
     }
 
     let mut bytes = Vec::new();
-    response.into_reader().read_to_end(&mut bytes).ok()?;
+    response
+        .body_mut()
+        .as_reader()
+        .read_to_end(&mut bytes)
+        .ok()?;
     if bytes.is_empty() {
         return None;
     }
@@ -593,8 +599,10 @@ fn fetch_favicon(site_url: &str) -> Option<(Vec<u8>, &'static str)> {
 
     for (path, ext) in [("/favicon.ico", "ico"), ("/favicon.png", "png")] {
         let url = format!("{base}{path}");
-        let response = match ureq::get(&url)
-            .timeout(std::time::Duration::from_secs(10))
+        let mut response = match ureq::get(&url)
+            .config()
+            .timeout_global(Some(std::time::Duration::from_secs(10)))
+            .build()
             .call()
         {
             Ok(response) => response,
@@ -606,7 +614,11 @@ fn fetch_favicon(site_url: &str) -> Option<(Vec<u8>, &'static str)> {
         }
 
         let mut bytes = Vec::new();
-        if response.into_reader().read_to_end(&mut bytes).is_ok()
+        if response
+            .body_mut()
+            .as_reader()
+            .read_to_end(&mut bytes)
+            .is_ok()
             && !bytes.is_empty()
             && !bytes.starts_with(b"<!")
             && !bytes.starts_with(b"<h")
