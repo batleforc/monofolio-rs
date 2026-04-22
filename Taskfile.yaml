@@ -50,6 +50,8 @@ tasks:
     desc: "Generate only the content database and sidebar data"
     cmds:
       - cargo run --package content --bin content-build
+      - cargo run --package content --bin generate-signature -- --output
+        ./target/content-build/public/minia/signature.webp
 
   dev:
     desc: "Start development server with hot-reloading (requires cargo-leptos)"

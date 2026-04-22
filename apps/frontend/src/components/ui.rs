@@ -13,6 +13,21 @@ clx! { SectionTitle, h2, "text-2xl font-mono font-bold tracking-tight mb-8 relat
 // Inner wrapper that centres content and adds responsive horizontal padding.
 clx! { SectionInner, div, "max-w-5xl mx-auto px-5 py-16" }
 
+// Section wrapper with consistent page spacing.
+clx! { PageSection, section, "py-16" }
+
+// Content wrapper for fixed max width inside sections.
+clx! { SectionContent, div, "max-w-5xl mx-auto px-5" }
+
+// Alternate card style for content panels.
+clx! { PanelCard, div, "rounded border border-border bg-card text-card-foreground shadow-sm transition-colors" }
+
+// Markdown content wrapper using the shared design tokens.
+clx! { ProseContent, article, "prose prose-sm max-w-none" }
+
+// Reusable tag badge for metadata chips.
+clx! { TagBadge, span, "inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground transition-colors" }
+
 // ── Button variants via leptos_ui::variants! ─────────────────────────────
 
 variants! {

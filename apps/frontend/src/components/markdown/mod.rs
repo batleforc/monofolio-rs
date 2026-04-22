@@ -43,6 +43,8 @@ use table::render_table;
 use text::render_text;
 use toc::{extract_headings, TableOfContents};
 
+use crate::components::ui::ProseContent;
+
 /// Represents a markdown AST node.
 /// Corresponds to the backend's `MarkdownNode` structure.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -133,11 +135,8 @@ pub fn RenderMarkdownNode(node: MarkdownNode) -> impl IntoView {
     }
 }
 
-/// Renders a full `MarkdownContent` inside an `<article>` wrapper.
 #[component]
-pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
-    let nodes = content.nodes;
-
+fn MarkdownHashScroll() -> impl IntoView {
     #[cfg(not(feature = "ssr"))]
     {
         Effect::new(|_| {
@@ -157,6 +156,13 @@ pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
         });
     }
 
+    view! { <></> }
+}
+
+/// Renders a full `MarkdownContent` inside a shared prose wrapper.
+#[component]
+pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
+    let nodes = content.nodes;
     let footnote_nodes = nodes.clone();
     let body_nodes: Vec<MarkdownNode> = nodes
         .into_iter()
@@ -164,12 +170,14 @@ pub fn MarkdownRenderer(content: MarkdownContent) -> impl IntoView {
         .collect();
 
     view! {
-        <article class="prose prose-sm max-w-none">
+        <ProseContent>
+            <MarkdownHashScroll />
             {body_nodes
                 .into_iter()
                 .map(|node| view! { <RenderMarkdownNode node=node /> })
-                .collect_view()} <FootnoteSection nodes=footnote_nodes />
-        </article>
+                .collect_view()}
+            <FootnoteSection nodes=footnote_nodes />
+        </ProseContent>
     }
 }
 

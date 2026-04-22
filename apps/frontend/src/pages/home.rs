@@ -8,9 +8,10 @@ use content::{ContentEntry, HomeConfig};
 use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
-use crate::components::{about::About, hero::Hero};
+use crate::components::{about::About, hero::Hero, state::{ErrorScreen, LoadingScreen}};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, use_translations, Language};
+use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
 
 const LAST_PROJECTS_COUNT: usize = 6;
@@ -155,37 +156,12 @@ impl From<&ContentEntry> for ProjectSummaryData {
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        fetch_home_from_api().await
-    }
-    #[cfg(feature = "ssr")]
-    {
-        None
-    }
+    fetch_json("/api/v1/home").await
 }
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_projects_data() -> Vec<ProjectSummaryData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        let resp = match gloo_net::http::Request::get("/api/v1/nav/projects")
-            .send()
-            .await
-        {
-            Ok(resp) => resp,
-            Err(_) => return vec![],
-        };
-        let text = match resp.text().await {
-            Ok(text) => text,
-            Err(_) => return vec![],
-        };
-        serde_json::from_str::<Vec<ProjectSummaryData>>(&text).unwrap_or_default()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        vec![]
-    }
+    fetch_json::<Vec<ProjectSummaryData>>("/api/v1/nav/projects").await.unwrap_or_default()
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -218,58 +194,7 @@ async fn load_projects_data_send_safe() -> Vec<ProjectSummaryData> {
     }
 }
 
-#[cfg(not(feature = "ssr"))]
-async fn fetch_home_from_api() -> Option<HomeData> {
-    let resp = gloo_net::http::Request::get("/api/v1/home")
-        .send()
-        .await
-        .ok()?;
-    let text = resp.text().await.ok()?;
-    serde_json::from_str::<HomeData>(&text).ok()
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────
-
-/// Loading skeleton shown while data is being fetched.
-#[component]
-fn LoadingScreen() -> impl IntoView {
-    let t = use_translations();
-    view! {
-        <div
-            class="min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center gap-5 text-muted-foreground"
-            role="status"
-            aria-live="polite"
-        >
-            <div
-                class="w-10 h-10 border-[3px] border-border border-t-primary rounded-full animate-spin"
-                aria-hidden="true"
-            ></div>
-            <p class="text-sm">{move || t.get().loading}</p>
-        </div>
-    }
-}
-
-/// Error state shown when the API fetch fails.
-#[component]
-fn ErrorScreen(#[prop(into)] on_retry: Callback<()>) -> impl IntoView {
-    let t = use_translations();
-    let btn_class = ButtonClass {
-        variant: ButtonVariant::Primary,
-        size: ButtonSize::Default,
-    }
-    .to_class();
-    view! {
-        <div
-            class="min-h-[calc(100svh-3.5rem)] flex flex-col items-center justify-center gap-5 text-muted-foreground"
-            role="alert"
-        >
-            <p>{move || t.get().error_loading}</p>
-            <button class=btn_class on:click=move |_| on_retry.run(())>
-                {move || t.get().error_retry}
-            </button>
-        </div>
-    }
-}
 
 #[component]
 fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {

@@ -28,7 +28,6 @@ const INTER_FONT: &[u8] = include_bytes!("../../../assets/fonts/Inter-Variable.t
 
 #[derive(Clone)]
 pub enum MiniatureImageKind {
-    Svg(PathBuf),
     IcomoonSymbol(String, PathBuf),
     Relative(PathBuf),
 }
@@ -36,9 +35,7 @@ pub enum MiniatureImageKind {
 impl MiniatureImageKind {
     pub fn to_string(&self) -> String {
         match self {
-            MiniatureImageKind::Svg(path) | MiniatureImageKind::Relative(path) => {
-                path.to_string_lossy().to_string()
-            }
+            MiniatureImageKind::Relative(path) => path.to_string_lossy().to_string(),
             MiniatureImageKind::IcomoonSymbol(symbol, path) => {
                 format!("{}#{}", path.display(), symbol)
             }
@@ -112,10 +109,13 @@ fn resolve_entry_image_path(entry: &ContentEntry, public_dir: &Path) -> Option<M
 
     let relative = relative?;
     let candidate = public_dir.join("media").join(relative);
-    if candidate.exists() && is_svg_path(&candidate) {
-        Some(MiniatureImageKind::Svg(candidate))
-    } else if candidate.exists() {
-        Some(MiniatureImageKind::Relative(candidate))
+    if candidate.exists() {
+        if is_svg_path(&candidate) {
+            // SVG page images are not supported by the miniature rendering pipeline.
+            None
+        } else {
+            Some(MiniatureImageKind::Relative(candidate))
+        }
     } else {
         None
     }
@@ -251,7 +251,9 @@ fn render_miniature_core(
         Style::default()
             .with(StyleDeclaration::display(Display::Flex))
             .with(StyleDeclaration::flex_direction(FlexDirection::Column))
-            .with(StyleDeclaration::justify_content(JustifyContent::SpaceBetween))
+            .with(StyleDeclaration::justify_content(
+                JustifyContent::SpaceBetween,
+            ))
             .with(StyleDeclaration::align_items(AlignItems::FlexStart))
             .with(StyleDeclaration::width(Percentage(62.0)))
             .with(StyleDeclaration::height(Percentage(100.0))),
@@ -260,7 +262,7 @@ fn render_miniature_core(
     let mut root_children = vec![text_panel];
     if let Some(image_path) = image {
         let image_key = match &image_path {
-            MiniatureImageKind::Svg(path) | MiniatureImageKind::Relative(path) => {
+            MiniatureImageKind::Relative(path) => {
                 preload_image_resource(path, global_context)?;
                 image_path.to_string()
             }
@@ -274,13 +276,13 @@ fn render_miniature_core(
             .with(StyleDeclaration::width(Percentage(100.0)))
             .with(StyleDeclaration::height(Percentage(100.0)));
 
-        if let MiniatureImageKind::Svg(_) | MiniatureImageKind::IcomoonSymbol(_, _) = image_path {
-            // SVG utilisés comme logos: on les force en blanc pour une bonne lisibilité.
+        if let MiniatureImageKind::IcomoonSymbol(_, _) = image_path {
+            // SVG used as logos: force them to white for readability.
             image_style = image_style
                 .with(StyleDeclaration::object_fit(ObjectFit::Contain))
                 .with(StyleDeclaration::filter(svg_white_filter(output_path)?));
         } else {
-            // Les visuels d'articles sont souvent des logos: `contain` évite un crop trop agressif.
+            // Most article visuals are logos: `contain` avoids aggressive cropping.
             image_style = image_style.with(StyleDeclaration::object_fit(ObjectFit::Contain));
         }
 
@@ -374,12 +376,11 @@ pub fn process_static_pages_miniatures(
     global_context: &mut GlobalContext,
 ) -> Result<(), ContentDatabaseError> {
     // Load home.yaml to get the author name and tagline.
-    let home_content = fs::read_to_string(&bundle.home_path).map_err(|source| {
-        ContentDatabaseError::ReadFile {
+    let home_content =
+        fs::read_to_string(&bundle.home_path).map_err(|source| ContentDatabaseError::ReadFile {
             path: bundle.home_path.display().to_string(),
             source,
-        }
-    })?;
+        })?;
     let home: HomeConfig =
         serde_yaml::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),

@@ -7,23 +7,12 @@ use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant};
 use crate::i18n::{use_language, Language};
 use crate::pages::home::HomeData;
+use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
-    #[cfg(not(feature = "ssr"))]
-    {
-        let resp = gloo_net::http::Request::get("/api/v1/home")
-            .send()
-            .await
-            .ok()?;
-        let text = resp.text().await.ok()?;
-        serde_json::from_str::<HomeData>(&text).ok()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        None
-    }
+    fetch_json("/api/v1/home").await
 }
 
 #[component]
