@@ -22,6 +22,7 @@ struct ProjectSummaryData {
     handle: String,
     tags: Vec<String>,
     techno: Vec<String>,
+    minia: Option<String>,
     image: String,
     released_at: String,
 }
@@ -490,8 +491,7 @@ pub fn ProjectsPage() -> impl IntoView {
                             .into_any();
                     }
                     if filtered_projects.get().is_empty() {
-                        return
-                        view! {
+                        return view! {
                             <Card class="p-5">
                                 <p class="text-sm text-muted-foreground">{no_result_label}</p>
                             </Card>
@@ -512,7 +512,13 @@ pub fn ProjectsPage() -> impl IntoView {
                                         let handle = project.handle;
                                         let tags = project.tags;
                                         let techno = project.techno;
-                                        let image = resolve_project_image(&project.image);
+                                        let image = if !&project.image.is_empty() {
+                                            resolve_project_image(&project.image)
+                                        } else if let Some(minia) = &project.minia {
+                                            resolve_project_image(minia)
+                                        } else {
+                                            None
+                                        };
                                         let project_url = format!(
                                             "/{}",
                                             handle.trim_start_matches('/'),

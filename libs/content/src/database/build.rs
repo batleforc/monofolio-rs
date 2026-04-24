@@ -369,6 +369,7 @@ pub fn build_content_database(
             date: entry.dates.created_at.clone(),
             tags: entry.tags.clone(),
             image: entry.image.clone(),
+            minia: entry.minia.clone(),
             reading_time_minutes: entry.reading_time_minutes,
             draft: entry.draft,
         })

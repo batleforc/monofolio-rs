@@ -13,6 +13,7 @@ struct BlogEntryData {
     description: String,
     handle: String,
     date: String,
+    minia: Option<String>,
     tags: Vec<String>,
     image: String,
     reading_time_minutes: usize,
@@ -49,6 +50,8 @@ pub fn BlogReferencePage() -> impl IntoView {
         #[cfg(not(feature = "ssr"))]
         {
             wasm_bindgen_futures::spawn_local(async move {
+                use leptos::leptos_dom::logging::console_log;
+
                 let mut entries: Vec<BlogEntryData> = load_blog_entries()
                     .await
                     .into_iter()
@@ -57,6 +60,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                 entries.sort_by(|a, b| b.date.cmp(&a.date));
                 blog_entries.set(entries);
                 loading.set(false);
+                console_log(format!("Blog entries loaded : {}", blog_entries.get_untracked().len()).as_str());
             });
         }
     };
@@ -136,7 +140,13 @@ pub fn BlogReferencePage() -> impl IntoView {
                                     let description = entry.description;
                                     let date_raw = entry.date;
                                     let handle = entry.handle;
-                                    let image = resolve_blog_image(&entry.image);
+                                    let image = if !&entry.image.is_empty() {
+                                        resolve_blog_image(&entry.image)
+                                    } else if let Some(minia) = &entry.minia {
+                                        resolve_blog_image(minia)
+                                    } else {
+                                        None
+                                    };
                                     let tags = entry.tags;
                                     let reading_time = entry.reading_time_minutes;
                                     let target_url = format!("/{}", handle.trim_start_matches('/'));
