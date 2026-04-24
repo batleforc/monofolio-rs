@@ -105,6 +105,7 @@ pub struct BlogTimelineEntry {
     pub date: String,
     pub tags: Vec<String>,
     pub image: String,
+    pub minia: Option<String>,
     pub reading_time_minutes: usize,
     pub draft: bool,
 }
