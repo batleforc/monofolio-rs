@@ -35,7 +35,7 @@ fn parse_fg(input: &str) -> ColorInput<true> {
 fn parse_args() -> (PathBuf, PathBuf) {
     let mut args = std::env::args().skip(1);
     let mut home_yaml = PathBuf::from("contents/home.yaml");
-    let mut output = PathBuf::from("signature.webp");
+    let mut output = PathBuf::from("signature.png");
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -54,7 +54,7 @@ fn parse_args() -> (PathBuf, PathBuf) {
                     "Usage: generate-signature [--home-yaml <path>] [--output <path>]\n\
                      \nDefaults:\
                      \n  --home-yaml  contents/home.yaml\
-                     \n  --output     signature.webp"
+                     \n  --output     signature.png"
                 );
                 std::process::exit(0);
             }
@@ -289,7 +289,7 @@ fn render_signature(
     let image = render(options)?;
 
     let mut file = File::create(output_path)?;
-    write_image(Cow::Owned(image), &mut file, ImageOutputFormat::WebP, None)?;
+    write_image(Cow::Owned(image), &mut file, ImageOutputFormat::Png, None)?;
 
     Ok(())
 }
