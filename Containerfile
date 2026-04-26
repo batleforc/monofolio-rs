@@ -89,7 +89,7 @@ RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
     cargo run --release --package content --bin content-build && \
     cargo run --release --package content --bin generate-signature -- --output \
-    ./target/content-build/public/minia/signature.webp
+    ./target/content-build/public/minia/signature.png
 
 # ── Build Leptos app: SSR binary + WASM/CSS assets ───────────────────────────
 # Outputs:
