@@ -58,7 +58,7 @@ jobs:
       image_backend: ${{ env.REGISTRY }}/${{ github.repository_owner
         }}/monofolio-rs:${{ github.sha }}
     steps:
-      - uses: https://github.com/actions/checkout@v6
+      - uses: actions/checkout@v6
       - name: Create env var with vault CA certificate
         run: echo "VAULT_CA_CERTIFICATE=$(cat "${{ secrets.VAULT_CA_CERT }}" | base64 -w
           0)" >> $GITHUB_ENV
