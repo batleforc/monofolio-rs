@@ -70,6 +70,7 @@ jobs:
           url: https://vault.vault:8200
           caCertificate: ${{ steps.cert.outputs.VAULT_CA_CERTIFICATE }}
           method: jwt
+          path: forgejo_jwt
           role: forgejo_default_policy
           jwtGithubAudience: forgejo_action
           secrets: |
