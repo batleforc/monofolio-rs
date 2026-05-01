@@ -71,7 +71,7 @@ jobs:
           caCertificate: ${{ steps.cert.outputs.VAULT_CA_CERTIFICATE }}
           method: jwt
           path: forgejo_jwt
-          role: forgejo_default_policy
+          role: forgejo_action
           jwtGithubAudience: forgejo_action
           secrets: |
             git-vault/data/batleforc/monofolio-rs/registry username | REGISTRY_USER ;
