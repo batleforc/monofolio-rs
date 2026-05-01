@@ -60,8 +60,8 @@ jobs:
     steps:
       - uses: https://git.batleforc.fr/action/checkout@v6
       - name: Create env var with vault CA certificate
-        run: echo "VAULT_CA_CERTIFICATE=$(cat "${{ secrets.VAULT_CA_CERT }}" | base64 -w
-          0)" >> $GITHUB_ENV
+        run: echo "VAULT_CA_CERTIFICATE=$(cat "${{ env.VAULT_CA_CERT }}" | base64 -w
+          0)">> $GITHUB_ENV
       - name: Get env variables from vault
         uses: https://git.batleforc.fr/action/hashicorp_vault-action@v3
         with:
