@@ -90,9 +90,6 @@ jobs:
           CACHE_SCOPE_REF="monofolio-rs-container-${GITHUB_REF_NAME//\//-}"
           buildah build  \
             --platform linux/amd64 \
-            --cache-from type=gha,scope=$CACHE_SCOPE_MAIN \
-            --cache-from type=gha,scope=$CACHE_SCOPE_REF \
-            --cache-to type=gha,scope=$CACHE_SCOPE_REF,mode=max \
             --tag $IMAGE_TAG \
             --tag $IMAGE_TAG_BRANCH \
             --file ${{ matrix.dockerfile }} \
