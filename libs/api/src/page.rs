@@ -4,6 +4,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
 
+fn is_page_visible(entry: &ContentEntry) -> bool {
+    !entry.draft && !entry.dates.released_at.trim().is_empty()
+}
+
 /// Simplified page payload looked up by content handle.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq, Eq)]
 pub struct PageResponse {
@@ -74,7 +78,11 @@ pub async fn get_page(path: actix_web::web::Path<String>, database: Data<Content
         });
     }
 
-    match database.entries.iter().find(|entry| entry.handle == handle) {
+    match database
+        .entries
+        .iter()
+        .find(|entry| entry.handle == handle && is_page_visible(entry))
+    {
         Some(entry) => HttpResponse::Ok().json(PageResponse::from(entry)),
         None => HttpResponse::NotFound().json(ApiErrorResponse {
             error: "Page not found".to_string(),
@@ -106,7 +114,7 @@ mod tests {
                     created_at: "2024-01-01T00:00:00Z".to_string(),
                     updated_at: "2024-01-01T00:00:00Z".to_string(),
                     updated_at_unix: 0,
-                    released_at: "".to_string(),
+                    released_at: "2024-01-01".to_string(),
                 },
                 draft: false,
                 tags: vec!["guide".to_string()],

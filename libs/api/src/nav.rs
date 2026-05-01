@@ -141,13 +141,17 @@ fn doc_sidebar_item_from(
         .filter_map(|child| doc_sidebar_item_from(child, known_handles))
         .collect();
 
-    Some(DocSidebarItem {
-        title: item.title.clone(),
-        handle: item.handle.clone(),
-        order: item.order,
-        kind,
-        children,
-    })
+    if known_handles.contains(&item.handle) || !children.is_empty() {
+        Some(DocSidebarItem {
+            title: item.title.clone(),
+            handle: item.handle.clone(),
+            order: item.order,
+            kind,
+            children,
+        })
+    } else {
+        None
+    }
 }
 
 fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
@@ -334,6 +338,48 @@ mod tests {
                     toc: vec![],
                     content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
                 },
+                ContentEntry {
+                    title: "A Page".to_string(),
+                    description: "".to_string(),
+                    handle: "docs/a-page".to_string(),
+                    source_path: "docs/a-page.md".to_string(),
+                    kind: ContentKind { blog: false, project: false, doc: true },
+                    minia: None,
+                    dates: ContentDates {
+                        created_at: "2024-01-01T00:00:00Z".to_string(),
+                        updated_at: "2024-01-02T00:00:00Z".to_string(),
+                        updated_at_unix: 0,
+                        released_at: "2024-01-01".to_string(),
+                    },
+                    draft: false,
+                    tags: vec![],
+                    techno: vec![],
+                    image: "".to_string(),
+                    reading_time_minutes: 1,
+                    toc: vec![],
+                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                },
+                ContentEntry {
+                    title: "Sub Page".to_string(),
+                    description: "".to_string(),
+                    handle: "docs/sub-folder/sub-page".to_string(),
+                    source_path: "docs/sub-folder/sub-page.md".to_string(),
+                    kind: ContentKind { blog: false, project: false, doc: true },
+                    minia: None,
+                    dates: ContentDates {
+                        created_at: "2024-01-01T00:00:00Z".to_string(),
+                        updated_at: "2024-01-02T00:00:00Z".to_string(),
+                        updated_at_unix: 0,
+                        released_at: "2024-01-01".to_string(),
+                    },
+                    draft: false,
+                    tags: vec![],
+                    techno: vec![],
+                    image: "".to_string(),
+                    reading_time_minutes: 1,
+                    toc: vec![],
+                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                },
             ],
             sidebar: vec![
                 // FolderWithIndex: has children AND "docs" handle exists in entries.
@@ -472,7 +518,7 @@ mod tests {
         let resp = actix_test::call_service(&app, req).await;
         assert!(resp.status().is_success());
         let body: serde_json::Value = actix_test::read_body_json(resp).await;
-        assert_eq!(body.as_array().unwrap().len(), 3);
+        assert_eq!(body.as_array().unwrap().len(), 5);
         assert_eq!(body[0]["href"], "/blogs/first");
     }
 }

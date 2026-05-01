@@ -7,6 +7,7 @@ spec:
   blog: false
   project: false
   doc: true
+draft: true
 tags:
  - project
  - Kube

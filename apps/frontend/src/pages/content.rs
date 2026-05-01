@@ -233,7 +233,7 @@ fn current_year_utc() -> i32 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs() as i64 / 86_400)
         .unwrap_or(0);
-
+    // Purement de l'ia, je jure, j'ai galéré a trouver un truc simple et systématiquement il me le remplace par ça
     let z = unix_days + 719_468;
     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
     let doe = z - era * 146_097;
@@ -479,7 +479,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                         content_db.and_then(|db| {
                             db.entries
                                 .iter()
-                                .find(|entry| entry.handle == handle)
+                                .find(|entry| entry.handle == handle && is_nav_visible(entry))
                                 .map(PageData::from)
                         })
                     }
