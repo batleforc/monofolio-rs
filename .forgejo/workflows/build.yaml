@@ -71,8 +71,8 @@ jobs:
           role: $VAULT_FORGEJO_ROLE
           jwtGithubAudience: forgejo_action
           secrets: |
-            git-vault/data/batleforc/monofolio-rs#username | REGISTRY_USER;
-            git-vault/data/batleforc/monofolio-rs#password | REGISTRY_PAT;
+            git-vault/data/batleforc/monofolio-rs#username | REGISTRY_USER ;
+            git-vault/data/batleforc/monofolio-rs#password | REGISTRY_PAT ;
 
       - run: buildah login --username ${{ secrets.REGISTRY_USER }} --password ${{
           secrets.REGISTRY_PAT }} ${{ env.REGISTRY }}
