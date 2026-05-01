@@ -43,7 +43,7 @@ env:
 jobs:
   build:
     name: Build container images
-    enable-openid-connect: true
+    enable-openid-connect: true # Required for vault authentication
     runs-on: buildah
     strategy:
       matrix:
@@ -73,8 +73,8 @@ jobs:
           role: forgejo_default_policy
           jwtGithubAudience: forgejo_action
           secrets: |
-            git-vault/data/batleforc/monofolio-rs username | REGISTRY_USER ;
-            git-vault/data/batleforc/monofolio-rs password | REGISTRY_PAT ;
+            git-vault/data/batleforc/monofolio-rs/registry username | REGISTRY_USER ;
+            git-vault/data/batleforc/monofolio-rs/registry password | REGISTRY_PAT ;
 
       - run: buildah login --username ${{ secrets.REGISTRY_USER }} --password ${{
           secrets.REGISTRY_PAT }} ${{ env.REGISTRY }}
