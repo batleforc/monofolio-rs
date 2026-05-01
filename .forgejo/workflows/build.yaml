@@ -60,15 +60,16 @@ jobs:
     steps:
       - uses: https://git.batleforc.fr/action/checkout@v6
       - name: Create env var with vault CA certificate
+        id: cert
         run: echo "VAULT_CA_CERTIFICATE=$(cat "$VAULT_CA_CERT" | base64 -w 0)">>
-          $GITHUB_ENV
+          "$GITHUB_OUTPUT"
       - name: Get env variables from vault
         uses: https://git.batleforc.fr/action/hashicorp_vault-action@v3
         with:
-          url: $VAULT_ADDR
-          caCertificate: $VAULT_CA_CERTIFICATE
+          url: https://vault.vault:8200
+          caCertificate: ${{ steps.cert.outputs.VAULT_CA_CERTIFICATE }}
           method: jwt
-          role: $VAULT_FORGEJO_ROLE
+          role: forgejo_default_policy
           jwtGithubAudience: forgejo_action
           secrets: |
             git-vault/data/batleforc/monofolio-rs username | REGISTRY_USER ;
