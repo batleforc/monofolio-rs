@@ -65,10 +65,10 @@ jobs:
       - name: Get env variables from vault
         uses: https://git.batleforc.fr/action/hashicorp_vault-action@v3
         with:
-          url: ${{ env.VAULT_ADDR }}
-          caCertificate: ${{ env.VAULT_CA_CERTIFICATE }}
+          url: $VAULT_ADDR
+          caCertificate: $VAULT_CA_CERTIFICATE
           method: jwt
-          role: ${{ env.VAULT_FORGEJO_ROLE }}
+          role: $VAULT_FORGEJO_ROLE
           jwtGithubAudience: forgejo_action
           secrets: |
             git-vault/data/batleforc/monofolio-rs#username | REGISTRY_USER
