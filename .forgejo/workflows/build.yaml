@@ -66,6 +66,7 @@ jobs:
           "$GITHUB_OUTPUT"
       - name: Get env variables from vault
         uses: https://git.batleforc.fr/action/hashicorp_vault-action@v3
+        id: vault
         with:
           url: https://vault.vault:8200
           caCertificate: ${{ steps.cert.outputs.VAULT_CA_CERTIFICATE }}
@@ -76,9 +77,11 @@ jobs:
           secrets: |
             git-vault/data/batleforc/monofolio-rs/registry username | REGISTRY_USER ;
             git-vault/data/batleforc/monofolio-rs/registry password | REGISTRY_PAT ;
+            git-vault/data/batleforc/monofolio-rs/registry url | REGISTRY ;
 
-      - run: buildah login --username ${{ secrets.REGISTRY_USER }} --password ${{
-          secrets.REGISTRY_PAT }} ${{ env.REGISTRY }}
+      - run: buildah login --username ${{ steps.vault.outputs.REGISTRY_USER }}
+          --password ${{ steps.vault.outputs.REGISTRY_PAT }} ${{
+          steps.vault.outputs.REGISTRY }}
       - name: Build Image
         run: |
           IMAGE_TAG="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_SHA}"
