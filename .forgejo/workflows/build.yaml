@@ -51,7 +51,7 @@ jobs:
           - name: "Backend Container"
             context: .
             dockerfile: Containerfile
-            image_name: ${{ github.repository_owner }}/monofolio-rs
+            image_name: batleforc/monofolio-rs
     permissions:
       contents: read
       id-token: write
@@ -86,8 +86,6 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_SHA}"
           IMAGE_TAG_BRANCH="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_REF_NAME}"
-          CACHE_SCOPE_MAIN="monofolio-rs-container-main"
-          CACHE_SCOPE_REF="monofolio-rs-container-${GITHUB_REF_NAME//\//-}"
           buildah build  \
             --platform linux/amd64 \
             --tag $IMAGE_TAG \
