@@ -63,7 +63,7 @@ jobs:
         run: echo "VAULT_CA_CERTIFICATE=$(cat "${{ secrets.VAULT_CA_CERT }}" | base64 -w
           0)" >> $GITHUB_ENV
       - name: Get env variables from vault
-        uses: hashicorp/vault-action@v2
+        uses: https://git.batleforc.fr/action/hashicorp_vault-action@v3
         with:
           url: ${{ env.VAULT_ADDR }}
           caCertificate: ${{ env.VAULT_CA_CERTIFICATE }}
