@@ -96,6 +96,6 @@ jobs:
             --tag $IMAGE_TAG \
             --tag $IMAGE_TAG_BRANCH \
             --file ${{ matrix.dockerfile }} \
-            --push ${{ matrix.context }}
+            ${{ matrix.context }}
           buildah push $IMAGE_TAG
           buildah push $IMAGE_TAG_BRANCH
