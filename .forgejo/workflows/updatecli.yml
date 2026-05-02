@@ -1,0 +1,26 @@
+name: Update version
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run daily at midnight UTC
+  workflow_dispatch:
+    # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  updatecli:
+    runs-on: kubernetes
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Updatecli
+        uses: https://github.com/updatecli/updatecli-action@v2
+
+      - name: Run Updatecli
+        run: updatecli compose apply
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

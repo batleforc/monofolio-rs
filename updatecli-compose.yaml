@@ -1,0 +1,6 @@
+policies:
+  - name: rust
+    config:
+      - .updatecli/manifest/rust.yaml
+    values:
+      - .updatecli/vars.yaml
