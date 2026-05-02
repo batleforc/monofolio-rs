@@ -4,6 +4,70 @@
     {
       "icon": {
         "paths": [
+          "M210.261 77.867c-46.507 23.595-46.507 27.307-2.987 75.947 241.28 268.587 298.837 332.032 303.232 332.032 5.931 0.725 340.096-364.459 343.808-375.509 1.451-2.987-8.875-13.312-22.144-22.869-17.707-13.312-36.864-18.475-73.045-19.925-67.84-4.437-91.477 10.325-175.573 104.747-38.357 42.795-70.827 78.208-70.827 78.208-0.725 0-32.427-34.688-70.059-76.715s-81.152-84.181-95.915-92.288c-33.963-19.2-103.296-20.651-136.491-3.627zM55.339 186.325c-36.139 13.995-55.339 27.307-55.339 37.589 0 5.163 56.789 71.595 125.44 147.584 69.333 75.947 125.397 139.435 125.397 140.885 0 1.493-56.789 64.939-125.44 140.928-69.333 76.715-124.672 143.829-123.904 149.76 3.669 19.925 64.171 45.013 108.416 45.013 71.595-0.768 87.808-13.312 239.061-179.285 75.947-83.371 137.941-154.197 137.941-156.416 0-2.944-61.227-72.277-136.491-154.88-98.133-107.008-146.048-154.965-168.96-165.291-34.645-16.981-90.709-19.925-126.123-5.888zM843.264 191.445c-21.419 11.093-75.264 64.213-168.235 166.016-75.221 82.645-136.491 151.979-136.491 154.923 0 2.987 61.995 73.045 137.984 156.416 151.211 165.973 167.467 178.517 239.019 179.285 44.288 0 104.747-25.088 108.459-45.013 0.725-6.656-54.613-73.045-123.947-149.035-68.608-75.947-125.44-140.16-125.44-141.653 0-1.451 56.832-65.664 125.44-141.653 69.333-75.904 124.672-142.379 123.947-148.267-3.712-19.2-58.283-41.301-105.515-44.288-33.92-1.451-51.627 1.493-75.221 13.269zM339.371 724.181c-91.477 101.077-166.741 186.624-168.235 190.293-1.451 2.987 8.875 13.312 22.187 22.912 17.664 13.269 36.864 18.432 73.003 19.925 67.157 4.395 92.203-11.093 177.067-107.008 36.864-41.301 68.608-75.947 69.333-75.947s32.469 34.645 70.101 76.715c86.315 95.915 109.184 109.909 176.299 106.24 36.181-1.493 55.339-6.656 73.045-19.925 13.269-9.6 23.595-19.925 22.144-22.869-3.712-11.093-337.92-376.277-343.808-375.509-2.944 0-79.659 83.371-171.136 185.173z"
+        ],
+        "attrs": [
+          {
+            "fill": "rgb(229, 112, 0)"
+          }
+        ],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "proxmox"
+        ],
+        "grid": 0
+      },
+      "attrs": [
+        {
+          "fill": "rgb(229, 112, 0)"
+        }
+      ],
+      "properties": {
+        "id": 630,
+        "order": 54,
+        "prevSize": 32,
+        "name": "proxmox"
+      },
+      "setIdx": 1,
+      "setId": 2,
+      "iconIdx": 629
+    },
+    {
+      "icon": {
+        "paths": [
+          "M353.408 181.973l317.141 161.109v322.176l-317.141-161.109zM705.323 343.083v322.176l317.269-161.109v-322.176zM1.493 2.176v322.176l317.141 161.109v-322.176zM353.408 861.525l317.141 161.109v-322.048l-317.141-161.109z"
+        ],
+        "attrs": [
+          {
+            "fill": "rgb(98, 60, 228)"
+          }
+        ],
+        "isMulticolor": false,
+        "isMulticolor2": false,
+        "tags": [
+          "terraform"
+        ],
+        "grid": 0
+      },
+      "attrs": [
+        {
+          "fill": "rgb(98, 60, 228)"
+        }
+      ],
+      "properties": {
+        "id": 804,
+        "order": 55,
+        "prevSize": 32,
+        "name": "terraform"
+      },
+      "setIdx": 1,
+      "setId": 2,
+      "iconIdx": 803
+    },
+    {
+      "icon": {
+        "paths": [
           "M512 128l470 256v342h-86v-296l-384 210-470-256zM214 562l298 164 298-164v172l-298 162-298-162v-172z"
         ],
         "attrs": [],
@@ -22,9 +86,9 @@
         "prevSize": 24,
         "name": "school"
       },
-      "setIdx": 0,
-      "setId": 9,
-      "iconIdx": 690
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 0
     },
     {
       "icon": {
@@ -47,9 +111,9 @@
         "prevSize": 24,
         "name": "work"
       },
-      "setIdx": 0,
-      "setId": 9,
-      "iconIdx": 846
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 1
     },
     {
       "icon": {
@@ -72,9 +136,9 @@
         "prevSize": 24,
         "name": "handyman"
       },
-      "setIdx": 0,
-      "setId": 9,
-      "iconIdx": 1232
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 2
     },
     {
       "icon": {
@@ -116,8 +180,8 @@
         "prevSize": 32
       },
       "setIdx": 2,
-      "setId": 7,
-      "iconIdx": 0
+      "setId": 1,
+      "iconIdx": 3
     },
     {
       "icon": {
@@ -148,9 +212,9 @@
         "name": "java",
         "code": 59648
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 403
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 4
     },
     {
       "icon": {
@@ -181,9 +245,9 @@
         "name": "postgresql",
         "code": 59649
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 616
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 5
     },
     {
       "icon": {
@@ -214,9 +278,9 @@
         "name": "raspberrypi",
         "code": 59650
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 652
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 6
     },
     {
       "icon": {
@@ -247,9 +311,9 @@
         "name": "redis",
         "code": 59651
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 663
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 7
     },
     {
       "icon": {
@@ -280,9 +344,9 @@
         "name": "ruby",
         "code": 59652
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 677
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 8
     },
     {
       "icon": {
@@ -313,9 +377,9 @@
         "name": "sonarqube",
         "code": 59654
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 729
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 9
     },
     {
       "icon": {
@@ -346,9 +410,9 @@
         "name": "svelte",
         "code": 59655
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 781
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 10
     },
     {
       "icon": {
@@ -379,9 +443,9 @@
         "name": "typescript",
         "code": 59656
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 832
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 11
     },
     {
       "icon": {
@@ -412,9 +476,9 @@
         "name": "visualstudiocode",
         "code": 59657
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 863
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 12
     },
     {
       "icon": {
@@ -445,9 +509,9 @@
         "name": "wireguard",
         "code": 59658
       },
-      "setIdx": 4,
-      "setId": 5,
-      "iconIdx": 888
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 13
     },
     {
       "icon": {
@@ -478,9 +542,9 @@
         "name": "ansible",
         "code": 59659
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 0
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 14
     },
     {
       "icon": {
@@ -511,9 +575,9 @@
         "name": "docker",
         "code": 59660
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 1
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 15
     },
     {
       "icon": {
@@ -536,9 +600,9 @@
         "name": "github",
         "code": 59661
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 2
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 16
     },
     {
       "icon": {
@@ -569,9 +633,9 @@
         "name": "gitlab",
         "code": 59662
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 3
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 17
     },
     {
       "icon": {
@@ -602,9 +666,9 @@
         "name": "go",
         "code": 59663
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 4
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 18
     },
     {
       "icon": {
@@ -635,9 +699,9 @@
         "name": "helm",
         "code": 59664
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 5
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 19
     },
     {
       "icon": {
@@ -668,9 +732,9 @@
         "name": "prometheus",
         "code": 59665
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 6
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 20
     },
     {
       "icon": {
@@ -701,9 +765,9 @@
         "name": "react",
         "code": 59666
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 7
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 21
     },
     {
       "icon": {
@@ -734,9 +798,9 @@
         "name": "redhat",
         "code": 59667
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 8
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 22
     },
     {
       "icon": {
@@ -767,9 +831,9 @@
         "name": "stackoverflow",
         "code": 59668
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 9
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 23
     },
     {
       "icon": {
@@ -807,9 +871,9 @@
         "name": "dot-net",
         "code": 59669
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 10
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 24
     },
     {
       "icon": {
@@ -847,9 +911,9 @@
         "prevSize": 32,
         "code": 59670
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 11
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 25
     },
     {
       "icon": {
@@ -887,9 +951,9 @@
         "prevSize": 32,
         "code": 59671
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 12
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 26
     },
     {
       "icon": {
@@ -927,9 +991,9 @@
         "prevSize": 32,
         "code": 59672
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 14
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 27
     },
     {
       "icon": {
@@ -967,9 +1031,9 @@
         "name": "kubernetes",
         "code": 59673
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 15
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 28
     },
     {
       "icon": {
@@ -1007,9 +1071,9 @@
         "prevSize": 32,
         "code": 59674
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 17
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 29
     },
     {
       "icon": {
@@ -1047,9 +1111,9 @@
         "prevSize": 32,
         "code": 59675
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 19
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 30
     },
     {
       "icon": {
@@ -1087,9 +1151,9 @@
         "prevSize": 32,
         "code": 59676
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 20
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 31
     },
     {
       "icon": {
@@ -1127,9 +1191,9 @@
         "name": "python",
         "code": 59677
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 22
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 32
     },
     {
       "icon": {
@@ -1167,9 +1231,9 @@
         "name": "php",
         "code": 59678
       },
-      "setIdx": 5,
-      "setId": 4,
-      "iconIdx": 23
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 33
     },
     {
       "icon": {
@@ -1196,9 +1260,9 @@
         "prevSize": 32,
         "code": 59847
       },
-      "setIdx": 6,
-      "setId": 3,
-      "iconIdx": 0
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 34
     },
     {
       "icon": {
@@ -1227,9 +1291,9 @@
         "prevSize": 32,
         "code": 59919
       },
-      "setIdx": 6,
-      "setId": 3,
-      "iconIdx": 1
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 35
     },
     {
       "icon": {
@@ -1257,9 +1321,9 @@
         "prevSize": 32,
         "code": 60033
       },
-      "setIdx": 6,
-      "setId": 3,
-      "iconIdx": 2
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 36
     },
     {
       "icon": {
@@ -1287,9 +1351,9 @@
         "prevSize": 32,
         "code": 60080
       },
-      "setIdx": 6,
-      "setId": 3,
-      "iconIdx": 3
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 37
     },
     {
       "icon": {
@@ -1318,9 +1382,9 @@
         "prevSize": 32,
         "code": 60106
       },
-      "setIdx": 6,
-      "setId": 3,
-      "iconIdx": 4
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 38
     },
     {
       "icon": {
@@ -1345,9 +1409,9 @@
         "prevSize": 28,
         "code": 61447
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 0
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 39
     },
     {
       "icon": {
@@ -1372,9 +1436,9 @@
         "prevSize": 28,
         "code": 61461
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 1
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 40
     },
     {
       "icon": {
@@ -1399,9 +1463,9 @@
         "prevSize": 28,
         "code": 61560
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 2
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 41
     },
     {
       "icon": {
@@ -1427,9 +1491,9 @@
         "prevSize": 28,
         "code": 61573
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 3
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 42
     },
     {
       "icon": {
@@ -1456,9 +1520,9 @@
         "prevSize": 28,
         "code": 61641
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 4
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 43
     },
     {
       "icon": {
@@ -1483,9 +1547,9 @@
         "prevSize": 28,
         "code": 61664
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 5
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 44
     },
     {
       "icon": {
@@ -1510,9 +1574,9 @@
         "prevSize": 28,
         "code": 62102
       },
-      "setIdx": 7,
-      "setId": 2,
-      "iconIdx": 6
+      "setIdx": 2,
+      "setId": 1,
+      "iconIdx": 45
     },
     {
       "icon": {
@@ -1537,9 +1601,9 @@
         "prevSize": 32,
         "code": 59679
       },
-      "setIdx": 8,
+      "setIdx": 2,
       "setId": 1,
-      "iconIdx": 4
+      "iconIdx": 46
     },
     {
       "icon": {
@@ -1563,9 +1627,9 @@
         "id": 23,
         "prevSize": 32
       },
-      "setIdx": 8,
+      "setIdx": 2,
       "setId": 1,
-      "iconIdx": 22
+      "iconIdx": 47
     },
     {
       "icon": {
@@ -1593,9 +1657,9 @@
         "prevSize": 32,
         "code": 59685
       },
-      "setIdx": 8,
+      "setIdx": 2,
       "setId": 1,
-      "iconIdx": 37
+      "iconIdx": 48
     },
     {
       "icon": {
@@ -1620,9 +1684,9 @@
         "id": 386,
         "prevSize": 32
       },
-      "setIdx": 8,
+      "setIdx": 2,
       "setId": 1,
-      "iconIdx": 385
+      "iconIdx": 49
     },
     {
       "icon": {
@@ -1646,9 +1710,9 @@
         "id": 446,
         "prevSize": 32
       },
-      "setIdx": 8,
+      "setIdx": 2,
       "setId": 1,
-      "iconIdx": 445
+      "iconIdx": 50
     }
   ],
   "height": 1024,
@@ -1694,7 +1758,7 @@
     "historySize": 50,
     "gridSize": 16,
     "quickUsageToken": {
-      "UntitledProject": "ZTk2MmI2MGRhNyMxNzQwNjA2OTY2I2c2RzVCMGpvbGFwMS9kdEhCYmQ3amxpQTBuY1ozV1JrMWZDQ1Q5NVVzY3lq"
+      "UntitledProject": "N2IzMTVlYjg2YSMxNzc3NzU2NzQ0I0FldWFQbnZxc1ZHT3lXM3lYVnhCN1VERnNJRVZ0NGwvTENSSHhkWmUwS3Ny"
     }
   }
 }
