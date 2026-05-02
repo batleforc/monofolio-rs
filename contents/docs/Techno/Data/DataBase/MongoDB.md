@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: intermediate
 links:
   - name: "MongoDB"
     url: "https://www.mongodb.com/"

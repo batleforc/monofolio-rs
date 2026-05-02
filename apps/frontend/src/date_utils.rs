@@ -25,12 +25,32 @@ pub fn format_display_date(raw: &str, lang: Language) -> String {
 
     let month_name = match lang {
         Language::Fr => [
-            "janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout",
-            "septembre", "octobre", "novembre", "decembre",
+            "janvier",
+            "fevrier",
+            "mars",
+            "avril",
+            "mai",
+            "juin",
+            "juillet",
+            "aout",
+            "septembre",
+            "octobre",
+            "novembre",
+            "decembre",
         ][month_index - 1],
         Language::En => [
-            "January", "February", "March", "April", "May", "June", "July", "August",
-            "September", "October", "November", "December",
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
         ][month_index - 1],
     };
 

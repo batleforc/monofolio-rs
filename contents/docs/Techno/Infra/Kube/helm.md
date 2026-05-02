@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: advanced
 image: "icomoon#helm"
 links:
   - name: "Helm"

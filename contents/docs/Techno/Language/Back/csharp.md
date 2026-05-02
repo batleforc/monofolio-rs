@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: intermediate
 image: "icomoon#dot-net"
 links:
   - name: "C#"

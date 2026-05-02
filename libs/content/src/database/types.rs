@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::markdown::{MarkdownContent, MarkdownHeading};
+use crate::markdown::{MarkdownContent, MarkdownHeading, TechnologyMaturity};
 
 fn default_index_is_main_item() -> bool {
     true
@@ -134,6 +134,19 @@ pub struct ContentDatabase {
     pub entries: Vec<ContentEntry>,
     pub sidebar: Vec<SidebarItem>,
     pub blog_timeline: Vec<BlogTimelineEntry>,
+    pub technology_map: Vec<TechnologyMindmapEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TechnologyMindmapEntry {
+    pub title: String,
+    pub description: String,
+    pub handle: String,
+    pub source_path: String,
+    pub tags: Vec<String>,
+    pub techno: Vec<String>,
+    pub image: String,
+    pub maturity: TechnologyMaturity,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

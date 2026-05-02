@@ -12,9 +12,9 @@ use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::i18n::{use_language, Language};
-use crate::services::api::fetch_json;
 use crate::pages::home::{HomeData, SocialLinkData};
 use crate::seo::StaticPageSeo;
+use crate::services::api::fetch_json;
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
@@ -68,7 +68,9 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
         _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
-        _ if img_url.starts_with("media#") => SocialIconType::Media(img_url.to_string().replace("media#", "/public/media/")),
+        _ if img_url.starts_with("media#") => {
+            SocialIconType::Media(img_url.to_string().replace("media#", "/public/media/"))
+        }
         _ if img_url.starts_with("/") => SocialIconType::Url(img_url.to_string()),
         _ => resolve_icomoon_symbol(img_url)
             .map(SocialIconType::Icomoon)

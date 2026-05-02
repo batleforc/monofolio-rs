@@ -84,6 +84,7 @@ fn builds_database_sidebar_and_timeline() {
     assert_eq!(database.blog_timeline.len(), 2);
     assert_eq!(database.blog_timeline[0].handle, "blogs/second");
     assert_eq!(database.blog_timeline[1].handle, "blogs/first");
+    assert!(database.technology_map.is_empty());
 
     fs::remove_dir_all(root).expect("cleanup should succeed");
 }
@@ -185,6 +186,52 @@ fn draft_blog_posts_excluded_from_timeline() {
     let database = build_content_database(&root).expect("build");
     assert_eq!(database.blog_timeline.len(), 1);
     assert_eq!(database.blog_timeline[0].handle, "blogs/published");
+    assert!(database.technology_map.is_empty());
+    fs::remove_dir_all(root).expect("cleanup");
+}
+
+#[test]
+fn builds_technology_mindmap_entries_from_docs() {
+    let root = temporary_directory();
+    fs::create_dir_all(root.join("docs/Techno/Infra/Kube")).expect("should create techno tree");
+
+    fs::write(
+        root.join("docs/Techno/index.md"),
+        "---\ntitle: Techno\nspec:\n  doc: true\nmindmap:\n  include: false\n---\n",
+    )
+    .expect("techno index");
+    fs::write(
+        root.join("docs/Techno/Infra/Kube/index.md"),
+        "---\ndate: 2024-01-01T00:00:00Z\ntitle: Kubernetes\ndescription: Container orchestration\nspec:\n  doc: true\nmindmap:\n  include: true\n  maturity: advanced\ntags:\n  - orchestration\n  - kube\n---\n",
+    )
+    .expect("kube index");
+    fs::write(
+        root.join("docs/Techno/Infra/Kube/helm.md"),
+        "---\ndate: 2024-01-02T00:00:00Z\ntitle: Helm\ndescription: Kubernetes package manager\nspec:\n  doc: true\nmindmap:\n  include: true\n  maturity: advanced\ntags:\n  - kubernetes\n  - package-manager\n---\n",
+    )
+    .expect("helm");
+    fs::write(
+        root.join("docs/Techno/Infra/Kube/microk8s.md"),
+        "---\ndate: 2024-01-03T00:00:00Z\ntitle: MicroK8s\ndescription: Lightweight Kubernetes\nspec:\n  doc: true\nmindmap:\n  include: false\n---\n",
+    )
+    .expect("microk8s");
+
+    let database = build_content_database(&root).expect("build");
+    assert_eq!(database.technology_map.len(), 2);
+    assert_eq!(database.technology_map[0].handle, "docs/techno/infra/kube");
+    assert_eq!(
+        database.technology_map[0].maturity,
+        crate::markdown::TechnologyMaturity::Advanced
+    );
+    assert_eq!(
+        database.technology_map[1].handle,
+        "docs/techno/infra/kube/helm"
+    );
+    assert_eq!(
+        database.technology_map[1].tags,
+        vec!["kubernetes", "package-manager"]
+    );
+
     fs::remove_dir_all(root).expect("cleanup");
 }
 
@@ -588,6 +635,7 @@ fn rewrites_mermaid_codeblocks_to_svg_images() {
         }],
         sidebar: vec![],
         blog_timeline: vec![],
+        technology_map: vec![],
     };
 
     process_mermaid_codeblocks_for_bundle_with(&bundle, &mut database, |_, output_path| {

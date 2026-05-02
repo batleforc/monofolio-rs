@@ -63,9 +63,12 @@ fn filter_search_results(items: &[SearchEntryData], query: &str) -> Vec<SearchEn
         .collect();
 
     results.sort_by(|(score_a, item_a), (score_b, item_b)| {
-        score_a
-            .cmp(score_b)
-            .then_with(|| item_a.title.to_lowercase().cmp(&item_b.title.to_lowercase()))
+        score_a.cmp(score_b).then_with(|| {
+            item_a
+                .title
+                .to_lowercase()
+                .cmp(&item_b.title.to_lowercase())
+        })
     });
 
     results.into_iter().map(|(_, item)| item).take(8).collect()
@@ -83,6 +86,10 @@ fn static_search_entries(lang: Language, t: &'static Translations) -> Vec<Search
     let contact_description = match lang {
         Language::Fr => "Moyens de contact.",
         Language::En => "Ways to get in touch.",
+    };
+    let technologies_description = match lang {
+        Language::Fr => "Carte des technologies et niveaux de maturite.",
+        Language::En => "Technology map and maturity levels.",
     };
 
     vec![
@@ -105,6 +112,13 @@ fn static_search_entries(lang: Language, t: &'static Translations) -> Vec<Search
             description: contact_description.to_string(),
             handle: "contact".to_string(),
             href: "/contact".to_string(),
+            kind: "page".to_string(),
+        },
+        SearchEntryData {
+            title: t.nav_technologies.to_string(),
+            description: technologies_description.to_string(),
+            handle: "technologies".to_string(),
+            href: "/technologies".to_string(),
             kind: "page".to_string(),
         },
     ]
@@ -190,6 +204,12 @@ pub fn NavBar() -> impl IntoView {
                         class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
                     >
                         {move || t.get().nav_projects}
+                    </a>
+                    <a
+                        href="/technologies"
+                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                    >
+                        {move || t.get().nav_technologies}
                     </a>
                     <a
                         href="/blog"
@@ -348,6 +368,13 @@ pub fn NavBar() -> impl IntoView {
                                 on:click=move |_| mobile_menu_open.set(false)
                             >
                                 {move || t.get().nav_projects}
+                            </a>
+                            <a
+                                href="/technologies"
+                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
+                                on:click=move |_| mobile_menu_open.set(false)
+                            >
+                                {move || t.get().nav_technologies}
                             </a>
                             <a
                                 href="/blog"

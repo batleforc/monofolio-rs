@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: advanced
 links:
   - name: "Keycloak"
     url: "https://www.keycloak.org/"

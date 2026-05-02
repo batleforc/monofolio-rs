@@ -144,7 +144,10 @@ pub fn shutdown_tracing(tracing_output: TracingOutput) -> Result<(), String> {
     }
 
     if !errors.is_empty() {
-        return Err(format!("Failed to shutdown providers:\n{}", errors.join("\n")));
+        return Err(format!(
+            "Failed to shutdown providers:\n{}",
+            errors.join("\n")
+        ));
     }
     Ok(())
 }

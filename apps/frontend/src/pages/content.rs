@@ -2,19 +2,21 @@ use std::collections::HashSet;
 #[cfg(feature = "ssr")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(feature = "ssr")]
+use content::{ContentDatabase, ContentEntry, SidebarItem};
 use leptos::prelude::*;
 use leptos_meta::{Link, Meta, Title};
 use leptos_router::hooks::use_location;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-#[cfg(feature = "ssr")]
-use content::{ContentDatabase, ContentEntry, SidebarItem};
 
 use crate::components::markdown::toc::{extract_headings, TableOfContents};
 use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
 use crate::components::ui::{Card, SectionTitle, TagBadge};
 use crate::date_utils::format_display_date;
-use crate::i18n::use_language;use crate::services::api::fetch_json;use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
+use crate::i18n::use_language;
+use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
+use crate::services::api::fetch_json;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 struct DocSidebarItemData {
@@ -131,7 +133,9 @@ fn resolve_header_image(raw: &str) -> Option<HeaderImageSource> {
         return Some(HeaderImageSource::Image(raw.to_string()));
     }
     if let Some(file_name) = raw.strip_prefix("media#") {
-        return Some(HeaderImageSource::Image(format!("/public/media/{file_name}")));
+        return Some(HeaderImageSource::Image(format!(
+            "/public/media/{file_name}"
+        )));
     }
     if let Some(file_name) = raw.strip_prefix("icomoon#") {
         return Some(HeaderImageSource::Icomoon(format!(
@@ -229,20 +233,20 @@ fn current_year_utc() -> i32 {
 
     #[cfg(feature = "ssr")]
     {
-    let unix_days = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs() as i64 / 86_400)
-        .unwrap_or(0);
-    // Purement de l'ia, je jure, j'ai galéré a trouver un truc simple et systématiquement il me le remplace par ça
-    let z = unix_days + 719_468;
-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
-    let doe = z - era * 146_097;
-    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let m = mp + if mp < 10 { 3 } else { -9 };
-    (y + if m <= 2 { 1 } else { 0 }) as i32
+        let unix_days = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_secs() as i64 / 86_400)
+            .unwrap_or(0);
+        // Purement de l'ia, je jure, j'ai galéré a trouver un truc simple et systématiquement il me le remplace par ça
+        let z = unix_days + 719_468;
+        let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+        let doe = z - era * 146_097;
+        let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+        let y = yoe + era * 400;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let m = mp + if mp < 10 { 3 } else { -9 };
+        (y + if m <= 2 { 1 } else { 0 }) as i32
     }
 }
 
@@ -457,39 +461,35 @@ pub fn ContentHandlePage() -> impl IntoView {
     #[cfg(feature = "ssr")]
     let content_db = use_context::<ContentDatabase>();
 
-    let page_data = Resource::new(
-        move || location.pathname.get(),
-        {
+    let page_data = Resource::new(move || location.pathname.get(), {
+        #[cfg(feature = "ssr")]
+        let content_db = content_db.clone();
+        move |pathname: String| {
             #[cfg(feature = "ssr")]
             let content_db = content_db.clone();
-            move |pathname: String| {
+            async move {
+                if !pathname.starts_with("/blogs/") && !pathname.starts_with("/docs/") {
+                    return None;
+                }
+                let handle = pathname.trim_start_matches('/').to_string();
+                #[cfg(not(feature = "ssr"))]
+                {
+                    load_page_data_send_safe(handle).await
+                }
                 #[cfg(feature = "ssr")]
-                let content_db = content_db.clone();
-                async move {
-                    if !pathname.starts_with("/blogs/") && !pathname.starts_with("/docs/") {
-                        return None;
-                    }
-                    let handle = pathname.trim_start_matches('/').to_string();
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_page_data_send_safe(handle).await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        content_db.and_then(|db| {
-                            db.entries
-                                .iter()
-                                .find(|entry| entry.handle == handle && is_nav_visible(entry))
-                                .map(PageData::from)
-                        })
-                    }
+                {
+                    content_db.and_then(|db| {
+                        db.entries
+                            .iter()
+                            .find(|entry| entry.handle == handle && is_nav_visible(entry))
+                            .map(PageData::from)
+                    })
                 }
             }
-        },
-    );
-    let docs_nav: Resource<Vec<DocSidebarItemData>> = Resource::new(
-        move || location.pathname.get(),
-        {
+        }
+    });
+    let docs_nav: Resource<Vec<DocSidebarItemData>> =
+        Resource::new(move || location.pathname.get(), {
             #[cfg(feature = "ssr")]
             let content_db = content_db.clone();
             move |pathname: String| {
@@ -522,8 +522,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                     }
                 }
             }
-        },
-    );
+        });
     let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
     Effect::new(move |_| {
         let handle = location.pathname.get().trim_start_matches('/').to_string();

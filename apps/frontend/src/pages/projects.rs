@@ -9,9 +9,9 @@ use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
 use crate::date_utils::format_display_date;
-use crate::services::api::fetch_json;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
+use crate::services::api::fetch_json;
 
 const PROJECTS_PER_PAGE: usize = 6;
 

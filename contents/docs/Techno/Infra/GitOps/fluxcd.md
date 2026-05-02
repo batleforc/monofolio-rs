@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: advanced
 links:
   - name: "FluxCD"
     url: "https://fluxcd.io/"

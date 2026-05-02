@@ -6,8 +6,8 @@ use serde::Deserialize;
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::i18n::{use_language, Language};
-use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
+use crate::services::api::fetch_json;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
 struct DocSidebarItemData {

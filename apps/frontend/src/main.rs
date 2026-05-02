@@ -22,6 +22,7 @@ fn build_sitemap_xml(database: &ContentDatabase) -> String {
         "https://maxleriche.net/".to_string(),
         "https://maxleriche.net/about".to_string(),
         "https://maxleriche.net/projects".to_string(),
+        "https://maxleriche.net/technologies".to_string(),
         "https://maxleriche.net/blog".to_string(),
         "https://maxleriche.net/docs".to_string(),
         "https://maxleriche.net/contact".to_string(),
@@ -61,7 +62,12 @@ async fn main() -> anyhow::Result<()> {
     use actix_files::Files;
     use actix_web::{middleware::Compress, web::Data, App, HttpServer};
     use anyhow::Context as _;
-    use api::{api_v1_scope, public::{public_scope, PublicRoot}, rss::RssFeed, ApiDoc};
+    use api::{
+        api_v1_scope,
+        public::{public_scope, PublicRoot},
+        rss::RssFeed,
+        ApiDoc,
+    };
     use content::{ContentDatabase, HomeConfig};
     use leptos::prelude::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
@@ -94,7 +100,9 @@ async fn main() -> anyhow::Result<()> {
         std::fs::read_to_string(&rss_path)
             .with_context(|| format!("Failed to read RSS feed at {rss_path}"))?,
     );
-    let public_root = PublicRoot(std::path::PathBuf::from(format!("{content_base_path}/public")));
+    let public_root = PublicRoot(std::path::PathBuf::from(format!(
+        "{content_base_path}/public"
+    )));
 
     let conf = leptos::config::get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -276,11 +284,13 @@ mod tests {
             }],
             sidebar: vec![],
             blog_timeline: vec![],
+            technology_map: vec![],
         };
 
         let xml = build_sitemap_xml(&database);
         assert!(xml.contains("<loc>https://maxleriche.net/</loc>"));
         assert!(xml.contains("<loc>https://maxleriche.net/about</loc>"));
+        assert!(xml.contains("<loc>https://maxleriche.net/technologies</loc>"));
         assert!(xml.contains("<loc>https://maxleriche.net/blogs/test</loc>"));
     }
 }

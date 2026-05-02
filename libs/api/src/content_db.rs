@@ -16,8 +16,16 @@ pub struct ContentDatabaseStatusResponse {
 
 impl From<&ContentDatabase> for ContentDatabaseStatusResponse {
     fn from(database: &ContentDatabase) -> Self {
-        let blog_entries = database.entries.iter().filter(|entry| entry.kind.blog).count();
-        let doc_entries = database.entries.iter().filter(|entry| entry.kind.doc).count();
+        let blog_entries = database
+            .entries
+            .iter()
+            .filter(|entry| entry.kind.blog)
+            .count();
+        let doc_entries = database
+            .entries
+            .iter()
+            .filter(|entry| entry.kind.doc)
+            .count();
         let project_entries = database
             .entries
             .iter()
@@ -45,7 +53,10 @@ impl From<&ContentDatabase> for ContentDatabaseStatusResponse {
 #[get("/content-db/status")]
 #[instrument(name = "get_content_database_status", skip(database))]
 pub async fn get_content_database_status(database: Data<ContentDatabase>) -> impl Responder {
-    info!(entries = database.entries.len(), "Serving content database status");
+    info!(
+        entries = database.entries.len(),
+        "Serving content database status"
+    );
     HttpResponse::Ok().json(ContentDatabaseStatusResponse::from(database.get_ref()))
 }
 
@@ -60,6 +71,7 @@ mod tests {
             entries: vec![],
             sidebar: vec![],
             blog_timeline: vec![],
+            technology_map: vec![],
         }
     }
 

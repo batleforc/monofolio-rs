@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: beginner
 image: "icomoon#svelte"
 links:
   - name: "Svelte"

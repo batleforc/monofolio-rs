@@ -12,10 +12,7 @@ pub fn About(data: HomeData) -> impl IntoView {
 
     let presentation = {
         let fr = data.presentation.clone();
-        let en = data
-            .presentation_en
-            .clone()
-            .unwrap_or_else(|| fr.clone());
+        let en = data.presentation_en.clone().unwrap_or_else(|| fr.clone());
         move || match lang.get() {
             Language::Fr => fr.clone(),
             Language::En => en.clone(),

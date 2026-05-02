@@ -25,7 +25,7 @@ pub use bundle::{
 };
 pub use types::{
     BlogTimelineEntry, ContentDatabase, ContentDatabaseError, ContentDates, ContentEntry,
-    ContentKind, ContentOutputBundle, DirMeta, SidebarItem,
+    ContentKind, ContentOutputBundle, DirMeta, SidebarItem, TechnologyMindmapEntry,
 };
 
 pub(super) fn copy_file_to_bundle(from: &Path, to: &Path) -> Result<(), ContentDatabaseError> {
