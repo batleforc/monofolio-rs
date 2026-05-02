@@ -4,7 +4,7 @@ copilot = "latest"
 gitleaks = "latest"
 node = "lts"
 perl = "latest"
-rust = { version = "latest", profile = "default", components = "rust-src,llvm-tools", targets = "wasm32-unknown-unknown, x86_64-unknown-linux-gnu" }
+rust = { version = "latest", profile = "default", components = "rust-src,llvm-tools", targets = "wasm32-unknown-unknown,x86_64-unknown-linux-gnu" }
 task = "latest"
 yarn = "latest"
 yq = "latest"

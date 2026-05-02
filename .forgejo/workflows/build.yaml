@@ -40,6 +40,11 @@ permissions:
 env:
   REGISTRY: registry.batleforc.fr
 
+concurrency:
+  # only run one build at a time
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build container images

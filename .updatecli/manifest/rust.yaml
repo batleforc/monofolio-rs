@@ -1,0 +1,32 @@
+name: Upgrade rust
+
+scms:
+  default:
+    kind: gitea
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner}}"
+      repository: "{{ .github.repository}}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      url: "https://git.batleforc.fr"
+      branch: main
+
+actions:
+  bumpeza:
+    kind: gitea/pullrequest
+    scmid: default
+    spec:
+      title: "ci: Upgrade rust"
+      automerge: false
+      description: |
+        Upgrade `rust` version in `Cargo.toml` to the latest version.
+      labels:
+        - "Upgrade"
+        - "UpdateCLI"
+
+autodiscovery:
+  scmid: default
+  crawlers:
+    cargo:
