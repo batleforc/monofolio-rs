@@ -1,5 +1,5 @@
 use actix_web::{get, web::Data, HttpResponse, Responder};
-use content::{HomeConfig, SocialLink, HistoryEntry};
+use content::{HistoryEntry, HomeConfig, SocialLink};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
@@ -94,7 +94,11 @@ impl From<HomeConfig> for HomeResponse {
             contact_availability: cfg.contact_availability,
             contact_availability_en: cfg.contact_availability_en,
             url: cfg.url.into_iter().map(SocialLinkResponse::from).collect(),
-            useful_links: cfg.useful_links.into_iter().map(SocialLinkResponse::from).collect(),
+            useful_links: cfg
+                .useful_links
+                .into_iter()
+                .map(SocialLinkResponse::from)
+                .collect(),
             history: cfg
                 .history
                 .into_iter()

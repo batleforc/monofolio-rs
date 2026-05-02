@@ -4,8 +4,8 @@ use serde::Deserialize;
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
-use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
+use crate::services::api::fetch_json;
 
 #[derive(Debug, Clone, Default, PartialEq, Deserialize)]
 struct BlogEntryData {
@@ -60,7 +60,13 @@ pub fn BlogReferencePage() -> impl IntoView {
                 entries.sort_by(|a, b| b.date.cmp(&a.date));
                 blog_entries.set(entries);
                 loading.set(false);
-                console_log(format!("Blog entries loaded : {}", blog_entries.get_untracked().len()).as_str());
+                console_log(
+                    format!(
+                        "Blog entries loaded : {}",
+                        blog_entries.get_untracked().len()
+                    )
+                    .as_str(),
+                );
             });
         }
     };

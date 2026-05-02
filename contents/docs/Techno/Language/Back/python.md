@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: intermediate
 image: "icomoon#python"
 links:
   - name: "Python"

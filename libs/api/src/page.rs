@@ -68,7 +68,10 @@ pub struct ApiErrorResponse {
 )]
 #[get("/page/{handle:.*}")]
 #[instrument(name = "get_page", skip(database))]
-pub async fn get_page(path: actix_web::web::Path<String>, database: Data<ContentDatabase>) -> impl Responder {
+pub async fn get_page(
+    path: actix_web::web::Path<String>,
+    database: Data<ContentDatabase>,
+) -> impl Responder {
     let handle = path.into_inner().trim_matches('/').to_string();
     info!(%handle, "Serving page by handle");
 
@@ -129,6 +132,7 @@ mod tests {
             }],
             sidebar: vec![],
             blog_timeline: vec![],
+            technology_map: vec![],
         }
     }
 
@@ -168,7 +172,9 @@ mod tests {
         )
         .await;
 
-        let req = actix_test::TestRequest::get().uri("/page/docs/missing").to_request();
+        let req = actix_test::TestRequest::get()
+            .uri("/page/docs/missing")
+            .to_request();
         let resp = actix_test::call_service(&app, req).await;
 
         assert_eq!(resp.status(), actix_web::http::StatusCode::NOT_FOUND);

@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: beginner
 links:
   - name: "Eclipse Che"
     url: "https://www.eclipse.org/che/"

@@ -5,6 +5,8 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: false
 ---
 
 Quick description of the techno used in the different projects.

@@ -14,6 +14,25 @@ pub struct MarkdownSpec {
     pub doc: bool,
 }
 
+/// Fixed maturity levels used by technology pages shown on the mindmap page.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TechnologyMaturity {
+    Beginner,
+    Intermediate,
+    Advanced,
+    Expert,
+}
+
+/// Front-matter settings for the technology mindmap page.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct MindmapMeta {
+    #[serde(default)]
+    pub include: bool,
+    #[serde(default)]
+    pub maturity: Option<TechnologyMaturity>,
+}
+
 fn default_release_true() -> bool {
     true
 }
@@ -45,6 +64,8 @@ pub struct MarkdownMeta {
     pub techno: Vec<String>,
     #[serde(default)]
     pub image: String,
+    #[serde(default)]
+    pub mindmap: MindmapMeta,
     #[serde(default = "default_release_true")]
     pub release: bool,
 }
@@ -449,10 +470,12 @@ mod tests {
 
     #[test]
     fn parses_frontmatter_and_body() {
-        let input = "---\ntitle: My Post\ntags:\n  - rust\n---\n\nContent here.";
+        let input = "---\ntitle: My Post\ntags:\n  - rust\nmindmap:\n  include: true\n  maturity: advanced\n---\n\nContent here.";
         let (meta, html) = parse_markdown_to_html(input);
         assert_eq!(meta.title, "My Post");
         assert_eq!(meta.tags, vec!["rust"]);
+        assert!(meta.mindmap.include);
+        assert_eq!(meta.mindmap.maturity, Some(TechnologyMaturity::Advanced));
         assert!(html.contains("Content here."));
     }
 

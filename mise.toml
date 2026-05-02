@@ -1,5 +1,6 @@
 [tools]
 cocogitto = "latest"
+copilot = "latest"
 gitleaks = "latest"
 node = "lts"
 perl = "latest"

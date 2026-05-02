@@ -114,6 +114,7 @@ mod tests {
                 reading_time_minutes: 2,
                 draft: false,
             }],
+            technology_map: vec![],
         };
 
         write_blog_rss_feed(&bundle, &database).expect("write rss");
@@ -140,6 +141,7 @@ mod tests {
             entries: vec![],
             sidebar: vec![],
             blog_timeline: vec![],
+            technology_map: vec![],
         };
 
         write_blog_rss_feed(&bundle, &database).expect("write rss");
@@ -172,6 +174,7 @@ mod tests {
                 reading_time_minutes: 1,
                 draft: false,
             }],
+            technology_map: vec![],
         };
 
         write_blog_rss_feed(&bundle, &database).expect("write rss");

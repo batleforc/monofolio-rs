@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: advanced
 image: "icomoon#vue-dot-js"
 links:
   - name: "Vue.js"

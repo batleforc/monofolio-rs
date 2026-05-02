@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: advanced
 links:
   - name: "Terraform"
     url: "https://www.terraform.io/"

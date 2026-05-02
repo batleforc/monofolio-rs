@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: intermediate
 links:
   - name: "MicroK8S"
     url: "https://microk8s.io/"

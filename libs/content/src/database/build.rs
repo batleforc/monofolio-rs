@@ -9,7 +9,7 @@ use crate::markdown::{parse_markdown_document, MarkdownMeta};
 use super::types::SidebarNode;
 use super::{
     load_dir_meta, BlogTimelineEntry, ContentDatabase, ContentDatabaseError, ContentDates,
-    ContentEntry, ContentKind, SidebarItem,
+    ContentEntry, ContentKind, SidebarItem, TechnologyMindmapEntry,
 };
 
 fn now_unix() -> u64 {
@@ -118,6 +118,10 @@ fn collect_markdown_files(
     }
 
     Ok(())
+}
+
+fn is_technology_doc_handle(handle: &str) -> bool {
+    handle == "docs/techno" || handle.starts_with("docs/techno/")
 }
 
 fn git_history_dates(content_root: &Path, relative_path: &Path) -> Option<(String, String, u64)> {
@@ -268,6 +272,7 @@ pub fn build_content_database(
     markdown_files.sort();
 
     let mut entries = Vec::new();
+    let mut technology_map = Vec::new();
     for file_path in markdown_files {
         let raw =
             fs::read_to_string(&file_path).map_err(|source| ContentDatabaseError::ReadFile {
@@ -316,6 +321,7 @@ pub fn build_content_database(
             .unwrap_or(file_updated_at_unix);
 
         let kind = infer_kind(relative_path, &doc.meta);
+        let mindmap_meta = doc.meta.mindmap.clone();
         let dates = ContentDates {
             created_at: created_at.clone(),
             updated_at,
@@ -331,10 +337,11 @@ pub fn build_content_database(
             },
         };
 
-        entries.push(ContentEntry {
+        let handle = handle_from_relative_path(relative_path, content_root);
+        let entry = ContentEntry {
             title: doc.meta.title.clone(),
             description: doc.meta.description.clone(),
-            handle: handle_from_relative_path(relative_path, content_root),
+            handle: handle.clone(),
             source_path,
             kind,
             dates,
@@ -346,10 +353,33 @@ pub fn build_content_database(
             reading_time_minutes: doc.reading_time_minutes,
             toc: doc.headings,
             content: doc.content,
-        });
+        };
+
+        if entry.kind.doc
+            && is_technology_doc_handle(&handle)
+            && mindmap_meta.include
+            && !entry.draft
+            && !entry.dates.released_at.trim().is_empty()
+        {
+            if let Some(maturity) = mindmap_meta.maturity {
+                technology_map.push(TechnologyMindmapEntry {
+                    title: entry.title.clone(),
+                    description: entry.description.clone(),
+                    handle: entry.handle.clone(),
+                    source_path: entry.source_path.clone(),
+                    tags: entry.tags.clone(),
+                    techno: entry.techno.clone(),
+                    image: entry.image.clone(),
+                    maturity,
+                });
+            }
+        }
+
+        entries.push(entry);
     }
 
     entries.sort_by(|left, right| left.handle.cmp(&right.handle));
+    technology_map.sort_by(|left, right| left.handle.cmp(&right.handle));
 
     let mut sidebar_root = SidebarNode::default();
     for entry in entries.iter().filter(|entry| entry.kind.doc) {
@@ -382,6 +412,7 @@ pub fn build_content_database(
         entries,
         sidebar,
         blog_timeline,
+        technology_map,
     })
 }
 

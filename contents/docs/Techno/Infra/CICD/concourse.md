@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: intermediate
 links:
   - name: "Concourse"
     url: "https://concourse-ci.org/"

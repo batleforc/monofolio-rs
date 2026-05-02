@@ -3,12 +3,12 @@ use icons::leptos::icon_component::LeptosIcon;
 use leptos::prelude::*;
 use tw_merge::IntoTailwindClass;
 
-use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant};
+use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::i18n::{use_language, Language};
 use crate::pages::home::HomeData;
-use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
+use crate::services::api::fetch_json;
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_home_data() -> Option<HomeData> {
@@ -63,7 +63,6 @@ pub fn ContactPage() -> impl IntoView {
         Language::Fr => "Disponibilité",
         Language::En => "Availability",
     };
-
 
     let contact_links_title = move || match lang.get() {
         Language::Fr => "Liens",

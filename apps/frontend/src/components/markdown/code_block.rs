@@ -83,7 +83,8 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
             let copy_text = copy_text.clone();
             let copied = copied;
             wasm_bindgen_futures::spawn_local(async move {
-                let escaped = serde_json::to_string(&copy_text).unwrap_or_else(|_| "\"\"".to_string());
+                let escaped =
+                    serde_json::to_string(&copy_text).unwrap_or_else(|_| "\"\"".to_string());
                 let script = format!(
                     "navigator.clipboard && navigator.clipboard.writeText({}).then(() => true).catch(() => false)",
                     escaped

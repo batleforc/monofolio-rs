@@ -6,6 +6,9 @@ spec:
   blog: false
   project: false
   doc: true
+mindmap:
+  include: true
+  maturity: advanced
 links:
   - name: "Kafka"
     url: "https://kafka.apache.org/"

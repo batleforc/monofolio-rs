@@ -1,18 +1,22 @@
+#[cfg(feature = "ssr")]
+use content::{ContentEntry, HomeConfig};
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use serde::{Deserialize, Serialize};
 use tw_merge::IntoTailwindClass;
-#[cfg(feature = "ssr")]
-use content::{ContentEntry, HomeConfig};
 
 use crate::components::ui::{
     ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
 };
-use crate::components::{about::About, hero::Hero, state::{ErrorScreen, LoadingScreen}};
+use crate::components::{
+    about::About,
+    hero::Hero,
+    state::{ErrorScreen, LoadingScreen},
+};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, use_translations, Language};
-use crate::services::api::fetch_json;
 use crate::seo::StaticPageSeo;
+use crate::services::api::fetch_json;
 
 const LAST_PROJECTS_COUNT: usize = 6;
 
@@ -161,7 +165,9 @@ async fn load_home_data() -> Option<HomeData> {
 
 #[cfg_attr(feature = "ssr", allow(dead_code))]
 async fn load_projects_data() -> Vec<ProjectSummaryData> {
-    fetch_json::<Vec<ProjectSummaryData>>("/api/v1/nav/projects").await.unwrap_or_default()
+    fetch_json::<Vec<ProjectSummaryData>>("/api/v1/nav/projects")
+        .await
+        .unwrap_or_default()
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -345,56 +351,50 @@ pub fn HomePage() -> impl IntoView {
     let home_config = use_context::<HomeConfig>();
     #[cfg(feature = "ssr")]
     let content_database = use_context::<content::ContentDatabase>();
-    let home_data = Resource::new(
-        move || location.pathname.get(),
-        {
+    let home_data = Resource::new(move || location.pathname.get(), {
+        #[cfg(feature = "ssr")]
+        let home_config = home_config.clone();
+        move |_| {
             #[cfg(feature = "ssr")]
             let home_config = home_config.clone();
-            move |_| {
+            async move {
+                #[cfg(not(feature = "ssr"))]
+                {
+                    load_home_data_send_safe().await
+                }
                 #[cfg(feature = "ssr")]
-                let home_config = home_config.clone();
-                async move {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_home_data_send_safe().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        home_config.map(HomeData::from)
-                    }
+                {
+                    home_config.map(HomeData::from)
                 }
             }
-        },
-    );
-    let projects_data = Resource::new(
-        move || location.pathname.get(),
-        {
+        }
+    });
+    let projects_data = Resource::new(move || location.pathname.get(), {
+        #[cfg(feature = "ssr")]
+        let content_database = content_database.clone();
+        move |_| {
             #[cfg(feature = "ssr")]
             let content_database = content_database.clone();
-            move |_| {
+            async move {
+                #[cfg(not(feature = "ssr"))]
+                {
+                    load_projects_data_send_safe().await
+                }
                 #[cfg(feature = "ssr")]
-                let content_database = content_database.clone();
-                async move {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                        load_projects_data_send_safe().await
-                    }
-                    #[cfg(feature = "ssr")]
-                    {
-                        content_database
-                            .map(|db| {
-                                db.entries
-                                    .iter()
-                                    .filter(|entry| entry.kind.project)
-                                    .map(ProjectSummaryData::from)
-                                    .collect()
-                            })
-                            .unwrap_or_default()
-                    }
+                {
+                    content_database
+                        .map(|db| {
+                            db.entries
+                                .iter()
+                                .filter(|entry| entry.kind.project)
+                                .map(ProjectSummaryData::from)
+                                .collect()
+                        })
+                        .unwrap_or_default()
                 }
             }
-        },
-    );
+        }
+    });
 
     let home_data_for_retry = home_data.clone();
     let projects_data_for_retry = projects_data.clone();

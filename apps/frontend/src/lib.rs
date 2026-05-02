@@ -18,7 +18,7 @@ use i18n::provide_i18n;
 use pages::{
     about::AboutPage, blog::BlogReferencePage, contact::ContactPage, content::ContentHandlePage,
     docs::DocsReferencePage, home::HomePage, not_found::NotFoundPage, projects::ProjectsPage,
-    teapot::TeapotPage,
+    teapot::TeapotPage, technologies::TechnologiesPage,
 };
 
 #[cfg(feature = "hydrate")]
@@ -48,6 +48,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/418") view=TeapotPage />
                     <Route path=path!("/about") view=AboutPage />
                     <Route path=path!("/projects") view=ProjectsPage />
+                    <Route path=path!("/technologies") view=TechnologiesPage />
                     <Route path=path!("/blogs/*any") view=ContentHandlePage />
                     <Route path=path!("/blog") view=BlogReferencePage />
                     <Route path=path!("/docs") view=DocsReferencePage />

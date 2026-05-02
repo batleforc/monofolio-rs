@@ -1,13 +1,36 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use actix_web::{get, web::Data, HttpResponse, Responder};
-use content::{BlogTimelineEntry, ContentDatabase, ContentEntry, SidebarItem};
+use content::{
+    BlogTimelineEntry, ContentDatabase, ContentEntry, SidebarItem, TechnologyMaturity,
+    TechnologyMindmapEntry,
+};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
 
 fn is_nav_visible(entry: &ContentEntry) -> bool {
     !entry.draft && !entry.dates.released_at.trim().is_empty()
+}
+
+fn segment_to_title(segment: &str) -> String {
+    segment
+        .split('-')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => {
+                    let mut out = String::new();
+                    out.push(first.to_ascii_uppercase());
+                    out.push_str(chars.as_str());
+                    out
+                }
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// A lightweight project summary derived from a [`ContentEntry`].
@@ -123,6 +146,54 @@ pub struct DocSidebarItem {
     pub children: Vec<DocSidebarItem>,
 }
 
+/// Recursive technology tree node used by the technology mindmap page.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq, Eq)]
+pub struct TechnologyMindmapNode {
+    pub title: String,
+    pub handle: String,
+    pub href: Option<String>,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub techno: Vec<String>,
+    pub image: String,
+    pub maturity: Option<String>,
+    #[schema(no_recursion)]
+    pub children: Vec<TechnologyMindmapNode>,
+}
+
+#[derive(Debug, Default)]
+struct TechnologyMindmapTreeNode {
+    title: String,
+    handle: String,
+    href: Option<String>,
+    description: String,
+    tags: Vec<String>,
+    techno: Vec<String>,
+    image: String,
+    maturity: Option<String>,
+    children: BTreeMap<String, TechnologyMindmapTreeNode>,
+}
+
+impl TechnologyMindmapTreeNode {
+    fn into_public_node(self) -> TechnologyMindmapNode {
+        TechnologyMindmapNode {
+            title: self.title,
+            handle: self.handle,
+            href: self.href,
+            description: self.description,
+            tags: self.tags,
+            techno: self.techno,
+            image: self.image,
+            maturity: self.maturity,
+            children: self
+                .children
+                .into_values()
+                .map(TechnologyMindmapTreeNode::into_public_node)
+                .collect(),
+        }
+    }
+}
+
 fn doc_sidebar_item_from(
     item: &SidebarItem,
     known_handles: &HashSet<String>,
@@ -168,6 +239,78 @@ fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
         .collect()
 }
 
+fn build_technology_mindmap(database: &ContentDatabase) -> Vec<TechnologyMindmapNode> {
+    let title_by_handle: HashMap<String, String> = database
+        .entries
+        .iter()
+        .filter(|entry| entry.kind.doc && entry.handle.starts_with("docs/techno"))
+        .map(|entry| (entry.handle.clone(), entry.title.clone()))
+        .collect();
+
+    let mut root = BTreeMap::<String, TechnologyMindmapTreeNode>::new();
+
+    for item in &database.technology_map {
+        let segments: Vec<&str> = item.handle.split('/').skip(2).collect();
+        if segments.is_empty() {
+            continue;
+        }
+
+        let mut current = &mut root;
+        let mut handle_parts = vec!["docs".to_string(), "techno".to_string()];
+
+        for (index, segment) in segments.iter().enumerate() {
+            handle_parts.push((*segment).to_string());
+            let handle = handle_parts.join("/");
+            let is_leaf = index + 1 == segments.len();
+
+            let node = current.entry(handle.clone()).or_insert_with(|| {
+                let title = title_by_handle
+                    .get(&handle)
+                    .cloned()
+                    .unwrap_or_else(|| segment_to_title(segment));
+                let href = title_by_handle
+                    .contains_key(&handle)
+                    .then(|| format!("/{}", handle.trim_start_matches('/')));
+                TechnologyMindmapTreeNode {
+                    title,
+                    handle,
+                    href,
+                    ..TechnologyMindmapTreeNode::default()
+                }
+            });
+
+            if is_leaf {
+                apply_technology_item(node, item);
+            }
+
+            current = &mut node.children;
+        }
+    }
+
+    root.into_values()
+        .map(TechnologyMindmapTreeNode::into_public_node)
+        .collect()
+}
+
+fn apply_technology_item(node: &mut TechnologyMindmapTreeNode, item: &TechnologyMindmapEntry) {
+    node.title = item.title.clone();
+    node.handle = item.handle.clone();
+    node.href = Some(format!("/{}", item.handle.trim_start_matches('/')));
+    node.description = item.description.clone();
+    node.tags = item.tags.clone();
+    node.techno = item.techno.clone();
+    node.image = item.image.clone();
+    node.maturity = Some(
+        match item.maturity {
+            TechnologyMaturity::Beginner => "beginner",
+            TechnologyMaturity::Intermediate => "intermediate",
+            TechnologyMaturity::Advanced => "advanced",
+            TechnologyMaturity::Expert => "expert",
+        }
+        .to_string(),
+    );
+}
+
 // ── Placeholder to satisfy the compiler (NavResponse kept for internal use) ──
 // (removed — replaced by 3 dedicated handlers below)
 
@@ -188,8 +331,11 @@ fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
 #[instrument(name = "get_blog_nav", skip(database))]
 pub async fn get_blog_nav(database: Data<ContentDatabase>) -> impl Responder {
     info!("Serving blog nav");
-    let entries: Vec<BlogSidebarEntry> =
-        database.blog_timeline.iter().map(BlogSidebarEntry::from).collect();
+    let entries: Vec<BlogSidebarEntry> = database
+        .blog_timeline
+        .iter()
+        .map(BlogSidebarEntry::from)
+        .collect();
     HttpResponse::Ok().json(entries)
 }
 
@@ -229,6 +375,21 @@ pub async fn get_projects_nav(database: Data<ContentDatabase>) -> impl Responder
     HttpResponse::Ok().json(projects)
 }
 
+/// Return the technology tree used by the technology mindmap page.
+#[utoipa::path(
+    tag = "nav",
+    responses(
+        (status = 200, description = "Technology mindmap tree.", body = Vec<TechnologyMindmapNode>),
+        (status = 500, description = "Internal server error.")
+    )
+)]
+#[get("/nav/technologies")]
+#[instrument(name = "get_technology_mindmap", skip(database))]
+pub async fn get_technology_mindmap(database: Data<ContentDatabase>) -> impl Responder {
+    info!("Serving technology mindmap");
+    HttpResponse::Ok().json(build_technology_mindmap(database.get_ref()))
+}
+
 /// Return a flat search index spanning all content-backed pages.
 #[utoipa::path(
     tag = "nav",
@@ -266,8 +427,8 @@ mod tests {
     use super::*;
     use actix_web::{test as actix_test, web::Data, App};
     use content::{
-        BlogTimelineEntry, ContentDatabase, ContentDates, ContentEntry, ContentKind, MarkdownContent,
-        SidebarItem,
+        BlogTimelineEntry, ContentDatabase, ContentDates, ContentEntry, ContentKind,
+        MarkdownContent, SidebarItem, TechnologyMaturity, TechnologyMindmapEntry,
     };
 
     fn sample_database() -> ContentDatabase {
@@ -279,7 +440,11 @@ mod tests {
                     description: "A cool project".to_string(),
                     handle: "project/my-project".to_string(),
                     source_path: "project/my-project.md".to_string(),
-                    kind: ContentKind { blog: false, project: true, doc: false },
+                    kind: ContentKind {
+                        blog: false,
+                        project: true,
+                        doc: false,
+                    },
                     minia: None,
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
@@ -293,7 +458,10 @@ mod tests {
                     image: "".to_string(),
                     reading_time_minutes: 3,
                     toc: vec![],
-                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                    content: MarkdownContent {
+                        format: "markdown_ast".to_string(),
+                        nodes: vec![],
+                    },
                 },
                 ContentEntry {
                     title: "My Blog Post".to_string(),
@@ -301,7 +469,11 @@ mod tests {
                     handle: "blogs/first".to_string(),
                     minia: None,
                     source_path: "blogs/first.md".to_string(),
-                    kind: ContentKind { blog: true, project: false, doc: false },
+                    kind: ContentKind {
+                        blog: true,
+                        project: false,
+                        doc: false,
+                    },
                     dates: ContentDates {
                         created_at: "2024-02-01T00:00:00Z".to_string(),
                         updated_at: "2024-02-02T00:00:00Z".to_string(),
@@ -314,7 +486,10 @@ mod tests {
                     image: "".to_string(),
                     reading_time_minutes: 1,
                     toc: vec![],
-                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                    content: MarkdownContent {
+                        format: "markdown_ast".to_string(),
+                        nodes: vec![],
+                    },
                 },
                 // Doc entry that acts as the index of the "docs" folder.
                 ContentEntry {
@@ -322,7 +497,11 @@ mod tests {
                     description: "".to_string(),
                     handle: "docs".to_string(),
                     source_path: "docs/index.md".to_string(),
-                    kind: ContentKind { blog: false, project: false, doc: true },
+                    kind: ContentKind {
+                        blog: false,
+                        project: false,
+                        doc: true,
+                    },
                     minia: None,
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
@@ -336,14 +515,21 @@ mod tests {
                     image: "".to_string(),
                     reading_time_minutes: 1,
                     toc: vec![],
-                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                    content: MarkdownContent {
+                        format: "markdown_ast".to_string(),
+                        nodes: vec![],
+                    },
                 },
                 ContentEntry {
                     title: "A Page".to_string(),
                     description: "".to_string(),
                     handle: "docs/a-page".to_string(),
                     source_path: "docs/a-page.md".to_string(),
-                    kind: ContentKind { blog: false, project: false, doc: true },
+                    kind: ContentKind {
+                        blog: false,
+                        project: false,
+                        doc: true,
+                    },
                     minia: None,
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
@@ -357,14 +543,21 @@ mod tests {
                     image: "".to_string(),
                     reading_time_minutes: 1,
                     toc: vec![],
-                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                    content: MarkdownContent {
+                        format: "markdown_ast".to_string(),
+                        nodes: vec![],
+                    },
                 },
                 ContentEntry {
                     title: "Sub Page".to_string(),
                     description: "".to_string(),
                     handle: "docs/sub-folder/sub-page".to_string(),
                     source_path: "docs/sub-folder/sub-page.md".to_string(),
-                    kind: ContentKind { blog: false, project: false, doc: true },
+                    kind: ContentKind {
+                        blog: false,
+                        project: false,
+                        doc: true,
+                    },
                     minia: None,
                     dates: ContentDates {
                         created_at: "2024-01-01T00:00:00Z".to_string(),
@@ -378,7 +571,10 @@ mod tests {
                     image: "".to_string(),
                     reading_time_minutes: 1,
                     toc: vec![],
-                    content: MarkdownContent { format: "markdown_ast".to_string(), nodes: vec![] },
+                    content: MarkdownContent {
+                        format: "markdown_ast".to_string(),
+                        nodes: vec![],
+                    },
                 },
             ],
             sidebar: vec![
@@ -421,6 +617,28 @@ mod tests {
                 reading_time_minutes: 1,
                 draft: false,
             }],
+            technology_map: vec![
+                TechnologyMindmapEntry {
+                    title: "Kubernetes".to_string(),
+                    description: "Container orchestration".to_string(),
+                    handle: "docs/techno/infra/kube".to_string(),
+                    source_path: "docs/Techno/Infra/Kube/index.md".to_string(),
+                    tags: vec!["orchestration".to_string()],
+                    techno: vec!["containers".to_string()],
+                    image: String::new(),
+                    maturity: TechnologyMaturity::Advanced,
+                },
+                TechnologyMindmapEntry {
+                    title: "Helm".to_string(),
+                    description: "Package manager".to_string(),
+                    handle: "docs/techno/infra/kube/helm".to_string(),
+                    source_path: "docs/Techno/Infra/Kube/helm.md".to_string(),
+                    tags: vec!["kubernetes".to_string(), "charts".to_string()],
+                    techno: vec!["kubernetes".to_string()],
+                    image: String::new(),
+                    maturity: TechnologyMaturity::Advanced,
+                },
+            ],
         }
     }
 
@@ -437,7 +655,10 @@ mod tests {
         // docs/sub-folder: Folder (has children, no matching content entry)
         assert_eq!(nav[0].children[1].kind, DocSidebarItemKind::Folder);
         // docs/sub-folder/sub-page: Markdown (leaf)
-        assert_eq!(nav[0].children[1].children[0].kind, DocSidebarItemKind::Markdown);
+        assert_eq!(
+            nav[0].children[1].children[0].kind,
+            DocSidebarItemKind::Markdown
+        );
     }
 
     // ── GET /nav/blog ─────────────────────────────────────────────────────────
@@ -445,8 +666,11 @@ mod tests {
     #[test]
     fn blog_nav_matches_timeline() {
         let db = sample_database();
-        let entries: Vec<BlogSidebarEntry> =
-            db.blog_timeline.iter().map(BlogSidebarEntry::from).collect();
+        let entries: Vec<BlogSidebarEntry> = db
+            .blog_timeline
+            .iter()
+            .map(BlogSidebarEntry::from)
+            .collect();
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].handle, "blogs/first");
     }
@@ -454,7 +678,9 @@ mod tests {
     #[actix_web::test]
     async fn get_blog_nav_returns_200() {
         let app = actix_test::init_service(
-            App::new().app_data(Data::new(sample_database())).service(get_blog_nav),
+            App::new()
+                .app_data(Data::new(sample_database()))
+                .service(get_blog_nav),
         )
         .await;
         let req = actix_test::TestRequest::get().uri("/nav/blog").to_request();
@@ -470,7 +696,9 @@ mod tests {
     #[actix_web::test]
     async fn get_doc_nav_returns_200_with_kinds() {
         let app = actix_test::init_service(
-            App::new().app_data(Data::new(sample_database())).service(get_doc_nav),
+            App::new()
+                .app_data(Data::new(sample_database()))
+                .service(get_doc_nav),
         )
         .await;
         let req = actix_test::TestRequest::get().uri("/nav/doc").to_request();
@@ -488,8 +716,12 @@ mod tests {
     #[test]
     fn projects_nav_only_includes_project_kind() {
         let db = sample_database();
-        let projects: Vec<ProjectSummary> =
-            db.entries.iter().filter(|e| e.kind.project).map(ProjectSummary::from).collect();
+        let projects: Vec<ProjectSummary> = db
+            .entries
+            .iter()
+            .filter(|e| e.kind.project)
+            .map(ProjectSummary::from)
+            .collect();
         assert_eq!(projects.len(), 1);
         assert_eq!(projects[0].handle, "project/my-project");
     }
@@ -497,10 +729,14 @@ mod tests {
     #[actix_web::test]
     async fn get_projects_nav_returns_200() {
         let app = actix_test::init_service(
-            App::new().app_data(Data::new(sample_database())).service(get_projects_nav),
+            App::new()
+                .app_data(Data::new(sample_database()))
+                .service(get_projects_nav),
         )
         .await;
-        let req = actix_test::TestRequest::get().uri("/nav/projects").to_request();
+        let req = actix_test::TestRequest::get()
+            .uri("/nav/projects")
+            .to_request();
         let resp = actix_test::call_service(&app, req).await;
         assert!(resp.status().is_success());
         let body: serde_json::Value = actix_test::read_body_json(resp).await;
@@ -508,10 +744,48 @@ mod tests {
         assert_eq!(body[0]["handle"], "project/my-project");
     }
 
+    #[test]
+    fn technology_mindmap_builds_nested_tree() {
+        let db = sample_database();
+        let tree = build_technology_mindmap(&db);
+
+        assert_eq!(tree.len(), 1);
+        assert_eq!(tree[0].title, "Infra");
+        assert_eq!(tree[0].children[0].title, "Kubernetes");
+        assert_eq!(tree[0].children[0].maturity.as_deref(), Some("advanced"));
+        assert_eq!(tree[0].children[0].children[0].title, "Helm");
+        assert_eq!(
+            tree[0].children[0].children[0].href.as_deref(),
+            Some("/docs/techno/infra/kube/helm")
+        );
+    }
+
+    #[actix_web::test]
+    async fn get_technology_mindmap_returns_nested_tree() {
+        let app = actix_test::init_service(
+            App::new()
+                .app_data(Data::new(sample_database()))
+                .service(get_technology_mindmap),
+        )
+        .await;
+        let req = actix_test::TestRequest::get()
+            .uri("/nav/technologies")
+            .to_request();
+        let resp = actix_test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        let body: serde_json::Value = actix_test::read_body_json(resp).await;
+        assert_eq!(body.as_array().unwrap().len(), 1);
+        assert_eq!(body[0]["title"], "Infra");
+        assert_eq!(body[0]["children"][0]["title"], "Kubernetes");
+        assert_eq!(body[0]["children"][0]["children"][0]["title"], "Helm");
+    }
+
     #[actix_web::test]
     async fn get_search_index_returns_entries() {
         let app = actix_test::init_service(
-            App::new().app_data(Data::new(sample_database())).service(get_search_index),
+            App::new()
+                .app_data(Data::new(sample_database()))
+                .service(get_search_index),
         )
         .await;
         let req = actix_test::TestRequest::get().uri("/search").to_request();
