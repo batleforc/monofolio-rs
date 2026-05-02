@@ -19,6 +19,7 @@ tags:
   - "Terraform"
   - "Cloud"
   - "Infrastructure as Code"
+image: "icomoon#terraform"
 ---
 
 ## Terraform
