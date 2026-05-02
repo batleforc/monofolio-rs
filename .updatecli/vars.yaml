@@ -5,4 +5,4 @@ github:
   token: "GITHUB_TOKEN"
   test: "v1.0"
   owner: "batleforc"
-  repository: "monofolio-v2"
+  repository: "monofolio-rs"
