@@ -1,4 +1,4 @@
-name: Upgrade rust
+name: Upgrade docker
 
 scms:
   default:
@@ -18,10 +18,10 @@ actions:
     kind: gitea/pullrequest
     scmid: default
     spec:
-      title: "ci: Upgrade rust"
+      title: "ci: Upgrade Containerfile"
       automerge: false
       description: |
-        Upgrade `rust` version in `Cargo.toml` to the latest version.
+        Upgrade `docker` version in `Containerfile` to the latest version.
       labels:
         - "Upgrade"
         - "UpdateCLI"
@@ -30,4 +30,4 @@ autodiscovery:
   scmid: default
   actionid: default
   crawlers:
-    cargo:
+    docker:
