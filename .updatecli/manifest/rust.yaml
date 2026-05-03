@@ -1,7 +1,7 @@
 name: Upgrade rust
 
 scms:
-  default:
+  forgejo:
     kind: gitea
     spec:
       user: "{{ .github.user }}"
@@ -14,9 +14,9 @@ scms:
       branch: main
 
 actions:
-  default:
+  forgejo:
     kind: gitea/pullrequest
-    scmid: default
+    scmid: forgejo
     spec:
       title: "ci: Upgrade rust"
       automerge: false
@@ -27,7 +27,8 @@ actions:
         - "UpdateCLI"
 
 autodiscovery:
-  scmid: default
-  actionid: default
+  scmid: forgejo
+  actionid: forgejo
+  groupby: all
   crawlers:
     cargo:
