@@ -65,6 +65,8 @@ jobs:
         }}/monofolio-rs:${{ github.sha }}
     steps:
       - uses: https://git.batleforc.fr/action/checkout@v6
+      - name: Install ArgoCD CLI
+        uses: https://github.com/clowdhaus/argo-cd-action/@main
       - name: Create env var with vault CA certificate
         id: cert
         run: echo "VAULT_CA_CERTIFICATE=$(cat "$VAULT_CA_CERT" | base64 -w 0)">>
@@ -101,3 +103,39 @@ jobs:
             ${{ matrix.context }}
           buildah push $IMAGE_TAG
           buildah push $IMAGE_TAG_BRANCH
+      - name: Obtain access Token
+        id: idtoken
+        run: |
+          TOKEN_ANSWER=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+
+          FORGEJO_ID_TOKEN=$(echo $TOKEN_ANSWER | jq -r .value)
+
+          DEX_URL="https://argo.batleforc.fr/api/dex/token"
+          echo "Exchanging Forgejo ID Token for ArgoCD access token..."
+          DEX_TOKEN_RESPONSE=$(curl -sSf \
+              "$DEX_URL" \
+              --user argo-cd-cli: \
+              --data-urlencode "connector_id=forgejo-actions" \
+              --data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+              --data-urlencode "scope=openid email profile federated:id" \
+              --data-urlencode "requested_token_type=urn:ietf:params:oauth:token-type:access_token" \
+              --data-urlencode "subject_token=$FORGEJO_ID_TOKEN" \
+              --data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:id_token")
+          DEX_TOKEN=$(jq -r .access_token <<< $DEX_TOKEN_RESPONSE)
+
+          if [[ -z "$DEX_TOKEN" ]]; then
+            echo "::error::No token found in dex response"
+            exit 1
+          fi
+
+          echo "::add-mask::$(echo "$DEX_TOKEN" | base64 -w0)"
+          echo "::add-mask::$DEX_TOKEN"
+          echo "dex-token=$DEX_TOKEN" >> "$GITHUB_OUTPUT"
+      - name: Refresh ArgoCD Application
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ steps.idtoken.outputs.dex-token }}
+          ARGOCD_SERVER: argocd.batleforc.fr
+          ARGOCD_OPTS: --grpc-web
+        run: |
+          set -x
+          argocd app sync monofolio-rs --timeout 300
