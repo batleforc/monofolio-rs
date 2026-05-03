@@ -33,6 +33,8 @@ jobs:
           toolchain: stable
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.5
+        with:
+          version: 11
 
       - name: Run Updatecli
         run: updatecli compose apply
