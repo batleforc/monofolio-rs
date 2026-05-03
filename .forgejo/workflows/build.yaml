@@ -65,8 +65,13 @@ jobs:
         }}/monofolio-rs:${{ github.sha }}
     steps:
       - uses: https://git.batleforc.fr/action/checkout@v6
-      - name: Install ArgoCD CLI
-        uses: https://github.com/clowdhaus/argo-cd-action/@main
+      - name: Setup ArgoCD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          mkdir -p "$RUNNER_TEMP/argocd"
+          install -m 555 argocd-linux-amd64 "$RUNNER_TEMP/argocd/argocd"
+          rm argocd-linux-amd64
+          echo "$RUNNER_TEMP/argocd" >> "$GITHUB_PATH"
       - name: Create env var with vault CA certificate
         id: cert
         run: echo "VAULT_CA_CERTIFICATE=$(cat "$VAULT_CA_CERT" | base64 -w 0)">>
