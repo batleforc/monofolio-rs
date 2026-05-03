@@ -30,4 +30,6 @@ autodiscovery:
   scmid: default
   actionid: default
   crawlers:
-    docker:
+    dockerfile:
+      filematch:
+        - "Containerfile"

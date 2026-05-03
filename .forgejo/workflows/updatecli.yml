@@ -31,6 +31,8 @@ jobs:
         uses: https://github.com/dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.5
 
       - name: Run Updatecli
         run: updatecli compose apply
