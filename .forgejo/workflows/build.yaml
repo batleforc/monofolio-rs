@@ -98,10 +98,10 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_SHA}"
           IMAGE_TAG_BRANCH="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_REF_NAME}"
-          buildah build  \
+          buildah bud  \
             --platform linux/amd64 \
-            --cache-to=${{ env.REGISTRY }}/${{ matrix.image_name }} \
-            --cache-from=${{ env.REGISTRY }}/${{ matrix.image_name }} \
+            --cache-to=type=registry,ref=$IMAGE_TAG \
+            --cache-from=type=registry,ref=$IMAGE_TAG \
             --tag $IMAGE_TAG \
             --tag $IMAGE_TAG_BRANCH \
             --file ${{ matrix.dockerfile }} \
