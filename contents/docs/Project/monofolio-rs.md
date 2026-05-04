@@ -64,7 +64,7 @@ Les assets sont également traités a la compilation:
 
 - Transformation des diagrammes Mermaid en images
 - Copie uniquement des assets utilisés et compression de ceux-ci
-– Génération des différentes miniatures pour chaque page du site, ainsi que de ma signature mail, via [Takumi-rs](https://github.com/kane50613/takumi).
+- Génération des différentes miniatures pour chaque page du site, ainsi que de ma signature mail, via [Takumi-rs](https://github.com/kane50613/takumi).
 - Création du feed RSS du blog
 - (Et + plus tard ...)
 
