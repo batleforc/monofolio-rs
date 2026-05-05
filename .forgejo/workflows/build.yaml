@@ -144,4 +144,4 @@ jobs:
           ARGOCD_OPTS: --grpc-web
         run: |
           set -x
-          argocd app sync monofolio --timeout 300
+          argocd app sync argocd/monofolio --timeout 300
