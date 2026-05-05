@@ -17,7 +17,7 @@ techno:
   - ArgoCD
   - Helm
   - Terraform
-  - Gitea
+  - Forgejo
   - Tekton
   - Kustomize
 ---

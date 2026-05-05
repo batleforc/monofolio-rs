@@ -102,6 +102,7 @@ jobs:
             --platform linux/amd64 \
             --layers \
             --cache-to=${{ env.REGISTRY }}/${{ matrix.image_name }}/cache \
+            --cache-from=${{ env.REGISTRY }}/${{ matrix.image_name }}/cache \
             --tag $IMAGE_TAG \
             --tag $IMAGE_TAG_BRANCH \
             --file ${{ matrix.dockerfile }} \

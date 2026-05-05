@@ -1,5 +1,5 @@
 ---
-date: 2024-08-09T22:51:00Z
+date: 2026-05-01T22:51:00Z
 title: "Weebo GitOps"
 description: |
     Weebo GitOps est un homelab iteratif orienté GitOps. C'est mon homelab qui évolue au fil du temps et qui me sert à apprendre de nouvelles technologies et à tester de nouvelles choses.
@@ -18,7 +18,7 @@ techno:
   - ArgoCD
   - Helm
   - Terraform
-  - Gitea
+  - Forgejo
   - Kustomize
 ---
 
