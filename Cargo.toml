@@ -59,7 +59,7 @@ image = { version = "0.25", default-features = true, features = [
     "jpeg",
     "webp",
 ] }
-mermaid-rs-renderer = { version = "0.2", default-features = false }
+mermaid-rs-renderer = { version = "0.2.2", default-features = false }
 sha2 = "0.11"
 takumi = { version = "1.0" }
 regex = "1"

@@ -54,8 +54,12 @@ pub fn TeapotPage() -> impl IntoView {
                         </p>
                         <p class="text-muted-foreground mb-6">{description}</p>
                         <div class="flex flex-wrap items-center gap-3">
-                            <a href="/" class=outline_btn_class>{home_label}</a>
-                            <a href="/404" class=ghost_btn_class>{not_found_label}</a>
+                            <a href="/" class=outline_btn_class>
+                                {home_label}
+                            </a>
+                            <a href="/404" class=ghost_btn_class>
+                                {not_found_label}
+                            </a>
                         </div>
                     </Card>
                 </div>

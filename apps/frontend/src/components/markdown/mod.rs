@@ -199,7 +199,7 @@ pub fn MarkdownWithToc(content: MarkdownContent) -> impl IntoView {
 
     if has_toc {
         view! {
-            <div class="flex gap-4">
+            <div class="flex min-w-0 gap-4">
                 <div class="flex-1 min-w-0">
                     <MarkdownRenderer content=content />
                 </div>

@@ -274,13 +274,18 @@ fn TechnologyBranch(
     };
 
     view! {
-        <div class=if is_technology { "space-y-3" } else if depth == 0 { "space-y-5" } else { "space-y-4" }>
+        <div class=if is_technology {
+            "space-y-3"
+        } else if depth == 0 {
+            "space-y-5"
+        } else {
+            "space-y-4"
+        }>
             {if is_technology {
                 view! {
                     <Card class="p-4 bg-background/60">
                         <div class="flex items-start gap-3">
-                            {visual.map(render_visual)}
-                            <div class="min-w-0 flex-1">
+                            {visual.map(render_visual)} <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
                                     {if let Some(link) = href {
                                         view! {
@@ -294,7 +299,9 @@ fn TechnologyBranch(
                                             .into_any()
                                     } else {
                                         view! {
-                                            <h3 class="text-base font-semibold text-foreground">{title.clone()}</h3>
+                                            <h3 class="text-base font-semibold text-foreground">
+                                                {title.clone()}
+                                            </h3>
                                         }
                                             .into_any()
                                     }}
@@ -303,9 +310,9 @@ fn TechnologyBranch(
                                         .map(|value| {
                                             let label_value = value.clone();
                                             view! {
-                                                <span class=maturity_badge_class(&value)>
-                                                    {move || maturity_label(&label_value, lang.get())}
-                                                </span>
+                                                <span class=maturity_badge_class(
+                                                    &value,
+                                                )>{move || maturity_label(&label_value, lang.get())}</span>
                                             }
                                         })}
                                 </div>
@@ -385,7 +392,6 @@ fn TechnologyBranch(
                 }
                     .into_any()
             }}
-
             {if has_children {
                 view! {
                     <div class=if is_technology {
@@ -411,7 +417,7 @@ fn TechnologyBranch(
                             .collect_view()}
                     </div>
                 }
-                .into_any()
+                    .into_any()
             } else {
                 view! { <></> }.into_any()
             }}
@@ -552,16 +558,16 @@ pub fn TechnologiesPage() -> impl IntoView {
                                 <p class="text-sm text-muted-foreground">{loading_label}</p>
                             </Card>
                         }
-                        .into_any();
+                            .into_any();
                     }
-
                     if filtered_tree.get().is_empty() {
-                        return view! {
+                        return
+                        view! {
                             <Card class="p-5">
                                 <p class="text-sm text-muted-foreground">{empty_label}</p>
                             </Card>
                         }
-                        .into_any();
+                            .into_any();
                     }
 
                     view! {
@@ -581,7 +587,7 @@ pub fn TechnologiesPage() -> impl IntoView {
                                 .collect_view()}
                         </div>
                     }
-                    .into_any()
+                        .into_any()
                 }}
             </SectionInner>
         </section>

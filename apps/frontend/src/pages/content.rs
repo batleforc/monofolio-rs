@@ -539,7 +539,7 @@ pub fn ContentHandlePage() -> impl IntoView {
 
     view! {
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
-            <div class="max-w-7xl mx-auto px-5 py-16">
+            <div class="max-w-[96rem] mx-auto px-5 py-16">
                 <Suspense fallback=move || {
                     view! {
                         <Card class="p-5">
@@ -721,8 +721,8 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                     </Card>
                                                 </div>
 
-                                                <div class="grid grid-cols-1 lg:grid-cols-[18rem_1fr] gap-5">
-                                                    <aside class="lg:sticky lg:top-16 self-start">
+                                                <div class="grid grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)] gap-5">
+                                                    <aside class="min-w-0 lg:sticky lg:top-16 self-start">
                                                         <Card class="p-4 max-h-[calc(100svh-6rem)] overflow-auto">
                                                             <p class="text-xs uppercase tracking-widest font-mono text-muted-foreground mb-3">
                                                                 "Docs navigation"
@@ -739,7 +739,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                         </Card>
                                                     </aside>
 
-                                                    <Card class="p-5">
+                                                    <Card class="p-5 min-w-0">
                                                         {header_image.clone().map(render_header_image)}
                                                         <p class="text-xs text-muted-foreground uppercase tracking-widest font-mono mb-2">
                                                             {kind_label}

@@ -20,10 +20,7 @@ pub fn About(data: HomeData) -> impl IntoView {
     };
 
     view! {
-        <section
-            class="border-y border-border bg-card/50"
-            id="about"
-        >
+        <section class="border-y border-border bg-card/50" id="about">
             <SectionInner>
                 <SectionTitle>{move || t.get().about_title}</SectionTitle>
                 <Card class="p-6 max-w-3xl">

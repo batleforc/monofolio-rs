@@ -229,10 +229,7 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
                 </button>
             </div>
 
-            <pre
-                data-language=language
-                class="mb-0 bg-muted rounded-b-lg p-4 overflow-x-auto"
-            >
+            <pre data-language=language class="mb-0 bg-muted rounded-b-lg p-4 overflow-x-auto">
                 <code class=code_class>{code_text}</code>
             </pre>
         </div>

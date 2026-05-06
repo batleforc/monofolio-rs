@@ -49,6 +49,7 @@ tasks:
   gen:content:
     desc: "Generate only the content database and sidebar data"
     cmds:
+      - rm -rf ./target/content-build
       - cargo run --package content --bin content-build
       - cargo run --package content --bin generate-signature -- --output
         ./target/content-build/public/minia/signature.png

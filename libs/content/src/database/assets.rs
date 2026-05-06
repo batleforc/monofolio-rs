@@ -6,7 +6,7 @@ use std::path::Path;
 
 use image::codecs::jpeg::JpegEncoder;
 use image::ImageReader;
-use mermaid_rs_renderer::{render_with_options as render_mermaid_svg, RenderOptions};
+use mermaid_rs_renderer::{render_with_options as render_mermaid_svg, LayoutConfig, RenderOptions, Theme};
 use sha2::{Digest, Sha256};
 
 use crate::markdown::MarkdownNode;
@@ -341,9 +341,44 @@ fn render_mermaid_with_renderer(
             source,
         })?;
     }
-    let opts = RenderOptions::mermaid_default()
-        .with_node_spacing(100.0)
-        .with_rank_spacing(100.0);
+    // Dark cyberpunk theme matching the site palette:
+    // background ~oklch(0.07) ≈ #120909, primary neon-red ~oklch(0.65 0.26 25) ≈ #DC2626,
+    // foreground ~oklch(0.93) ≈ #EDE8E8, accent copper ~oklch(0.72 0.14 52) ≈ #C07828.
+    let theme = Theme {
+        background: "transparent".to_string(),
+        font_family: "'trebuchet ms', verdana, arial, sans-serif".to_string(),
+        font_size: 16.0,
+        primary_color: "#1A0B0B".to_string(),
+        primary_text_color: "#EDE8E8".to_string(),
+        primary_border_color: "#DC2626".to_string(),
+        line_color: "#B91C1C".to_string(),
+        secondary_color: "#130808".to_string(),
+        tertiary_color: "#1A0B0B".to_string(),
+        edge_label_background: "#0F0808".to_string(),
+        cluster_background: "#130808".to_string(),
+        cluster_border: "#7F1D1D".to_string(),
+        text_color: "#EDE8E8".to_string(),
+        sequence_actor_fill: "#1A0B0B".to_string(),
+        sequence_actor_border: "#DC2626".to_string(),
+        sequence_actor_line: "#846868".to_string(),
+        sequence_note_fill: "#1A0F00".to_string(),
+        sequence_note_border: "#C07828".to_string(),
+        sequence_activation_fill: "#130808".to_string(),
+        sequence_activation_border: "#7F1D1D".to_string(),
+        pie_title_text_color: "#EDE8E8".to_string(),
+        pie_section_text_color: "#EDE8E8".to_string(),
+        pie_legend_text_color: "#EDE8E8".to_string(),
+        pie_stroke_color: "#DC2626".to_string(),
+        pie_outer_stroke_color: "#7F1D1D".to_string(),
+        ..Theme::modern()
+    };
+    let mut layout = LayoutConfig::default();
+    layout.node_spacing = 112.0;
+    layout.rank_spacing = 144.0;
+    layout.max_label_width_chars = 36;
+    layout.flowchart.auto_spacing.enabled = false;
+
+    let opts = RenderOptions { theme, layout };
 
     let svg =
         render_mermaid_svg(source, opts).map_err(|error| ContentDatabaseError::MermaidRender {
@@ -722,4 +757,49 @@ pub fn process_home_yaml_minia_for_bundle(
     })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_mermaid_with_renderer;
+
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temporary_directory() -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time should be valid")
+            .as_nanos();
+        std::env::temp_dir().join(format!("content-assets-test-{nanos}"))
+    }
+
+    #[test]
+    fn rendered_mermaid_svg_uses_renderer_aligned_text_metrics() {
+        let output = temporary_directory();
+        let svg_path = output.join("diagram.svg");
+
+        render_mermaid_with_renderer(
+            "flowchart TD; A[Create a Pull Request] --> B{Test Start}; B --> C[Test by Github Actions]; B --> D[Test flow by Tekton];",
+            &svg_path,
+        )
+        .expect("render mermaid");
+
+        let svg = fs::read_to_string(&svg_path).expect("read rendered svg");
+        assert!(
+            svg.contains("font-size=\"16\""),
+            "svg should use larger text"
+        );
+        assert!(
+            svg.contains("font-family=\"trebuchet ms,verdana,arial,sans-serif\""),
+            "svg should use the renderer-calibrated font stack"
+        );
+        assert!(
+            !svg.contains("aspect-ratio:"),
+            "svg should keep natural geometry so edge origins stay aligned"
+        );
+
+        fs::remove_dir_all(output).expect("cleanup should succeed");
+    }
 }
