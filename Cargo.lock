@@ -1272,6 +1272,7 @@ checksum = "7c20b425addb8661e97fe1d51c4d8bcec3ec29ed6ad0db983976a7521276b8f7"
 dependencies = [
  "hashbrown 0.17.0",
  "linebender_resource_handle",
+ "memmap2",
  "parlance",
  "read-fonts",
  "smallvec",
@@ -2934,7 +2935,6 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fad031076f48f0d4d85ce1aea9b94b4e715a4d636a030a123038f8f5b5e4343"
 dependencies = [
- "core_maths",
  "fontique",
  "harfrust",
  "hashbrown 0.17.0",
@@ -3996,7 +3996,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c34617370ae968efb7161bb2beb517d9084659aae19e24b89e3db25b46e4564"
 dependencies = [
  "bytemuck",
- "core_maths",
  "read-fonts",
 ]
 
@@ -4191,9 +4190,9 @@ dependencies = [
 
 [[package]]
 name = "takumi"
-version = "1.0.16"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ebab0ec29c61fae4ebe1aa7fb2afd18bc490d1d3a71f037e03429ed203d6e93"
+checksum = "2e9f7233efe9604307fd5d536833632b043072b02d565d9a983237f76338717a"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -4204,7 +4203,6 @@ dependencies = [
  "gif",
  "image",
  "image-webp",
- "libm",
  "libwebp-sys",
  "parley",
  "paste",
