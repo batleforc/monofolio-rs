@@ -61,7 +61,7 @@ image = { version = "0.25", default-features = true, features = [
 ] }
 mermaid-rs-renderer = { version = "0.2.2", default-features = false }
 sha2 = "0.11"
-takumi = { version = "1.0" }
+takumi = { version = "1.1" }
 regex = "1"
 
 # Error handling
