@@ -51,8 +51,12 @@ pub fn NotFoundPage() -> impl IntoView {
                     <Card class="p-6 sm:p-8">
                         <p class="text-muted-foreground mb-6">{description}</p>
                         <div class="flex flex-wrap items-center gap-3">
-                            <a href="/" class=primary_btn_class>{home_label}</a>
-                            <a href="/418" class=ghost_btn_class>{teapot_label}</a>
+                            <a href="/" class=primary_btn_class>
+                                {home_label}
+                            </a>
+                            <a href="/418" class=ghost_btn_class>
+                                {teapot_label}
+                            </a>
                         </div>
                     </Card>
                 </div>

@@ -41,14 +41,14 @@ Par le passé, j'ai pue mettre en place autant Gitlab, Gogs que Gitea. Mais cett
 ```mermaid
 
 graph TD
-    A[Authentik] -->|OIDC| B(Forgejo)
-    C[ArgoCD] -->|Déploiement| B
-    D[Vault] -->|Stocke le configuration| B
-    E[Terraform] -->|Provisionne les ressources| A
-    E -->|Stock la configuration Forgejo| D
-    C -->|Déploiement| A
-    C -->|Déploiement| D
-    C -->|Synchronise| E
+  A[Authentik] -->|OIDC| B(Forgejo)
+  C[ArgoCD] -->|Déploiement| B
+  D[Vault] -->|Stocke le configuration| B
+  E[Terraform] -->|Provisionne les ressources| A
+  E -->|Stock la configuration Forgejo| D
+  C -->|Déploiement| A
+  C -->|Déploiement| D
+  C -->|Synchronise| E
 
 ```
 
