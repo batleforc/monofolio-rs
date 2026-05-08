@@ -20,6 +20,8 @@ techno:
   - Authentik
 ---
 
+## THIS IS A WORK IN PROGRESS
+
 Bienvenue dans cette suite d'article destiné a présenter l'intégration mise en place afin d'avoir une forge Git auto-hébergée fonctionnelle au sein de l'environnement Weebo GitOps. Cette forge a donc pour objectif de permettre une gestion GitOps autant que possible.
 
 Ceci n'est pas un tutoriel pas à pas, mais plutôt une présentation de l'installation de Forgejo basique, l'installation complète sera l'objet d'un prochain article dédié au setup a travers la stack Weebo GitOps, incluant toute la configuration de l'authentification via Terraform et Vault ainsi que la délégation de la gestion des identité.
