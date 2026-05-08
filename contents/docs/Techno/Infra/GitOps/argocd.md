@@ -20,6 +20,7 @@ techno:
 tags:
   - "GitOps"
   - "Continous Deployment"
+image: "media#argo.png"
 ---
 
 ## ArgoCD

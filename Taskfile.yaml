@@ -7,8 +7,8 @@ tasks:
     cmds:
       - echo "Initializing the project"
       - mise install
-      - cargo install trunk ui-cli leptosfmt
-      - cargo install cargo-leptos --locked
+      - cargo install trunk ui-cli leptosfmt --force
+      - cargo install cargo-leptos --locked --force
       - cog install-hook -a -o
 
   lint:

@@ -633,11 +633,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                     } else if image.starts_with("http://") {
                                         format!("https://{}", image.trim_start_matches("http://"))
                                     } else if let Some(file_name) = image.strip_prefix("media#") {
-                                        canonical_url(&format!("/media/{file_name}"))
+                                        canonical_url(&format!("{file_name}"))
                                     } else {
-                                        canonical_url(
-                                            &format!("/media/{}", image.trim_start_matches('/')),
-                                        )
+                                        canonical_url(&format!("{}", image.trim_start_matches('/')))
                                     };
 
                                     view! {
@@ -664,7 +662,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                             name="twitter:description"
                                             content=page_description.clone()
                                         />
-                                        <Meta name="twitter:image" content=image_url.clone() />
+                                        <Meta
+                                            name="twitter:image"
+                                            content=minia.clone().unwrap_or(image_url.clone())
+                                        />
                                         <SectionTitle>{title.clone()}</SectionTitle>
 
                                         {if is_doc {

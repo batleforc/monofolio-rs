@@ -1,2 +1,9 @@
 [rustfmt]
-overrideCommand = ["leptosfmt", "--stdin", "--rustfmt"]
+overrideCommand = [
+    "sh",
+    "-c",
+    "cargo_bin=\"${CARGO_HOME:-$HOME/.cargo}/bin\"; PATH=\"$cargo_bin:$PATH\"; export PATH; formatter=\"$cargo_bin/leptosfmt\"; if [ -x \"$formatter\" ]; then exec \"$formatter\" \"$@\"; fi; exec leptosfmt \"$@\"",
+    "sh",
+    "--stdin",
+    "--rustfmt",
+]
