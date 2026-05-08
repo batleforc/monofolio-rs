@@ -102,11 +102,11 @@ RUN cargo clean --release --package frontend --package content --package api --p
 
 # Pre-generate the stylesheet expected by cargo-leptos.
 # This avoids a build failure when cargo-leptos cannot find target/tmp/tailwind.css.
-# RUN mkdir -p target/tmp \
-#     && pnpm exec tailwindcss \
-#     -i apps/frontend/style/main.css \
-#     -o target/tmp/tailwind.css \
-#     --minify
+RUN mkdir -p target/tmp \
+    && CI=true pnpm exec tailwindcss \
+    -i apps/frontend/style/main.css \
+    -o target/tmp/tailwind.css \
+    --minify
 
 # ── Build Leptos app: SSR binary + WASM/CSS assets ───────────────────────────
 # Outputs:
