@@ -24,6 +24,7 @@ tags:
   - "Kubernetes"
   - "Tekton"
   - "Continous Integration"
+image: "media#techno/tekton.png"
 ---
 
 ## Tekton

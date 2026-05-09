@@ -26,6 +26,7 @@ tags:
   - "Self-hosted"
   - "Web"
   - "Kubernetes"
+image: "icomoon#gitea"
 ---
 
 ## Gitea

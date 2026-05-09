@@ -20,6 +20,7 @@ tags:
   - "Cloud"
   - "Web"
   - "Kubernetes"
+image: "media#application/keycloak.png"
 ---
 
 ## Keycloak
