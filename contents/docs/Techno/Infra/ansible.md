@@ -19,6 +19,7 @@ tags:
   - "Ansible"
   - "Yaml"
   - "Infrastructure as Code"
+image: "icomoon#ansible"
 ---
 
 ## Ansible

@@ -21,6 +21,7 @@ tags:
   - "K3s"
   - "Lightweight"
   - "K8s"
+image: "media#techno/k3s.png"
 ---
 
 ## K3s

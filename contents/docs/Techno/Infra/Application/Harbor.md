@@ -20,6 +20,7 @@ tags:
   - "Kubernetes"
   - "Harbor"
   - "Security"
+image: "media#application/harbor.png"
 ---
 
 ## Harbor

@@ -25,6 +25,7 @@ tags:
   - "Cloud"
   - "Web"
   - "Kubernetes"
+image: "media#application/eclipse-che.png"
 ---
 
 ## Eclipse Che

@@ -20,6 +20,7 @@ tags:
   - "Runners"
   - "Continous Integration"
   - "Continous Deployment"
+image: "media#techno/concourse.png"
 ---
 
 ## Concourse

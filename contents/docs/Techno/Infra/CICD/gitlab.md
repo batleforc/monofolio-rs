@@ -23,6 +23,7 @@ tags:
   - "Runners"
   - "Continous Integration"
   - "Continous Deployment"
+image: "icomoon#gitlab"
 ---
 
 ## Gitlab CI/CD

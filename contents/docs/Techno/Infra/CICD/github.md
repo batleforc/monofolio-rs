@@ -21,6 +21,7 @@ tags:
   - "Continous Integration"
   - "Continous Deployment"
   - "CI/CD"
+image: "icomoon#github"
 ---
 
 ## Github Actions

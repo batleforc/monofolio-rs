@@ -21,6 +21,7 @@ tags:
   - "GitOps"
   - "FluxCD"
   - "Continous Deployment"
+image: "media#techno/fluxcd.png"
 ---
 
 ## FluxCD

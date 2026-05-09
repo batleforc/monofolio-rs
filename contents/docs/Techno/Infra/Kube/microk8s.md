@@ -18,9 +18,10 @@ techno:
   - "Yaml"
 tags:
   - "Kubernetes"
-  - "K3s"
+  - "MicroK8s"
   - "Canonical"
   - "K8s"
+image: "media#techno/microk8s.png"
 ---
 
 ## MicroK8S
