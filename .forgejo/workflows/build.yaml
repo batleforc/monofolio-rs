@@ -2,7 +2,7 @@ name: Container Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "**/*.rs"
       - "**/*.css"
@@ -17,7 +17,7 @@ on:
       - "Containerfile"
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "**/*.rs"
       - "**/*.css"
@@ -145,4 +145,4 @@ jobs:
         run: |
           set -x
           argocd app get --grpc-web --hard-refresh argocd/monofolio
-          argocd app sync argocd/monofolio --grpc-web --timeout 300
+          argocd app sync argocd/monofolio --grpc-web --timeout 300 || true
