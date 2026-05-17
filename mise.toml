@@ -3,6 +3,7 @@ cocogitto = "latest"
 copilot = "latest"
 gitleaks = "latest"
 node = "lts"
+opengrep = "latest"
 perl = "latest"
 rust = { version = "latest", profile = "default", components = "rust-src,llvm-tools", targets = "wasm32-unknown-unknown,x86_64-unknown-linux-gnu" }
 task = "latest"
