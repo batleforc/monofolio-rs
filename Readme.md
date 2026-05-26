@@ -84,7 +84,7 @@ The goal of this V2 is to strengthen is to redo the design, the codebase, the wa
 
 The home page is **100% client-hydrated**: the server delivers a lightweight loading skeleton, and the WASM bundle fetches content from `/api/v1/home` after hydration.
 
-```
+```text
 Server (SSR)              Client (WASM)
 ─────────────             ─────────────
 Loading skeleton   →  hydrates  →  fetches /api/v1/home  →  renders content
@@ -125,7 +125,7 @@ Loading skeleton   →  hydrates  →  fetches /api/v1/home  →  renders conten
 
 UI strings (nav labels, buttons, loading text) live in:
 
-```
+```text
 apps/frontend/src/i18n/translations.rs
 ```
 
@@ -146,12 +146,17 @@ Each language is a `pub static` of type `Translations`. To add a new string:
 ### Running Locally
 
 ```bash
-# Build content database
-cargo run -p content --bin content-build
-
-# Run the dev server (SSR + serve WASM)
-cargo run --package frontend --features ssr
+# Start development mode (SSR + frontend + content + shiki hot reload)
+task dev
 
 # Run unit tests
 cargo test --package content --package api
 ```
+
+### Development Hot Reload
+
+- `task dev` now runs two processes:
+  - `cargo leptos watch --project frontend` for Rust/WASM/CSS reload.
+  - `cargo run --package content --bin content-watch` for `contents/` and shiki rebuilds.
+- On content rebuild success, a frontend source sentinel is updated to trigger Leptos dev reload.
+- Scope is development only.

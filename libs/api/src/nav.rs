@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use crate::visibility::is_content_visible;
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use content::{
     BlogTimelineEntry, ContentDatabase, ContentEntry, SidebarItem, TechnologyMaturity,
@@ -8,10 +9,6 @@ use content::{
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
-
-fn is_nav_visible(entry: &ContentEntry) -> bool {
-    !entry.draft && !entry.dates.released_at.trim().is_empty()
-}
 
 fn segment_to_title(segment: &str) -> String {
     segment
@@ -229,7 +226,7 @@ fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
     let known_handles: HashSet<String> = database
         .entries
         .iter()
-        .filter(|e| e.kind.doc && is_nav_visible(e))
+        .filter(|e| e.kind.doc && is_content_visible(e))
         .map(|e| e.handle.clone())
         .collect();
     database
@@ -369,7 +366,7 @@ pub async fn get_projects_nav(database: Data<ContentDatabase>) -> impl Responder
     let projects: Vec<ProjectSummary> = database
         .entries
         .iter()
-        .filter(|e| e.kind.project && is_nav_visible(e))
+        .filter(|e| e.kind.project && is_content_visible(e))
         .map(ProjectSummary::from)
         .collect();
     HttpResponse::Ok().json(projects)
@@ -405,7 +402,7 @@ pub async fn get_search_index(database: Data<ContentDatabase>) -> impl Responder
     let mut entries: Vec<SearchEntry> = database
         .entries
         .iter()
-        .filter(|entry| is_nav_visible(entry))
+        .filter(|entry| is_content_visible(entry))
         .map(SearchEntry::from)
         .collect();
     entries.sort_by(|a, b| {

@@ -117,7 +117,7 @@ pub fn RenderMarkdownNode(node: MarkdownNode) -> impl IntoView {
         "code_block" => render_code_block(node).into_any(),
         "blockquote" => render_blockquote(node).into_any(),
         "list" => render_list(node).into_any(),
-        "list_item" => render_list_item(node).into_any(),
+        "list_item" | "item" => render_list_item(node).into_any(),
         "table" => render_table(node).into_any(),
         "rule" => render_rule().into_any(),
         "html" => render_html(node).into_any(),

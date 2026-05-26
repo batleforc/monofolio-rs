@@ -54,7 +54,12 @@ tasks:
       - cargo run --package content --bin generate-signature -- --output
         ./target/content-build/public/minia/signature.png
 
-  dev:
-    desc: "Start development server with hot-reloading (requires cargo-leptos)"
+  dev:content:
+    desc: "Watch content and shiki sources, then rebuild generated assets"
     cmds:
-      - cargo leptos watch --project frontend
+      - cargo run --package content --features dev-tools --bin content-watch
+
+  dev:
+    desc: "Start dev server with code/content hot-reloading"
+    cmds:
+      - ./scripts/dev-hot-reload.sh

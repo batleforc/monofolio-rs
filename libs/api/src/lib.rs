@@ -6,6 +6,7 @@ pub mod nav;
 pub mod page;
 pub mod public;
 pub mod rss;
+pub mod visibility;
 
 pub use doc::ApiDoc;
 
