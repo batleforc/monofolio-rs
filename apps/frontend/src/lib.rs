@@ -13,6 +13,8 @@ mod pages;
 mod seo;
 mod services;
 
+const _CONTENT_RELOAD_SENTINEL: &str = include_str!("content_reload_sentinel.rs");
+
 use components::navbar::NavBar;
 use i18n::provide_i18n;
 use pages::{

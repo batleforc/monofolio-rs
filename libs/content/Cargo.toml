@@ -3,19 +3,29 @@ name = "content"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "content-watch"
+path = "src/bin/content-watch.rs"
+required-features = ["dev-tools"]
+
 [dependencies]
-serde = { workspace = true }
-serde_yaml = { workspace = true }
-serde_json = { workspace = true }
-regex = { workspace = true }
-pulldown-cmark = { workspace = true }
 gray_matter = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
 image = { workspace = true }
 mermaid-rs-renderer = { workspace = true }
+notify = { workspace = true, optional = true }
+pulldown-cmark = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
 sha2 = { workspace = true }
 takumi = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ureq = { workspace = true }
+
+[features]
+default = []
+dev-tools = ["dep:notify"]

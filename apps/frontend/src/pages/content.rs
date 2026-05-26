@@ -9,12 +9,13 @@ use leptos_meta::{Link, Meta, Title};
 use leptos_router::hooks::use_location;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tw_merge::IntoTailwindClass;
 
 use crate::components::markdown::toc::{extract_headings, TableOfContents};
 use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
-use crate::components::ui::{Card, SectionTitle, TagBadge};
+use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant, Card, SectionTitle, TagBadge};
 use crate::date_utils::format_display_date;
-use crate::i18n::use_language;
+use crate::i18n::{use_language, Language};
 use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
 use crate::services::api::fetch_json;
 
@@ -188,12 +189,37 @@ fn slugify_like_handle(value: &str) -> String {
 }
 
 fn flatten_doc_index(items: &[DocSidebarItemData], out: &mut Vec<(String, String)>) {
-    for item in items {
+    let mut sorted = items.to_vec();
+    sorted.sort_by(|a, b| a.order.cmp(&b.order));
+
+    for item in sorted {
         if item.kind != "folder" {
             out.push((item.title.clone(), item.handle.clone()));
         }
         flatten_doc_index(&item.children, out);
     }
+}
+
+fn find_doc_neighbors(
+    active_handle: &str,
+    docs_index: &[(String, String)],
+) -> (Option<(String, String)>, Option<(String, String)>) {
+    let Some(index) = docs_index
+        .iter()
+        .position(|(_, handle)| handle == active_handle)
+    else {
+        return (None, None);
+    };
+
+    let previous = if index > 0 {
+        docs_index.get(index - 1).cloned()
+    } else {
+        None
+    };
+
+    let next = docs_index.get(index + 1).cloned();
+
+    (previous, next)
 }
 
 fn find_doc_href_for_techno(techno: &str, docs_index: &[(String, String)]) -> Option<String> {
@@ -543,7 +569,12 @@ pub fn ContentHandlePage() -> impl IntoView {
                 <Suspense fallback=move || {
                     view! {
                         <Card class="p-5">
-                            <p class="text-sm text-muted-foreground">"Loading page..."</p>
+                            <p class="text-sm text-muted-foreground">
+                                {move || match lang.get() {
+                                    Language::Fr => "Chargement de la page...",
+                                    Language::En => "Loading page...",
+                                }}
+                            </p>
                         </Card>
                     }
                 }>
@@ -551,12 +582,20 @@ pub fn ContentHandlePage() -> impl IntoView {
                         page_data.get().is_some() && page_data.get().flatten().is_none()
                     }>
                         <Card class="p-5">
-                            <p class="text-sm text-muted-foreground">"Unable to load this page."</p>
+                            <p class="text-sm text-muted-foreground">
+                                {move || match lang.get() {
+                                    Language::Fr => "Impossible de charger cette page.",
+                                    Language::En => "Unable to load this page.",
+                                }}
+                            </p>
                             <a
                                 href="/projects"
                                 class="inline-flex mt-3 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
                             >
-                                "Back to projects"
+                                {move || match lang.get() {
+                                    Language::Fr => "Retour aux projets",
+                                    Language::En => "Back to projects",
+                                }}
                             </a>
                         </Card>
                     </Show>
@@ -604,10 +643,25 @@ pub fn ContentHandlePage() -> impl IntoView {
                                     let is_blog = blog;
                                     let is_doc = doc;
                                     let back_href = if is_blog { "/blog" } else { "/projects" };
-                                    let back_label = if is_blog {
-                                        "Back to blog"
+                                    let back_btn_class = ButtonClass {
+                                        variant: ButtonVariant::Outline,
+                                        size: ButtonSize::Sm,
+                                    }
+                                        .to_class();
+                                    let edit_btn_class = ButtonClass {
+                                        variant: ButtonVariant::Ghost,
+                                        size: ButtonSize::Sm,
+                                    }
+                                        .to_class();
+                                    let doc_nav_btn_class = ButtonClass {
+                                        variant: ButtonVariant::Outline,
+                                        size: ButtonSize::Default,
+                                    }
+                                        .to_class();
+                                    let (previous_doc, next_doc) = if is_doc {
+                                        find_doc_neighbors(&handle, &docs_index)
                                     } else {
-                                        "Back to projects"
+                                        (None, None)
                                     };
                                     let header_image = resolve_header_image(&image);
                                     let edit_url = edit_in_git_url(&source_path);
@@ -683,7 +737,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                         <div class="grid grid-cols-2 gap-2">
                                                             <details>
                                                                 <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-                                                                    "Navigation"
+                                                                    {move || match lang.get() {
+                                                                        Language::Fr => "Navigation",
+                                                                        Language::En => "Navigation",
+                                                                    }}
                                                                 </summary>
                                                                 <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
                                                                     {move || {
@@ -702,7 +759,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                 view! {
                                                                     <details>
                                                                         <summary class="list-none cursor-pointer select-none rounded border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-                                                                            "Sommaire"
+                                                                            {move || match lang.get() {
+                                                                                Language::Fr => "Sommaire",
+                                                                                Language::En => "Contents",
+                                                                            }}
                                                                         </summary>
                                                                         <div class="mt-2 rounded border border-border p-3 max-h-[55svh] overflow-auto">
                                                                             <TableOfContents entries=toc_entries.clone() />
@@ -713,7 +773,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             } else {
                                                                 view! {
                                                                     <div class="rounded border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground">
-                                                                        "Pas de sommaire"
+                                                                        {move || match lang.get() {
+                                                                            Language::Fr => "Pas de sommaire",
+                                                                            Language::En => "No table of contents",
+                                                                        }}
                                                                     </div>
                                                                 }
                                                                     .into_any()
@@ -726,7 +789,10 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                     <aside class="min-w-0 lg:sticky lg:top-16 self-start">
                                                         <Card class="p-4 max-h-[calc(100svh-6rem)] overflow-auto">
                                                             <p class="text-xs uppercase tracking-widest font-mono text-muted-foreground mb-3">
-                                                                "Docs navigation"
+                                                                {move || match lang.get() {
+                                                                    Language::Fr => "Navigation docs",
+                                                                    Language::En => "Docs navigation",
+                                                                }}
                                                             </p>
                                                             {move || {
                                                                 render_doc_sidebar_tree(
@@ -756,7 +822,12 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                 );
                                                                 if !created_at_display.is_empty() {
                                                                     view! {
-                                                                        <span>{format!("Published: {}", created_at_display)}</span>
+                                                                        <span>
+                                                                            {move || match lang.get() {
+                                                                                Language::Fr => format!("Publié : {}", created_at_display),
+                                                                                Language::En => format!("Published: {}", created_at_display),
+                                                                            }}
+                                                                        </span>
                                                                     }
                                                                         .into_any()
                                                                 } else {
@@ -770,7 +841,14 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                 );
                                                                 if !updated_at_display.is_empty() {
                                                                     view! {
-                                                                        <span>{format!("Updated: {}", updated_at_display)}</span>
+                                                                        <span>
+                                                                            {move || match lang.get() {
+                                                                                Language::Fr => {
+                                                                                    format!("Mis a jour : {}", updated_at_display)
+                                                                                }
+                                                                                Language::En => format!("Updated: {}", updated_at_display),
+                                                                            }}
+                                                                        </span>
                                                                     }
                                                                         .into_any()
                                                                 } else {
@@ -819,24 +897,80 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                 .collect_view()}
                                                         </div>
                                                         <p class="text-xs text-muted-foreground">
-                                                            {format!("Reading time: {} min", reading_time_minutes)}
+                                                            {move || match lang.get() {
+                                                                Language::Fr => {
+                                                                    format!("Temps de lecture : {} min", reading_time_minutes)
+                                                                }
+                                                                Language::En => {
+                                                                    format!("Reading time: {} min", reading_time_minutes)
+                                                                }
+                                                            }}
                                                         </p> <div class="mt-5 border-t border-border pt-4">
                                                             <MarkdownFromValue value=content.clone() />
                                                         </div>
-                                                        <a
-                                                            href=back_href
-                                                            class="inline-flex mt-4 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                                                        >
-                                                            {back_label}
-                                                        </a>
-                                                        <a
-                                                            href=edit_url.clone()
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            class="inline-flex mt-2 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                                                        >
-                                                            "Edit in Git"
-                                                        </a>
+                                                        <div class="mt-4 flex flex-wrap gap-2">
+                                                            {previous_doc
+                                                                .clone()
+                                                                .map(|(title, handle)| {
+                                                                    let href = format!("/{}", handle.trim_start_matches('/'));
+                                                                    let title_label = title.clone();
+                                                                    view! {
+                                                                        <a href=href class=doc_nav_btn_class.clone()>
+                                                                            {move || {
+                                                                                let prefix = match lang.get() {
+                                                                                    Language::Fr => "Doc précédent",
+                                                                                    Language::En => "Previous doc",
+                                                                                };
+                                                                                format!("{}: {}", prefix, title_label)
+                                                                            }}
+                                                                        </a>
+                                                                    }
+                                                                })}
+                                                            {next_doc
+                                                                .clone()
+                                                                .map(|(title, handle)| {
+                                                                    let href = format!("/{}", handle.trim_start_matches('/'));
+                                                                    let title_label = title.clone();
+                                                                    view! {
+                                                                        <a href=href class=doc_nav_btn_class.clone()>
+                                                                            {move || {
+                                                                                let prefix = match lang.get() {
+                                                                                    Language::Fr => "Doc suivant",
+                                                                                    Language::En => "Next doc",
+                                                                                };
+                                                                                format!("{}: {}", prefix, title_label)
+                                                                            }}
+                                                                        </a>
+                                                                    }
+                                                                })}
+                                                        </div> <div class="mt-2 flex flex-wrap gap-2">
+                                                            <a href=back_href class=back_btn_class.clone()>
+                                                                {move || {
+                                                                    if is_blog {
+                                                                        match lang.get() {
+                                                                            Language::Fr => "Retour au blog",
+                                                                            Language::En => "Back to blog",
+                                                                        }
+                                                                    } else {
+                                                                        match lang.get() {
+                                                                            Language::Fr => "Retour aux projets",
+                                                                            Language::En => "Back to projects",
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            </a>
+                                                            <a
+                                                                href=edit_url.clone()
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                class=edit_btn_class.clone()
+                                                            >
+                                                                {move || match lang.get() {
+                                                                    Language::Fr => "Editer sur Git",
+                                                                    Language::En => "Edit in Git",
+                                                                }}
+                                                            </a>
+                                                        </div>
                                                         <p class="mt-6 text-xs text-muted-foreground">
                                                             {footer_note.clone()}
                                                         </p>
@@ -862,7 +996,12 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             );
                                                             if !created_at_display.is_empty() {
                                                                 view! {
-                                                                    <span>{format!("Published: {}", created_at_display)}</span>
+                                                                    <span>
+                                                                        {move || match lang.get() {
+                                                                            Language::Fr => format!("Publié : {}", created_at_display),
+                                                                            Language::En => format!("Published: {}", created_at_display),
+                                                                        }}
+                                                                    </span>
                                                                 }
                                                                     .into_any()
                                                             } else {
@@ -876,7 +1015,14 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             );
                                                             if !updated_at_display.is_empty() {
                                                                 view! {
-                                                                    <span>{format!("Updated: {}", updated_at_display)}</span>
+                                                                    <span>
+                                                                        {move || match lang.get() {
+                                                                            Language::Fr => {
+                                                                                format!("Mis a jour : {}", updated_at_display)
+                                                                            }
+                                                                            Language::En => format!("Updated: {}", updated_at_display),
+                                                                        }}
+                                                                    </span>
                                                                 }
                                                                     .into_any()
                                                             } else {
@@ -923,7 +1069,14 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             .collect_view()}
                                                     </div>
                                                     <p class="text-xs text-muted-foreground">
-                                                        {format!("Reading time: {} min", reading_time_minutes)}
+                                                        {move || match lang.get() {
+                                                            Language::Fr => {
+                                                                format!("Temps de lecture : {} min", reading_time_minutes)
+                                                            }
+                                                            Language::En => {
+                                                                format!("Reading time: {} min", reading_time_minutes)
+                                                            }
+                                                        }}
                                                     </p>
                                                     {if is_blog {
                                                         view! {
@@ -934,21 +1087,34 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             .into_any()
                                                     } else {
                                                         view! { <></> }.into_any()
-                                                    }}
-                                                    <a
-                                                        href=back_href
-                                                        class="inline-flex mt-4 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                                                    >
-                                                        {back_label}
-                                                    </a>
-                                                    <a
-                                                        href=edit_url
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        class="inline-flex mt-2 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
-                                                    >
-                                                        "Edit in Git"
-                                                    </a>
+                                                    }} <div class="mt-4 flex flex-wrap gap-2">
+                                                        <a href=back_href class=back_btn_class>
+                                                            {move || {
+                                                                if is_blog {
+                                                                    match lang.get() {
+                                                                        Language::Fr => "Retour au blog",
+                                                                        Language::En => "Back to blog",
+                                                                    }
+                                                                } else {
+                                                                    match lang.get() {
+                                                                        Language::Fr => "Retour aux projets",
+                                                                        Language::En => "Back to projects",
+                                                                    }
+                                                                }
+                                                            }}
+                                                        </a>
+                                                        <a
+                                                            href=edit_url
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            class=edit_btn_class
+                                                        >
+                                                            {move || match lang.get() {
+                                                                Language::Fr => "Editer sur Git",
+                                                                Language::En => "Edit in Git",
+                                                            }}
+                                                        </a>
+                                                    </div>
                                                     <p class="mt-6 text-xs text-muted-foreground">
                                                         {footer_note}
                                                     </p>

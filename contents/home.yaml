@@ -44,6 +44,10 @@ url:
     url: https://www.linkedin.com/in/maxime-leriche-weebo/
     primaire: true
     imgUrl: ico#linkedin2
+  - name: BlueSky
+    url: https://bsky.app/profile/maxleriche.net
+    primaire: true
+    imgUrl: ico#bluesky
 usefulLinks:
   - name: AltPunk
     url: https://altpunk.org/

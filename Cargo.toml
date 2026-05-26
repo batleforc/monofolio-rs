@@ -1,15 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["libs/trace", "libs/content", "libs/api", "apps/frontend"]
+members = ["apps/frontend", "libs/api", "libs/content", "libs/trace"]
 
 [workspace.dependencies]
+actix-files = { version = "0.6" }
 # Actix
 actix-web = { version = "4", features = ["macros"] }
-actix-files = { version = "0.6" }
 
+anyhow = "1"
 # Async
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-anyhow = "1"
 
 # Leptos
 leptos = { version = "0.8" }
@@ -29,54 +29,61 @@ serde_yaml = "0.9"
 
 # Tracing
 tracing = { version = "0.1", features = ["std"] }
-tracing-subscriber = { version = "0.3", features = [
+tracing-actix-web = { version = "0.7" }
+tracing-opentelemetry = { version = "0.32" }
+tracing-subscriber = {
+  version = "0.3",
+  features = [
     "env-filter",
+    "fmt",
     "registry",
     "std",
-    "fmt",
-] }
-tracing-opentelemetry = { version = "0.32" }
-tracing-actix-web = { version = "0.7" }
+  ]
+}
 
 # OpenTelemetry
-opentelemetry = { version = "0.31", features = ["trace", "metrics"] }
-opentelemetry_sdk = { version = "0.31", features = [
+opentelemetry = { version = "0.31", features = ["metrics", "trace"] }
+opentelemetry-otlp = {
+  version = "0.31",
+  features = [
+    "grpc-tonic",
+    "metrics",
     "trace",
+  ]
+}
+opentelemetry_sdk = {
+  version = "0.31",
+  features = [
     "metrics",
     "rt-tokio",
-] }
-opentelemetry-otlp = { version = "0.31", features = [
-    "grpc-tonic",
     "trace",
-    "metrics",
-] }
+  ]
+}
 
+gray_matter = "0.3"
+image = {
+  version = "0.25",
+  default-features = true,
+  features = [
+    "jpeg",
+    "png",
+    "webp",
+  ]
+}
+mermaid-rs-renderer = { version = "0.2.2", default-features = false }
+notify = "6"
 # Content parsing
 pulldown-cmark = "0.13"
-gray_matter = "0.3"
-image = { version = "0.25", default-features = true, features = [
-    "png",
-    "jpeg",
-    "webp",
-] }
-mermaid-rs-renderer = { version = "0.2.2", default-features = false }
+regex = "1"
 sha2 = "0.11"
 takumi = { version = "1.0" }
-regex = "1"
 
+icons = { version = "0.18.2", features = ["leptos"] }
+leptos_ui = "0.3.22"
 # Error handling
 thiserror = "2"
 tw_merge = { version = "0.1.21", features = ["variant"] }
-icons = { version = "0.18.2", features = ["leptos"] }
-leptos_ui = "0.3.22"
 ureq = { version = "3" }
-
-[profile.release]
-lto = true
-opt-level = 3
-
-[profile.release.package.frontend]
-opt-level = 'z'
 
 [[workspace.metadata.leptos]]
 # Name of the Leptos package inside the workspace
@@ -115,3 +122,10 @@ bin-package = "frontend"
 lib-package = "frontend"
 
 tailwind-input-file = "apps/frontend/style/main.css"
+
+[profile.release]
+opt-level = 3
+lto = true
+
+[profile.release.package.frontend]
+opt-level = "z"

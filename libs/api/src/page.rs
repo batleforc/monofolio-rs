@@ -1,12 +1,9 @@
 use actix_web::{get, web::Data, HttpResponse, Responder};
+use crate::visibility::is_content_visible;
 use content::{ContentDatabase, ContentEntry};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use utoipa::ToSchema;
-
-fn is_page_visible(entry: &ContentEntry) -> bool {
-    !entry.draft && !entry.dates.released_at.trim().is_empty()
-}
 
 /// Simplified page payload looked up by content handle.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq, Eq)]
@@ -84,7 +81,7 @@ pub async fn get_page(
     match database
         .entries
         .iter()
-        .find(|entry| entry.handle == handle && is_page_visible(entry))
+        .find(|entry| entry.handle == handle && is_content_visible(entry))
     {
         Some(entry) => HttpResponse::Ok().json(PageResponse::from(entry)),
         None => HttpResponse::NotFound().json(ApiErrorResponse {
