@@ -1,5 +1,8 @@
 use leptos::prelude::*;
-use leptos_meta::{Link, Meta, Title};
+use leptos_meta::{Link, Meta, Script, Title};
+use serde_json::json;
+
+use crate::pages::home::HomeData;
 
 pub const SITE_URL: &str = "https://maxleriche.net";
 pub const DEFAULT_OG_IMAGE: &str = "https://maxleriche.net/assets/apple-touch-icon.png";
@@ -18,6 +21,40 @@ pub fn og_minia_url(path: &str) -> String {
         path.trim_start_matches('/').replace("/", "_")
     };
     format!("{SITE_URL}/public/minia/{}.webp", path)
+}
+
+pub fn build_person_json_ld(data: &HomeData) -> String {
+    let mut person = json!({
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": data.name,
+        "url": SITE_URL,
+        "description": data.short_description_en.as_deref().unwrap_or(&data.short_description),
+        "sameAs": data.url.iter().map(|l| l.url.clone()).collect::<Vec<_>>(),
+    });
+
+    if let Some(email) = &data.contact_email {
+        person["email"] = json!(email);
+    }
+    if let Some(job) = &data.current_work {
+        person["jobTitle"] = json!(job);
+    }
+    if let Some(location) = &data.contact_location {
+        person["address"] = json!({
+            "@type": "PostalAddress",
+            "addressLocality": location,
+        });
+    }
+
+    person.to_string()
+}
+
+#[component]
+pub fn PersonJsonLd(data: HomeData) -> impl IntoView {
+    let json_string = build_person_json_ld(&data);
+    view! {
+        <Script type_="application/ld+json">{json_string}</Script>
+    }
 }
 
 #[component]
@@ -45,7 +82,8 @@ pub fn StaticPageSeo(
 
 #[cfg(test)]
 mod tests {
-    use super::canonical_url;
+    use super::{build_person_json_ld, canonical_url};
+    use crate::pages::home::{HomeData, SocialLinkData};
 
     #[test]
     fn canonical_url_handles_root_and_paths() {
@@ -55,5 +93,40 @@ mod tests {
             canonical_url("/docs/test"),
             "https://maxleriche.net/docs/test"
         );
+    }
+
+    #[test]
+    fn person_json_ld_contains_required_fields() {
+        let data = HomeData {
+            name: "Maxime Leriche".to_string(),
+            short_description: "Dev, Ops".to_string(),
+            short_description_en: Some("Dev, Ops, Arch".to_string()),
+            contact_email: Some("max@maxleriche.net".to_string()),
+            current_work: Some("Engineer".to_string()),
+            contact_location: Some("Nouvelle-Aquitaine, France".to_string()),
+            url: vec![SocialLinkData {
+                name: "GitHub".to_string(),
+                url: "https://github.com/batleforc".to_string(),
+                primaire: true,
+                img_url: String::new(),
+            }],
+            ..Default::default()
+        };
+
+        let json_string = build_person_json_ld(&data);
+        let parsed: serde_json::Value = serde_json::from_str(&json_string).unwrap();
+
+        assert_eq!(parsed["@type"], "Person");
+        assert_eq!(parsed["name"], "Maxime Leriche");
+        assert_eq!(parsed["description"], "Dev, Ops, Arch");
+        assert_eq!(parsed["email"], "max@maxleriche.net");
+        assert_eq!(parsed["jobTitle"], "Engineer");
+        assert_eq!(
+            parsed["address"]["addressLocality"],
+            "Nouvelle-Aquitaine, France"
+        );
+        let same_as = parsed["sameAs"].as_array().unwrap();
+        assert_eq!(same_as.len(), 1);
+        assert_eq!(same_as[0], "https://github.com/batleforc");
     }
 }
