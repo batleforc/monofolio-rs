@@ -17,7 +17,7 @@ use crate::components::{
 };
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, use_translations, Language};
-use crate::seo::StaticPageSeo;
+use crate::seo::{PersonJsonLd, StaticPageSeo};
 use crate::services::api::fetch_json;
 
 const LAST_PROJECTS_COUNT: usize = 6;
@@ -326,6 +326,7 @@ fn HomeContent(data: HomeData, projects: Vec<ProjectSummaryData>) -> impl IntoVi
     .to_class();
 
     view! {
+        <PersonJsonLd data=data.clone() />
         <Hero data=data.clone() />
         <About data=data.clone() />
         <LatestProjectsSection projects=projects />
