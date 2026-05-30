@@ -1,4 +1,5 @@
 pub mod about;
+pub mod dino_game;
 pub mod hero;
 pub mod markdown;
 pub mod navbar;
