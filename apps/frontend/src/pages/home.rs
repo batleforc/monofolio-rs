@@ -410,7 +410,7 @@ pub fn HomePage() -> impl IntoView {
         <div class="home-page">
             <StaticPageSeo
                 title="Maxime Leriche | Portfolio DevOps passionné"
-                description="Portfolio de Maxime Leriche : projets, expériences, articles et contact."
+                description="Portfolio de Maxime Leriche alias Batleforc, ingénieur DevOps passionné : projets Kubernetes, GitOps (ArgoCD), Rust, sandbox et retours d'expérience sur l'architecture cloud-native."
                 path="/"
             />
             <Suspense fallback=move || {
