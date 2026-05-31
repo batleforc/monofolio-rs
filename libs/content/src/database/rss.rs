@@ -43,7 +43,7 @@ pub(super) fn write_blog_rss_feed(
 
 fn blog_link_from_handle(handle: &str) -> String {
     if let Some(rest) = handle.strip_prefix("blogs/") {
-        return format!("/blog/{rest}");
+        return format!("/blogs/{rest}");
     }
 
     format!("/{handle}")
