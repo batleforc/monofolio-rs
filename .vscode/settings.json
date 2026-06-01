@@ -6,5 +6,8 @@
     ["clx!\\s*\\{[^,]*,\\s*[^,]*,\\s*\"([^\"]*)\""],
     ["void!\\s*\\{[^,]*,\\s*[^,]*,\\s*\"([^\"]*)\""],
     ["tw_merge!\\(([^)]*)\\)"]
-  ]
+  ],
+  "yaml.schemas": {
+    "./resumectl.schema.json": ["contents/media/cv.yaml"]
+  }
 }
