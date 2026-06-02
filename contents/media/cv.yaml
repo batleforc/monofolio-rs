@@ -34,7 +34,7 @@ experience:
     startDate: 2023-09
     endDate: "present"
     description: |
-      Toujours dans l'équipe DevSecOps et Couche d'échange depuis devenue Socle de Fabrication Couche d'échange, j'occupe un poste à mi-chemin entre les deux partit de cette équipe, entre Dev et Ops
+      Toujours dans l'équipe DevSecOps et Couche d'échange depuis devenue Socle de Fabrication Couche d'échange, j'occupe un poste à mi-chemin entre les deux partie de cette équipe, entre Dev et Ops
     highlights:
       - Mise en place d'une stack d'environnement de développement cloud (DevSpaces/Eclipse Che sur Openshift + GitOps ArgoCD)
       - Étude et mise en place d'un assistant Code Dev.
@@ -68,6 +68,47 @@ experience:
     endDate: 2020-06
     description: "Développements d'applications en PHP sur un Framework propre à l'entreprise"
     highlights: []
+
+# Personal Projects
+projects:
+  - name: Weebo-SI
+    description: L'env de Dev Presque Parfait
+    url: https://github.com/batleforc/weebo-si
+    technologies:
+      - Terraform
+      - Pulumi
+      - Ansible
+      - Talos/Kubernetes
+      - Kubevirt
+      - ArgoCD
+      - HomeLab
+      - Proxmox
+  - name: ProxyAuthK8S
+    description: Kubernetes api server reverse proxy and agregator
+    url: https://github.com/batleforc/ProxyAuthK8S
+    technologies:
+      - Rust
+      - kubernetes
+      - operator
+      - reverse-proxy
+  - name: Batlehub
+    description: Your package hub. Proxy, cache, and host.
+    url: https://github.com/batleforc/batlehub
+    technologies:
+      - Rust
+      - registry
+      - package-manager
+      - proxy
+      - cache
+      - hosting
+  - name: Monofolio-RS
+    description: Déclinaison de mon monofolio dans une stack full Rust
+    url: https://github.com/batleforc/monofolio-rs
+    technologies:
+      - Rust
+      - Actix-Web
+      - Leptos
+      - Markdown
 
 # Education
 education:
@@ -136,47 +177,6 @@ certifications:
   - name: Numérique Responsable
     issuer: La Rochelle Université
     date: 2023-06
-
-# Personal Projects
-projects:
-  - name: Weebo-SI
-    description: L'env de Dev Presque Parfait
-    url: https://github.com/batleforc/weebo-si
-    technologies:
-      - Terraform
-      - Pulumi
-      - Ansible
-      - Talos/Kubernetes
-      - Kubevirt
-      - ArgoCD
-      - HomeLab
-      - Proxmox
-  - name: ProxyAuthK8S
-    description: Kubernetes api server reverse proxy and agregator
-    url: https://github.com/batleforc/ProxyAuthK8S
-    technologies:
-      - Rust
-      - kubernetes
-      - operator
-      - reverse-proxy
-  - name: Batlehub
-    description: Your package hub. Proxy, cache, and host.
-    url: https://github.com/batleforc/batlehub
-    technologies:
-      - Rust
-      - registry
-      - package-manager
-      - proxy
-      - cache
-      - hosting
-  - name: Monofolio-RS
-    description: Déclinaison de mon monofolio dans une stack full Rust
-    url: https://github.com/batleforc/monofolio-rs
-    technologies:
-      - Rust
-      - Actix-Web
-      - Leptos
-      - Markdown
 
 # Interests (optional)
 interests:
