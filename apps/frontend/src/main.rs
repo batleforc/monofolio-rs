@@ -168,6 +168,9 @@ async fn main() -> anyhow::Result<()> {
         app.service(public_scope())
             .service(Scalar::with_url("/api/docs", api))
             .service(get_sitemap)
+            .service(Files::new("/assets", site_root.to_string()))
+            .service(Files::new("/pkg", format!("{site_root}/pkg")))
+            .service(Files::new("/media", media_path.clone()))
             .leptos_routes(routes.clone(), {
                 let leptos_options = leptos_options.clone();
                 let home_config = home_config.clone();
@@ -231,9 +234,6 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
             })
-            .service(Files::new("/assets", site_root.to_string()))
-            .service(Files::new("/pkg", format!("{site_root}/pkg")))
-            .service(Files::new("/media", media_path))
     })
     .bind((Ipv4Addr::UNSPECIFIED, addr.port()))?;
 
