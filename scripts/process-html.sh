@@ -5,6 +5,9 @@ uv add weasyprint pikepdf
 
 resumectl generate --html --theme tech --color=#ff2b39 --output contents/media/output/ -d contents/media/cv.yaml
 
+## Swap Projects before Education (bloc Projets doit apparaître en premier)
+perl -0777 -i -pe 's{(<section class="section">\s*<h2 class="section-title">Education</h2>.*?</section>)(\s*)(<section class="section">\s*<h2 class="section-title">Projects</h2>.*?</section>)}{$3$2$1}gs' contents/media/output/cv.html
+
 # Post-Process
 
 ## To FR
@@ -26,9 +29,9 @@ perl -0777 -i -pe 's|(\.interest-item \{)|.interest-item { display: inline-block
 sed -i 's|</head>|<style>.interest-item { display: inline-block; margin: 2px; background-color: #1e293b; color: white; }</style>\n</head>|' contents/media/output/cv.html
 
 ## Add space before Education  with a div with height 50px
-perl -0777 -i -pe 's|</section>\s*<section class="section">\s*<h2 class="section-title">Diplômes et Formations</h2>|</section>\n\n                <!-- Add space between sections -->\n                <div style="height: 50px;"></div>\n\n                <section class="section">\n                    <h2 class="section-title">Diplômes et Formations</h2>|g' contents/media/output/cv.html
+perl -0777 -i -pe 's|</section>\s*<section class="section">\s*<h2 class="section-title">Projets</h2>|</section>\n\n                <!-- Add space between sections -->\n                <div style="height: 50px;"></div>\n\n                <section class="section">\n                    <h2 class="section-title">Projets</h2>|g' contents/media/output/cv.html
 
-## Add space at the end of the Projets section to fill the last page
+## Add space at the end of the last section (Diplômes et Formations) to fill the last page
 perl -0777 -i -pe 's|</section>\s*</div>|</section>\n\n                <!-- Add space between sections -->\n                <div style="height: 200px;"></div>\n\n            </div>|g' contents/media/output/cv.html
 
 .venv/bin/weasyprint contents/media/output/cv.html contents/media/output/cv_full.pdf
