@@ -32,6 +32,14 @@ fn increment_not_found_counter() -> u64 {
 /// Custom 404 page. Shows a cyberpunk mini-game on every 5th visit.
 #[component]
 pub fn NotFoundPage() -> impl IntoView {
+    #[cfg(feature = "ssr")]
+    {
+        use leptos_actix::ResponseOptions;
+        if let Some(res) = use_context::<ResponseOptions>() {
+            res.set_status(actix_web::http::StatusCode::NOT_FOUND);
+        }
+    }
+
     let lang = use_language();
 
     // — Normal 404 labels —
@@ -130,4 +138,3 @@ pub fn NotFoundPage() -> impl IntoView {
         </section>
     }
 }
-

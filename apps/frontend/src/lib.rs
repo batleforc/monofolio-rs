@@ -56,6 +56,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/docs") view=DocsReferencePage />
                     <Route path=path!("/docs/*any") view=ContentHandlePage />
                     <Route path=path!("/contact") view=ContactPage />
+                    <Route path=path!("/*any") view=NotFoundPage />
                 </Routes>
             </main>
         </Router>
