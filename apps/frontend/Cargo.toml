@@ -3,90 +3,6 @@ name = "frontend"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[[bin]]
-name = "frontend"
-path = "src/main.rs"
-
-[dependencies]
-leptos = { workspace = true }
-leptos_meta = { workspace = true }
-leptos_router = { workspace = true }
-leptos_actix = { workspace = true, optional = true }
-actix-web = { workspace = true, optional = true }
-actix-files = { workspace = true, optional = true }
-utoipa = { workspace = true, optional = true }
-utoipa-actix-web = { workspace = true, optional = true }
-utoipa-scalar = { workspace = true, optional = true }
-tracing = { workspace = true }
-tracing-actix-web = { workspace = true, optional = true }
-tokio = { workspace = true, optional = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-serde_yaml = { workspace = true, optional = true }
-anyhow = { workspace = true, optional = true }
-wasm-bindgen = { version = "0.2", optional = true }
-js-sys = { version = "0.3", optional = true }
-console_error_panic_hook = { version = "0.1", optional = true }
-gloo-net = { version = "0.7", features = ["http"], optional = true }
-web-sys = { version = "0.3", features = [
-    "Window",
-    "Storage",
-    "Navigator",
-    "Clipboard",
-    "HtmlCanvasElement",
-    "CanvasRenderingContext2d",
-    "KeyboardEvent",
-    "MouseEvent",
-    "TouchEvent",
-    "TouchList",
-    "Touch",
-    "EventTarget",
-], optional = true }
-wasm-bindgen-futures = { version = "0.4", optional = true }
-futures = { version = "0.3.32", optional = true }
-
-trace = { path = "../../libs/trace", optional = true }
-content = { path = "../../libs/content" }
-api = { path = "../../libs/api", optional = true }
-tw_merge.workspace = true
-icons.workspace = true
-leptos_ui.workspace = true
-leptos_icons = "0.7"
-icondata_si = "0.1"
-
-[features]
-default = ["ssr"]
-hydrate = [
-    "dep:wasm-bindgen",
-    "dep:js-sys",
-    "dep:console_error_panic_hook",
-    "dep:gloo-net",
-    "dep:web-sys",
-    "dep:wasm-bindgen-futures",
-    "dep:futures",
-    "leptos/hydrate",
-]
-ssr = [
-    "dep:actix-web",
-    "dep:actix-files",
-    "dep:leptos_actix",
-    "dep:utoipa",
-    "dep:utoipa-actix-web",
-    "dep:utoipa-scalar",
-    "dep:tracing-actix-web",
-    "dep:tokio",
-    "dep:anyhow",
-    "dep:trace",
-    "dep:api",
-    "dep:serde_yaml",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-]
-
 [package.metadata.leptos]
 # Name used by cargo-leptos
 name = "monofolio"
@@ -105,3 +21,91 @@ lib-features = ["hydrate"]
 bin-features = ["ssr"]
 # Styles
 style-file = "../../target/tmp/tailwind.css"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "frontend"
+path = "src/main.rs"
+
+[dependencies]
+actix-files = { workspace = true, optional = true }
+actix-web = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+futures = { version = "0.3.32", optional = true }
+gloo-net = { version = "0.7", features = ["http"], optional = true }
+js-sys = { version = "0.3", optional = true }
+leptos = { workspace = true }
+leptos_actix = { workspace = true, optional = true }
+leptos_meta = { workspace = true }
+leptos_router = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+tracing = { workspace = true }
+tracing-actix-web = { workspace = true, optional = true }
+utoipa = { workspace = true, optional = true }
+utoipa-actix-web = { workspace = true, optional = true }
+utoipa-scalar = { workspace = true, optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+web-sys = {
+  version = "0.3",
+  features = [
+    "CanvasRenderingContext2d",
+    "Clipboard",
+    "EventTarget",
+    "HtmlCanvasElement",
+    "KeyboardEvent",
+    "MouseEvent",
+    "Navigator",
+    "Storage",
+    "Touch",
+    "TouchEvent",
+    "TouchList",
+    "Window",
+  ],
+  optional = true
+}
+
+api = { path = "../../libs/api", optional = true }
+content = { path = "../../libs/content" }
+icondata_si = "0.1"
+icons.workspace = true
+leptos_icons = "0.7"
+leptos_ui.workspace = true
+trace = { path = "../../libs/trace", features = ["otel"], optional = true }
+tw_merge.workspace = true
+
+[features]
+default = ["ssr"]
+hydrate = [
+  "dep:console_error_panic_hook",
+  "dep:futures",
+  "dep:gloo-net",
+  "dep:js-sys",
+  "dep:wasm-bindgen",
+  "dep:wasm-bindgen-futures",
+  "dep:web-sys",
+  "leptos/hydrate",
+]
+ssr = [
+  "dep:actix-files",
+  "dep:actix-web",
+  "dep:anyhow",
+  "dep:api",
+  "dep:leptos_actix",
+  "dep:serde_yaml",
+  "dep:tokio",
+  "dep:trace",
+  "dep:tracing-actix-web",
+  "dep:utoipa",
+  "dep:utoipa-actix-web",
+  "dep:utoipa-scalar",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+  "leptos/ssr",
+]
