@@ -20,7 +20,7 @@ RUN pnpm run build:shiki
 # Stage 2 - rust-base: shared Rust + Node.js toolchain for build stages
 # Node.js is required by cargo-leptos to run the Tailwind CSS compiler.
 # =============================================================================
-FROM docker.io/rust:1-bookworm AS rust-base
+FROM docker.io/rust:1-bookworm@sha256:13c186980fa33cc12759b429662a1322939dbe697484b7c33b47dd2698d28460 AS rust-base
 WORKDIR /app
 
 # ── Install Node.js (LTS) by copying from the official node image ────────────
