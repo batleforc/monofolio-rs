@@ -130,7 +130,7 @@ RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
 # =============================================================================
 # Stage 5 - runtime: minimal image with only what the server needs at runtime
 # =============================================================================
-FROM gcr.io/distroless/cc-debian12:nonroot@sha256:bd2899c12b335c827750ccf2359879eab09c09b206023dcebea408947d54127c
+FROM gcr.io/distroless/cc-debian12:nonroot@sha256:66aa873a4a14fb164aa01296058efd8253744606d72715e45acface073359faa
 WORKDIR /app
 
 # SSR server binary
