@@ -2,7 +2,7 @@
 # =============================================================================
 # Stage 1 - node-builder: bundle Shiki (syntax highlighting)
 # =============================================================================
-FROM docker.io/node:lts-bookworm-slim@sha256:242549cd46785b480c832479a730f4f2a20865d61ea2e404fdb2a5c3d3b73ecf AS node-builder
+FROM docker.io/node:lts-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d AS node-builder
 WORKDIR /build
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
