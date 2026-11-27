@@ -1,8 +1,11 @@
 [tools]
+"cargo:cargo-audit" = "latest"    # deps:cve:snapshot (RustSec advisories)
+"cargo:cargo-machete" = "latest"  # deps:unused (unused Rust dependencies)
 cocogitto = "latest"
 copilot = "latest"
 "github:batleforc/weebo-skillsagent" = "0.19.0"
 gitleaks = "latest"
+jq = "latest"                     # parses the audit JSON in deps:cve:snapshot
 node = "lts"
 opengrep = "latest"
 perl = "latest"

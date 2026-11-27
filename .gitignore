@@ -204,3 +204,6 @@ contents/media/output/
 # <<< wska links in .claude/
 
 graphify-out/cache/
+
+# Task cache and deps snapshots
+.task/

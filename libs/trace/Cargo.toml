@@ -9,9 +9,9 @@ opentelemetry = { workspace = true }
 opentelemetry_sdk = { workspace = true }
 opentelemetry-otlp = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-opentelemetry = { workspace = true }
+tracing-opentelemetry = { workspace = true, optional = true }
 
 [features]
 default = []
 metrics = []
-otel = []
+otel = ["dep:tracing-opentelemetry"]
