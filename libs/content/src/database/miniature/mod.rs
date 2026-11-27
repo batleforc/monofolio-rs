@@ -1,22 +1,18 @@
 use std::{
-    borrow::Cow,
+    collections::HashMap,
     fs::{self, File},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use takumi::{
-    layout::{
-        node::Node,
-        style::{
-            AlignItems, ColorInput, Display, Filters, FlexDirection, FromCss, JustifyContent,
-            Length::{Percentage, Px},
-            ObjectFit, Style, StyleDeclaration,
-        },
-        Viewport,
+    prelude::{
+        AlignItems, ColorInput, Display, Filters, FlexDirection, FontOpticalSizing, FontResource,
+        Fonts, FromCssStr, ImageSource, JustifyContent,
+        Length::{Percentage, Px},
+        Node, ObjectFit, RenderOptions, Style, StyleDeclaration, Viewport,
     },
-    rendering::{render, write_image, ImageOutputFormat, RenderOptions},
-    resources::{font::FontResource, image::ImageSource},
-    GlobalContext,
+    render,
 };
 
 use crate::{
@@ -43,12 +39,17 @@ impl MiniatureImageKind {
     }
 }
 
+/// Fonts and preloaded images shared by every miniature render (takumi 2 has no global context).
+#[derive(Default)]
+pub struct GlobalContext {
+    fonts: Fonts,
+    images: HashMap<Arc<str>, ImageSource>,
+}
+
 /// Crée un [`GlobalContext`] Takumi avec la police Inter chargée.
 pub fn build_miniature_context() -> GlobalContext {
     let mut context = GlobalContext::default();
-    let _ = context
-        .font_context
-        .load_and_store(FontResource::new(INTER_FONT));
+    let _ = context.fonts.register(FontResource::new(INTER_FONT));
     context
 }
 
@@ -56,21 +57,15 @@ fn miniature_file_name(handle: &str) -> String {
     format!("{}.webp", handle.replace('/', "_"))
 }
 
-fn parse_bg_color(
-    input: &str,
-    output_path: &Path,
-) -> Result<ColorInput<false>, ContentDatabaseError> {
-    ColorInput::<false>::from_str(input).map_err(|_| ContentDatabaseError::MiniatureRender {
+fn parse_bg_color(input: &str, output_path: &Path) -> Result<ColorInput, ContentDatabaseError> {
+    ColorInput::from_css_str(input).map_err(|_| ContentDatabaseError::MiniatureRender {
         path: output_path.display().to_string(),
         message: format!("invalid color: {input}"),
     })
 }
 
-fn parse_text_color(
-    input: &str,
-    output_path: &Path,
-) -> Result<ColorInput<true>, ContentDatabaseError> {
-    ColorInput::<true>::from_str(input).map_err(|_| ContentDatabaseError::MiniatureRender {
+fn parse_text_color(input: &str, output_path: &Path) -> Result<ColorInput, ContentDatabaseError> {
+    ColorInput::from_css_str(input).map_err(|_| ContentDatabaseError::MiniatureRender {
         path: output_path.display().to_string(),
         message: format!("invalid color: {input}"),
     })
@@ -129,7 +124,7 @@ fn is_svg_path(path: &Path) -> bool {
 }
 
 fn svg_white_filter(output_path: &Path) -> Result<Filters, ContentDatabaseError> {
-    Filters::from_str("brightness(0) invert(1)").map_err(|_| {
+    Filters::from_css_str("brightness(0) invert(1)").map_err(|_| {
         ContentDatabaseError::MiniatureRender {
             path: output_path.display().to_string(),
             message: "invalid svg white filter".to_string(),
@@ -305,6 +300,10 @@ fn render_miniature_core(
         Style::default()
             .with(StyleDeclaration::width(Px(1200.0)))
             .with(StyleDeclaration::height(Px(630.0)))
+            // takumi 2 sets Inter's `opsz` axis from the font size; keep the takumi 1 glyphs.
+            .with(StyleDeclaration::font_optical_sizing(
+                FontOpticalSizing::None,
+            ))
             .with(StyleDeclaration::background_color(bg))
             .with(StyleDeclaration::display(Display::Flex))
             .with(StyleDeclaration::flex_direction(FlexDirection::Row))
@@ -319,7 +318,8 @@ fn render_miniature_core(
     let options = RenderOptions::builder()
         .viewport(Viewport::new((1200, 630)))
         .node(root)
-        .global(global_context)
+        .fonts(&global_context.fonts)
+        .images(global_context.images.clone())
         .build();
 
     let image = render(options).map_err(|error| ContentDatabaseError::MiniatureRender {
@@ -332,13 +332,37 @@ fn render_miniature_core(
         source,
     })?;
 
-    write_image(Cow::Owned(image), &mut file, ImageOutputFormat::WebP, None).map_err(|error| {
-        ContentDatabaseError::EncodeImage {
-            path: output_path.display().to_string(),
-            message: error.to_string(),
-        }
+    let encoded = encode_webp(&image, &mut file);
+    encoded.map_err(|message| ContentDatabaseError::EncodeImage {
+        path: output_path.display().to_string(),
+        message,
     })?;
     Ok(())
+}
+
+fn encode_webp(image: &takumi::prelude::Bitmap, file: &mut File) -> Result<(), String> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use takumi::{
+            prelude::{OutputFormat, Quality},
+            write_image,
+        };
+        write_image(
+            image,
+            file,
+            OutputFormat::WebP {
+                quality: Quality::new(100),
+            },
+        )
+        .map_err(|error| error.to_string())
+    }
+    // takumi 2 ships no WebP encoder on wasm32. The hydrate build links this crate
+    // but never renders miniatures, so it only needs to compile there.
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = (image, file);
+        Err("WebP encoding is not available on wasm32".to_string())
+    }
 }
 
 pub fn generate_miniature_for_entry(
@@ -561,7 +585,7 @@ fn preload_image_resource(
     global_context: &mut GlobalContext,
 ) -> Result<(), ContentDatabaseError> {
     let key = image_path.to_string_lossy().to_string();
-    if global_context.persistent_image_store.get(&key).is_some() {
+    if global_context.images.contains_key(key.as_str()) {
         return Ok(());
     }
 
@@ -576,7 +600,7 @@ fn preload_image_resource(
             message: error.to_string(),
         })?;
 
-    global_context.persistent_image_store.insert(key, image);
+    global_context.images.insert(key.into(), image);
     Ok(())
 }
 
@@ -588,7 +612,7 @@ fn preload_icomoon_symbol(
     // Create a unique key for this symbol
     let key = format!("{}#{}", svg_path.display(), symbol_id);
 
-    if global_context.persistent_image_store.get(&key).is_some() {
+    if global_context.images.contains_key(key.as_str()) {
         return Ok(key);
     }
 
@@ -602,8 +626,6 @@ fn preload_icomoon_symbol(
             message: error.to_string(),
         })?;
 
-    global_context
-        .persistent_image_store
-        .insert(key.clone(), image);
+    global_context.images.insert(key.as_str().into(), image);
     Ok(key)
 }

@@ -1,19 +1,14 @@
-use std::{borrow::Cow, fs::File, path::PathBuf};
+use std::{collections::HashMap, fs::File, path::PathBuf, sync::Arc};
 
 use content::HomeConfig;
 use takumi::{
-    layout::{
-        node::Node,
-        style::{
-            AlignItems, ColorInput, Display, FlexDirection, FromCss, JustifyContent,
-            Length::{Percentage, Px},
-            ObjectFit, Style, StyleDeclaration,
-        },
-        Viewport,
+    prelude::{
+        AlignItems, ColorInput, Display, FlexDirection, FontOpticalSizing, FontResource, Fonts,
+        FromCssStr, ImageSource, JustifyContent,
+        Length::{Percentage, Px},
+        Node, ObjectFit, OutputFormat, RenderOptions, Style, StyleDeclaration, Viewport,
     },
-    rendering::{render, write_image, ImageOutputFormat, RenderOptions},
-    resources::{font::FontResource, image::ImageSource},
-    GlobalContext,
+    render, write_image,
 };
 
 const INTER_FONT: &[u8] = include_bytes!("../../assets/fonts/Inter-Variable.ttf");
@@ -24,12 +19,12 @@ const FG: &str = "oklch(0.93 0.018 25)";
 const MUTED: &str = "oklch(0.58 0.04 30)";
 const PRIMARY: &str = "oklch(0.65 0.26 25)";
 
-fn parse_bg(input: &str) -> ColorInput<false> {
-    ColorInput::<false>::from_str(input).expect("invalid bg color")
+fn parse_bg(input: &str) -> ColorInput {
+    ColorInput::from_css_str(input).expect("invalid bg color")
 }
 
-fn parse_fg(input: &str) -> ColorInput<true> {
-    ColorInput::<true>::from_str(input).expect("invalid fg color")
+fn parse_fg(input: &str) -> ColorInput {
+    ColorInput::from_css_str(input).expect("invalid fg color")
 }
 
 fn parse_args() -> (PathBuf, PathBuf) {
@@ -86,7 +81,7 @@ fn portfolio_logo_path() -> Option<PathBuf> {
 fn render_signature(
     home: &HomeConfig,
     output_path: &PathBuf,
-    ctx: &mut GlobalContext,
+    fonts: &Fonts,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // ── Palette ───────────────────────────────────────────────────────────
     let bg = parse_bg(BG);
@@ -215,6 +210,7 @@ fn render_signature(
 
     // ── Image panel (38% of content area) ────────────────────────────────
     let mut content_children = vec![text_panel];
+    let mut images: HashMap<Arc<str>, ImageSource> = HashMap::new();
 
     if let Some(logo_path) = portfolio_logo_path() {
         let image_key = logo_path.to_string_lossy().to_string();
@@ -232,7 +228,7 @@ fn render_signature(
                 return Ok(());
             }
         };
-        ctx.persistent_image_store.insert(image_key.clone(), source);
+        images.insert(image_key.as_str().into(), source);
 
         let image_node = Node::image(image_key).with_style(
             Style::default()
@@ -272,6 +268,10 @@ fn render_signature(
         Style::default()
             .with(StyleDeclaration::width(Px(800.0)))
             .with(StyleDeclaration::height(Px(220.0)))
+            // takumi 2 sets Inter's `opsz` axis from the font size; keep the takumi 1 glyphs.
+            .with(StyleDeclaration::font_optical_sizing(
+                FontOpticalSizing::None,
+            ))
             .with(StyleDeclaration::background_color(bg))
             .with(StyleDeclaration::display(Display::Flex))
             .with(StyleDeclaration::flex_direction(FlexDirection::Row))
@@ -283,13 +283,14 @@ fn render_signature(
     let options = RenderOptions::builder()
         .viewport(Viewport::new((800, 220)))
         .node(root)
-        .global(ctx)
+        .fonts(fonts)
+        .images(images)
         .build();
 
     let image = render(options)?;
 
     let mut file = File::create(output_path)?;
-    write_image(Cow::Owned(image), &mut file, ImageOutputFormat::Png, None)?;
+    write_image(&image, &mut file, OutputFormat::Png)?;
 
     Ok(())
 }
@@ -313,12 +314,10 @@ fn main() {
         }
     };
 
-    let mut ctx = GlobalContext::default();
-    let _ = ctx
-        .font_context
-        .load_and_store(FontResource::new(INTER_FONT));
+    let mut fonts = Fonts::default();
+    let _ = fonts.register(FontResource::new(INTER_FONT));
 
-    match render_signature(&home, &output_path, &mut ctx) {
+    match render_signature(&home, &output_path, &fonts) {
         Ok(()) => println!("Signature generated: {}", output_path.display()),
         Err(e) => {
             eprintln!("Render failed: {e}");
