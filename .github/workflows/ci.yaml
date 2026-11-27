@@ -1,0 +1,33 @@
+# Build gate for pull requests and main, running the same tasks as a developer
+# (task check, task test). Build, push and deploy stay on Forgejo
+# (.forgejo/workflows/build.yaml); this repository is the public mirror.
+name: CI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # mise's GitHub lookups, 60/h without it
+jobs:
+  check:
+    name: fmt, check (SSR + WASM), test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # rust comes from mise.toml with the wasm32 target, like locally.
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install_args: task rust
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: cargo fmt --all -- --check
+      - run: task check
+      - run: task test
+      # Not gated yet: `task lint` (clippy -D warnings) fails on 35 existing
+      # warnings in apps/frontend and libs/content. Gate it once they are fixed.
