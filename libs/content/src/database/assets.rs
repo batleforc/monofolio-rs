@@ -41,31 +41,31 @@ fn rewrite_media_urls_in_nodes(
 }
 
 fn collect_non_history_media_refs_in_home_yaml(
-    value: &serde_yaml::Value,
+    value: &yaml_serde::Value,
     refs: &mut BTreeSet<String>,
 ) {
     match value {
-        serde_yaml::Value::String(raw) => {
+        yaml_serde::Value::String(raw) => {
             if let Some(relative_path) = media_reference_to_relative_path(raw) {
                 refs.insert(relative_path);
             }
         }
-        serde_yaml::Value::Sequence(items) => {
+        yaml_serde::Value::Sequence(items) => {
             for item in items {
                 collect_non_history_media_refs_in_home_yaml(item, refs);
             }
         }
-        serde_yaml::Value::Mapping(map) => {
+        yaml_serde::Value::Mapping(map) => {
             for (key, value) in map {
-                if let serde_yaml::Value::String(key_str) = key {
+                if let yaml_serde::Value::String(key_str) = key {
                     if key_str == "history" {
-                        if let serde_yaml::Value::Sequence(entries) = value {
+                        if let yaml_serde::Value::Sequence(entries) = value {
                             for entry in entries {
-                                if let serde_yaml::Value::Mapping(entry_map) = entry {
+                                if let yaml_serde::Value::Mapping(entry_map) = entry {
                                     for (entry_key, entry_value) in entry_map {
                                         let is_img_url = matches!(
                                             entry_key,
-                                            serde_yaml::Value::String(k) if k == "imgUrl"
+                                            yaml_serde::Value::String(k) if k == "imgUrl"
                                         );
                                         if !is_img_url {
                                             collect_non_history_media_refs_in_home_yaml(
@@ -87,10 +87,10 @@ fn collect_non_history_media_refs_in_home_yaml(
     }
 }
 
-fn collect_cv_refs_in_yaml(value: &serde_yaml::Value, refs: &mut BTreeSet<String>) {
-    if let serde_yaml::Value::Mapping(map) = value {
+fn collect_cv_refs_in_yaml(value: &yaml_serde::Value, refs: &mut BTreeSet<String>) {
+    if let yaml_serde::Value::Mapping(map) = value {
         for (key, value) in map {
-            if let serde_yaml::Value::String(key_str) = key {
+            if let yaml_serde::Value::String(key_str) = key {
                 if key_str == "cvUrl" {
                     if let Some(url) = value.as_str() {
                         refs.insert(url.to_string());
@@ -151,15 +151,15 @@ fn fetch_remote_media(_url: &str) -> Option<Vec<u8>> {
 }
 
 fn rewrite_https_img_urls_in_yaml(
-    value: &mut serde_yaml::Value,
+    value: &mut yaml_serde::Value,
     bundle_media_root: &Path,
 ) -> Result<(), ContentDatabaseError> {
     match value {
-        serde_yaml::Value::Mapping(map) => {
+        yaml_serde::Value::Mapping(map) => {
             for (key, inner) in map.iter_mut() {
-                let is_img_url = matches!(key, serde_yaml::Value::String(k) if k == "imgUrl");
+                let is_img_url = matches!(key, yaml_serde::Value::String(k) if k == "imgUrl");
                 if is_img_url {
-                    if let serde_yaml::Value::String(raw) = inner {
+                    if let yaml_serde::Value::String(raw) = inner {
                         if raw.starts_with("https://") {
                             let source_url = raw.clone();
                             let ext = guess_extension_from_https_url(&source_url);
@@ -195,7 +195,7 @@ fn rewrite_https_img_urls_in_yaml(
                 }
             }
         }
-        serde_yaml::Value::Sequence(items) => {
+        yaml_serde::Value::Sequence(items) => {
             for item in items {
                 rewrite_https_img_urls_in_yaml(item, bundle_media_root)?;
             }
@@ -215,27 +215,27 @@ fn section_thumbnail_file_name(section_prefix: &str, relative_path: &str, ext: &
 }
 
 fn rewrite_section_img_urls_to_thumbnails(
-    home_yaml: &mut serde_yaml::Value,
+    home_yaml: &mut yaml_serde::Value,
     content_media_root: &Path,
     bundle_media_root: &Path,
     section_key: &str,
     file_prefix: &str,
 ) -> Result<(), ContentDatabaseError> {
-    let history_key = serde_yaml::Value::String(section_key.to_string());
-    let img_url_key = serde_yaml::Value::String("imgUrl".to_string());
+    let history_key = yaml_serde::Value::String(section_key.to_string());
+    let img_url_key = yaml_serde::Value::String("imgUrl".to_string());
 
     let Some(root_map) = home_yaml.as_mapping_mut() else {
         return Ok(());
     };
-    let Some(serde_yaml::Value::Sequence(entries)) = root_map.get_mut(&history_key) else {
+    let Some(yaml_serde::Value::Sequence(entries)) = root_map.get_mut(&history_key) else {
         return Ok(());
     };
 
     for entry in entries {
-        let serde_yaml::Value::Mapping(entry_map) = entry else {
+        let yaml_serde::Value::Mapping(entry_map) = entry else {
             continue;
         };
-        let Some(serde_yaml::Value::String(raw_url)) = entry_map.get_mut(&img_url_key) else {
+        let Some(yaml_serde::Value::String(raw_url)) = entry_map.get_mut(&img_url_key) else {
             continue;
         };
 
@@ -482,8 +482,8 @@ pub fn process_home_yaml_media_for_bundle(
             source,
         })?;
 
-    let mut home_yaml: serde_yaml::Value =
-        serde_yaml::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
+    let mut home_yaml: yaml_serde::Value =
+        yaml_serde::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),
             message: error.to_string(),
         })?;
@@ -528,7 +528,7 @@ pub fn process_home_yaml_media_for_bundle(
     }
 
     let rewritten =
-        serde_yaml::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
+        yaml_serde::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),
             message: error.to_string(),
         })?;
@@ -671,11 +671,11 @@ fn fetch_favicon(_site_url: &str) -> Option<(Vec<u8>, &'static str)> {
 }
 
 fn rewrite_minia_refs_in_yaml(
-    value: &mut serde_yaml::Value,
+    value: &mut yaml_serde::Value,
     bundle_minia_root: &Path,
 ) -> Result<(), ContentDatabaseError> {
     match value {
-        serde_yaml::Value::String(raw) => {
+        yaml_serde::Value::String(raw) => {
             if let Some(site_url) = minia_reference_to_site_url(raw) {
                 let site_url = site_url.to_string();
 
@@ -706,12 +706,12 @@ fn rewrite_minia_refs_in_yaml(
                 *raw = public_minia_url(&format!("{prefix}.{ext}"));
             }
         }
-        serde_yaml::Value::Sequence(items) => {
+        yaml_serde::Value::Sequence(items) => {
             for item in items {
                 rewrite_minia_refs_in_yaml(item, bundle_minia_root)?;
             }
         }
-        serde_yaml::Value::Mapping(map) => {
+        yaml_serde::Value::Mapping(map) => {
             for value in map.values_mut() {
                 rewrite_minia_refs_in_yaml(value, bundle_minia_root)?;
             }
@@ -737,8 +737,8 @@ pub fn process_home_yaml_minia_for_bundle(
             source,
         })?;
 
-    let mut home_yaml: serde_yaml::Value =
-        serde_yaml::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
+    let mut home_yaml: yaml_serde::Value =
+        yaml_serde::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),
             message: error.to_string(),
         })?;
@@ -746,7 +746,7 @@ pub fn process_home_yaml_minia_for_bundle(
     rewrite_minia_refs_in_yaml(&mut home_yaml, &minia_root)?;
 
     let rewritten =
-        serde_yaml::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
+        yaml_serde::to_string(&home_yaml).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),
             message: error.to_string(),
         })?;

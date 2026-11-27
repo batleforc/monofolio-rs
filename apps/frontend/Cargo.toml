@@ -43,7 +43,7 @@ leptos_meta = { workspace = true }
 leptos_router = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_yaml = { workspace = true, optional = true }
+yaml_serde = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 tracing = { workspace = true }
 tracing-actix-web = { workspace = true, optional = true }
@@ -100,7 +100,7 @@ ssr = [
   "dep:anyhow",
   "dep:api",
   "dep:leptos_actix",
-  "dep:serde_yaml",
+  "dep:yaml_serde",
   "dep:tokio",
   "dep:trace",
   "dep:tracing-actix-web",

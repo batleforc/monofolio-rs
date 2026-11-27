@@ -112,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
     let home_path = format!("{content_base_path}/home.yaml");
     let home_yaml = std::fs::read_to_string(&home_path)
         .with_context(|| format!("Failed to read home config at {home_path}"))?;
-    let home_config: HomeConfig = serde_yaml::from_str(&home_yaml)
+    let home_config: HomeConfig = yaml_serde::from_str(&home_yaml)
         .with_context(|| format!("Failed to parse home config at {home_path}"))?;
     let content_db_path = format!("{}/db.json", content_base_path);
     let content_database_json = std::fs::read_to_string(&content_db_path)

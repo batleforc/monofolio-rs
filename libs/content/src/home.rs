@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn social_link_defaults() {
         let yaml = "name: GitHub\nurl: https://github.com\n";
-        let link: SocialLink = serde_yaml::from_str(yaml).unwrap();
+        let link: SocialLink = yaml_serde::from_str(yaml).unwrap();
         assert_eq!(link.name, "GitHub");
         assert!(!link.primaire);
         assert!(link.img_url.is_empty());
@@ -108,15 +108,15 @@ mod tests {
             useful_links: vec![],
             history: vec![],
         };
-        let yaml = serde_yaml::to_string(&config).unwrap();
-        let parsed: HomeConfig = serde_yaml::from_str(&yaml).unwrap();
+        let yaml = yaml_serde::to_string(&config).unwrap();
+        let parsed: HomeConfig = yaml_serde::from_str(&yaml).unwrap();
         assert_eq!(config, parsed);
     }
 
     #[test]
     fn history_entry_bilingual_defaults() {
         let yaml = "title: T\nlieux: L\ndate: 2020\nweight: 1\n";
-        let entry: HistoryEntry = serde_yaml::from_str(yaml).unwrap();
+        let entry: HistoryEntry = yaml_serde::from_str(yaml).unwrap();
         assert!(entry.title_en.is_none());
         assert!(entry.description_en.is_none());
     }
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn history_entry_url_defaults_to_empty_vec() {
         let yaml = "title: T\nlieux: L\ndate: 2020\nweight: 1\n";
-        let entry: HistoryEntry = serde_yaml::from_str(yaml).unwrap();
+        let entry: HistoryEntry = yaml_serde::from_str(yaml).unwrap();
         assert!(entry.url.is_empty());
     }
 }

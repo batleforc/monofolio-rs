@@ -306,7 +306,7 @@ fn main() {
         }
     };
 
-    let home: HomeConfig = match serde_yaml::from_str(&home_content) {
+    let home: HomeConfig = match yaml_serde::from_str(&home_content) {
         Ok(h) => h,
         Err(e) => {
             eprintln!("Failed to parse {}: {e}", home_yaml_path.display());

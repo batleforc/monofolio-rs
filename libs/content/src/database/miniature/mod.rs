@@ -410,7 +410,7 @@ pub fn process_static_pages_miniatures(
             source,
         })?;
     let home: HomeConfig =
-        serde_yaml::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
+        yaml_serde::from_str(&home_content).map_err(|error| ContentDatabaseError::ParseYaml {
             path: bundle.home_path.display().to_string(),
             message: error.to_string(),
         })?;

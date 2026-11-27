@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn config_deserialises_from_yaml() {
         let yaml = "port: 8080\nenv: production\n";
-        let cfg: SiteConfig = serde_yaml::from_str(yaml).unwrap();
+        let cfg: SiteConfig = yaml_serde::from_str(yaml).unwrap();
         assert_eq!(cfg.port, 8080);
         assert_eq!(cfg.env, "production");
     }

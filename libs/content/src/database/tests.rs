@@ -390,7 +390,7 @@ fn rewrites_history_img_url_to_40x40_thumbnail_in_bundle() {
     process_home_yaml_media_for_bundle(&root, &bundle).expect("process home media");
 
     let rewritten_home = fs::read_to_string(&bundle.home_path).expect("read rewritten home");
-    let home_yaml: serde_yaml::Value = serde_yaml::from_str(&rewritten_home).expect("parse home");
+    let home_yaml: yaml_serde::Value = yaml_serde::from_str(&rewritten_home).expect("parse home");
     let img_url = home_yaml
         .get("history")
         .and_then(|v| v.as_sequence())
@@ -500,7 +500,7 @@ fn rewrites_useful_links_img_url_to_40x40_thumbnail_in_bundle() {
     process_home_yaml_media_for_bundle(&root, &bundle).expect("process home media");
 
     let rewritten_home = fs::read_to_string(&bundle.home_path).expect("read rewritten home");
-    let home_yaml: serde_yaml::Value = serde_yaml::from_str(&rewritten_home).expect("parse home");
+    let home_yaml: yaml_serde::Value = yaml_serde::from_str(&rewritten_home).expect("parse home");
     let img_url = home_yaml
         .get("usefulLinks")
         .and_then(|v| v.as_sequence())
