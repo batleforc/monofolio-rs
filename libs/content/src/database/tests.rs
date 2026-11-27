@@ -576,7 +576,7 @@ fn full_workflow_helper_builds_and_finalizes_bundle() {
 
     let rss = fs::read_to_string(output.join("rss.xml")).expect("read rss");
     assert!(rss.contains("<title>First post</title>"));
-    assert!(rss.contains("<link>/blog/first</link>"));
+    assert!(rss.contains("<link>https://maxleriche.net/blogs/first</link>"));
     assert!(rss.contains("<category>rust</category>"));
 
     fs::remove_dir_all(root).expect("cleanup root");

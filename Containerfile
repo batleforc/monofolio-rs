@@ -100,6 +100,11 @@ COPY --from=node-builder /build/apps/frontend/public/js/shiki.bundle.js \
 RUN cargo clean --release --package frontend --package content --package api --package trace \
     && cargo clean --release --target wasm32-unknown-unknown --package frontend
 
+# ── Run the test suite: a failing test stops the image build (and the deploy) ─
+RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
+    cargo test --release --locked --workspace
+
 # Pre-generate the stylesheet expected by cargo-leptos.
 # This avoids a build failure when cargo-leptos cannot find target/tmp/tailwind.css.
 RUN mkdir -p target/tmp \
@@ -119,6 +124,9 @@ RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
 # Copy content last so content-only updates do not invalidate the expensive
 # Leptos SSR/WASM compilation step above.
 COPY contents/ contents/
+# Git history gives each page its created/updated dates (content-build runs `git log`).
+# Copied last so a new commit only invalidates the content step.
+COPY .git .git
 
 # ── Generate content database (db.json, home.yaml, rss.xml, public/ media) ───
 RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \

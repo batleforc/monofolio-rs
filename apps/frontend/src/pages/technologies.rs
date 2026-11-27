@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(not(feature = "ssr"))]
 use web_sys::js_sys;
@@ -7,9 +7,9 @@ use web_sys::js_sys;
 use crate::components::ui::{Card, SectionInner, SectionTitle, TagBadge};
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
-use crate::services::api::fetch_json;
+use crate::services::api::json_resource;
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 struct TechnologyNodeData {
     title: String,
     handle: String,
@@ -26,28 +26,6 @@ struct TechnologyNodeData {
 enum TechnologyVisual {
     Image(String),
     Icomoon(String),
-}
-
-#[cfg_attr(feature = "ssr", allow(dead_code))]
-async fn load_technology_tree() -> Vec<TechnologyNodeData> {
-    fetch_json("/api/v1/nav/technologies")
-        .await
-        .unwrap_or_default()
-}
-
-#[cfg(not(feature = "ssr"))]
-async fn load_technology_tree_send_safe() -> Vec<TechnologyNodeData> {
-    let (tx, rx) = futures::channel::oneshot::channel::<Vec<TechnologyNodeData>>();
-    wasm_bindgen_futures::spawn_local(async move {
-        let _ = tx.send(load_technology_tree().await);
-    });
-    match rx.await {
-        Ok(data) => data,
-        Err(err) => {
-            tracing::warn!("oneshot receiver canceled while loading technology tree: {err}");
-            Vec::new()
-        }
-    }
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -428,8 +406,14 @@ fn TechnologyBranch(
 #[component]
 pub fn TechnologiesPage() -> impl IntoView {
     let lang = use_language();
-    let technology_tree: RwSignal<Vec<TechnologyNodeData>> = RwSignal::new(vec![]);
-    let loading = RwSignal::new(true);
+    #[cfg(feature = "ssr")]
+    let initial = crate::services::api::from_content_db(api::nav::build_technology_mindmap);
+    #[cfg(not(feature = "ssr"))]
+    let initial = None;
+    let technology_res =
+        json_resource::<Vec<TechnologyNodeData>>("/api/v1/nav/technologies", initial);
+    let technology_tree =
+        Signal::derive(move || technology_res.get().flatten().unwrap_or_default());
     let search_query = RwSignal::new(String::new());
     #[cfg(not(feature = "ssr"))]
     let query_hydrated = RwSignal::new(false);
@@ -444,23 +428,6 @@ pub fn TechnologiesPage() -> impl IntoView {
             query_hydrated.set(true);
         });
     }
-
-    let do_fetch = move || {
-        loading.set(true);
-        #[cfg(not(feature = "ssr"))]
-        {
-            wasm_bindgen_futures::spawn_local(async move {
-                technology_tree.set(load_technology_tree_send_safe().await);
-                loading.set(false);
-            });
-        }
-    };
-
-    #[cfg(feature = "ssr")]
-    let _ = &do_fetch;
-
-    #[cfg(not(feature = "ssr"))]
-    do_fetch();
 
     #[cfg(not(feature = "ssr"))]
     Effect::new(move |_| {
@@ -533,6 +500,13 @@ pub fn TechnologiesPage() -> impl IntoView {
                 <SectionTitle>{title}</SectionTitle>
                 <p class="mb-6 text-muted-foreground">{subtitle}</p>
 
+                <Suspense fallback=move || {
+                    view! {
+                        <Card class="p-5">
+                            <p class="text-sm text-muted-foreground">{loading_label}</p>
+                        </Card>
+                    }
+                }>
                 <Card class="mb-6 p-4 sm:p-5">
                     <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                         <label class="flex flex-col gap-1 text-sm">
@@ -552,14 +526,6 @@ pub fn TechnologiesPage() -> impl IntoView {
                 </Card>
 
                 {move || {
-                    if loading.get() {
-                        return view! {
-                            <Card class="p-5">
-                                <p class="text-sm text-muted-foreground">{loading_label}</p>
-                            </Card>
-                        }
-                            .into_any();
-                    }
                     if filtered_tree.get().is_empty() {
                         return
                         view! {
@@ -589,6 +555,7 @@ pub fn TechnologiesPage() -> impl IntoView {
                     }
                         .into_any()
                 }}
+                </Suspense>
             </SectionInner>
         </section>
     }

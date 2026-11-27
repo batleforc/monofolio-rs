@@ -65,9 +65,16 @@ jobs:
         }}/monofolio-rs:${{ github.sha }}
     steps:
       - uses: https://git.batleforc.fr/action/checkout@v6
+        with:
+          fetch-depth: 0 # full history: content-build reads page dates from git log
       - name: Setup ArgoCD CLI
+        if: github.event_name != 'pull_request'
+        env:
+          ARGOCD_VERSION: v3.6.3
+          ARGOCD_SHA256: 3750cd7ed2a2ef05c640344b86f29aa99c9783e847c8f326c81e3900ad39412b
         run: |
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          curl -sSfL -o argocd-linux-amd64 "https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_VERSION}/argocd-linux-amd64"
+          echo "${ARGOCD_SHA256}  argocd-linux-amd64" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/argocd"
           install -m 555 argocd-linux-amd64 "$RUNNER_TEMP/argocd/argocd"
           rm argocd-linux-amd64
@@ -98,18 +105,26 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_SHA}"
           IMAGE_TAG_BRANCH="${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_REF_NAME}"
+          CACHE_TO=""
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            CACHE_TO="--cache-to=${{ env.REGISTRY }}/${{ matrix.image_name }}/cache"
+          fi
           buildah bud  \
             --platform linux/amd64 \
             --layers \
-            --cache-to=${{ env.REGISTRY }}/${{ matrix.image_name }}/cache \
+            $CACHE_TO \
             --cache-from=${{ env.REGISTRY }}/${{ matrix.image_name }}/cache \
             --tag $IMAGE_TAG \
             --tag $IMAGE_TAG_BRANCH \
             --file ${{ matrix.dockerfile }} \
             ${{ matrix.context }}
-          buildah push $IMAGE_TAG
-          buildah push $IMAGE_TAG_BRANCH
+      - name: Push Image
+        if: github.event_name != 'pull_request'
+        run: |
+          buildah push "${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_SHA}"
+          buildah push "${{ env.REGISTRY }}/${{ matrix.image_name }}:${GITHUB_REF_NAME}"
       - name: Obtain access Token
+        if: github.event_name != 'pull_request'
         id: idtoken
         run: |
           TOKEN_ANSWER=$(curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
@@ -138,6 +153,7 @@ jobs:
           echo "::add-mask::$DEX_TOKEN"
           echo "dex-token=$DEX_TOKEN" >> "$GITHUB_OUTPUT"
       - name: Refresh ArgoCD Application
+        if: github.event_name != 'pull_request'
         env:
           ARGOCD_AUTH_TOKEN: ${{ steps.idtoken.outputs.dex-token }}
           ARGOCD_SERVER: argo.batleforc.fr
@@ -145,4 +161,4 @@ jobs:
         run: |
           set -x
           argocd app get --grpc-web --hard-refresh argocd/monofolio
-          argocd app sync argocd/monofolio --grpc-web --timeout 300 || true
+          argocd app sync argocd/monofolio --grpc-web --timeout 300

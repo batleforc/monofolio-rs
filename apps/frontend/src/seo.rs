@@ -4,7 +4,7 @@ use serde_json::json;
 
 use crate::pages::home::HomeData;
 
-pub const SITE_URL: &str = "https://maxleriche.net";
+pub use content::SITE_URL;
 pub const DEFAULT_OG_IMAGE: &str = "https://maxleriche.net/assets/apple-touch-icon.png";
 
 pub fn canonical_url(path: &str) -> String {

@@ -4,10 +4,13 @@ pub mod home;
 pub mod markdown;
 pub mod post;
 
+/// Public origin of the site, used for absolute URLs (canonical, sitemap, RSS).
+pub const SITE_URL: &str = "https://maxleriche.net";
+
 pub use config::SiteConfig;
 pub use database::{
     build_content_database, build_content_database_and_bundle,
-    build_content_database_and_prepare_bundle, create_content_output_bundle,
+    build_content_database_and_prepare_bundle, create_content_output_bundle, escape_xml,
     finalize_content_output_bundle, prepare_content_output_bundle,
     process_home_yaml_media_for_bundle, process_markdown_media_for_bundle,
     process_mermaid_codeblocks_for_bundle, write_content_database_json, BlogTimelineEntry,

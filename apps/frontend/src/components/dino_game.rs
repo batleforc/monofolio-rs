@@ -195,24 +195,41 @@ pub fn DinoGame() -> impl IntoView {
                     ctx.fill_rect(0.0, 0.0, CANVAS_W, CANVAS_H);
                     ctx.set_fill_style_str("#00ffdc");
                     ctx.set_font("bold 18px monospace");
-                    let _ = ctx.fill_text("[ CYBER RUNNER ]", CANVAS_W / 2.0 - 100.0, CANVAS_H / 2.0 - 14.0);
+                    let _ = ctx.fill_text(
+                        "[ CYBER RUNNER ]",
+                        CANVAS_W / 2.0 - 100.0,
+                        CANVAS_H / 2.0 - 14.0,
+                    );
                     ctx.set_font("13px monospace");
                     ctx.set_fill_style_str("#aaaaaa");
-                    let _ = ctx.fill_text("Press Space or click to start", CANVAS_W / 2.0 - 115.0, CANVAS_H / 2.0 + 12.0);
+                    let _ = ctx.fill_text(
+                        "Press Space or click to start",
+                        CANVAS_W / 2.0 - 115.0,
+                        CANVAS_H / 2.0 + 12.0,
+                    );
                 }
                 GameState::GameOver => {
                     ctx.set_fill_style_str("rgba(0,0,0,0.55)");
                     ctx.fill_rect(0.0, 0.0, CANVAS_W, CANVAS_H);
                     ctx.set_fill_style_str("#ff2244");
                     ctx.set_font("bold 22px monospace");
-                    let _ = ctx.fill_text("GAME OVER", CANVAS_W / 2.0 - 70.0, CANVAS_H / 2.0 - 16.0);
+                    let _ =
+                        ctx.fill_text("GAME OVER", CANVAS_W / 2.0 - 70.0, CANVAS_H / 2.0 - 16.0);
                     ctx.set_fill_style_str("#00ffdc");
                     ctx.set_font("14px monospace");
-                    let final_score = format!("Score: {}  |  Best: {}", data.score as u64, data.high_score as u64);
-                    let _ = ctx.fill_text(&final_score, CANVAS_W / 2.0 - 110.0, CANVAS_H / 2.0 + 8.0);
+                    let final_score = format!(
+                        "Score: {}  |  Best: {}",
+                        data.score as u64, data.high_score as u64
+                    );
+                    let _ =
+                        ctx.fill_text(&final_score, CANVAS_W / 2.0 - 110.0, CANVAS_H / 2.0 + 8.0);
                     ctx.set_fill_style_str("#aaaaaa");
                     ctx.set_font("13px monospace");
-                    let _ = ctx.fill_text("Space / click to restart", CANVAS_W / 2.0 - 96.0, CANVAS_H / 2.0 + 30.0);
+                    let _ = ctx.fill_text(
+                        "Space / click to restart",
+                        CANVAS_W / 2.0 - 96.0,
+                        CANVAS_H / 2.0 + 30.0,
+                    );
                 }
                 GameState::Running => {}
             }
@@ -337,7 +354,12 @@ pub fn DinoGame() -> impl IntoView {
             {
                 let id = window
                     .request_animation_frame(
-                        raf_closure.borrow().as_ref().unwrap().as_ref().unchecked_ref(),
+                        raf_closure
+                            .borrow()
+                            .as_ref()
+                            .unwrap()
+                            .as_ref()
+                            .unchecked_ref(),
                     )
                     .unwrap();
                 raf_handle.set(Some(id));
@@ -370,8 +392,31 @@ pub fn DinoGame() -> impl IntoView {
             // Keydown
             {
                 let jump_fn = jump_or_start.clone();
+                // The listener sits on `window`, so it must unregister itself once the
+                // canvas leaves the page, or it keeps eating Space/ArrowUp/W site-wide.
+                let keydown_fn: Rc<RefCell<Option<js_sys::Function>>> = Rc::new(RefCell::new(None));
+                let keydown_fn_cb = keydown_fn.clone();
+                let canvas_for_key = canvas_el.clone();
                 let keydown_cb = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::wrap(Box::new(
                     move |e: web_sys::KeyboardEvent| {
+                        if !canvas_for_key.is_connected() {
+                            if let (Some(win), Some(f)) =
+                                (web_sys::window(), keydown_fn_cb.borrow_mut().take())
+                            {
+                                let _ = win.remove_event_listener_with_callback("keydown", &f);
+                            }
+                            return;
+                        }
+                        let typing = web_sys::window()
+                            .and_then(|w| w.document())
+                            .and_then(|d| d.active_element())
+                            .map(|el| {
+                                matches!(el.tag_name().as_str(), "INPUT" | "TEXTAREA" | "SELECT")
+                            })
+                            .unwrap_or(false);
+                        if typing {
+                            return;
+                        }
                         let key = e.key();
                         if key == " " || key == "ArrowUp" || key == "w" || key == "W" {
                             e.prevent_default();
@@ -385,6 +430,12 @@ pub fn DinoGame() -> impl IntoView {
                         keydown_cb.as_ref().unchecked_ref(),
                     )
                     .unwrap();
+                *keydown_fn.borrow_mut() = Some(
+                    keydown_cb
+                        .as_ref()
+                        .unchecked_ref::<js_sys::Function>()
+                        .clone(),
+                );
                 keydown_cb.forget();
             }
 
@@ -397,10 +448,7 @@ pub fn DinoGame() -> impl IntoView {
                     },
                 ));
                 canvas_el
-                    .add_event_listener_with_callback(
-                        "click",
-                        click_cb.as_ref().unchecked_ref(),
-                    )
+                    .add_event_listener_with_callback("click", click_cb.as_ref().unchecked_ref())
                     .unwrap();
                 click_cb.forget();
             }

@@ -299,11 +299,6 @@ fn map_sidebar_item(item: &SidebarItem, known_doc_handles: &HashSet<String>) -> 
 }
 
 #[cfg(feature = "ssr")]
-fn is_nav_visible(entry: &ContentEntry) -> bool {
-    !entry.draft && !entry.dates.released_at.trim().is_empty()
-}
-
-#[cfg(feature = "ssr")]
 fn map_sidebar_item_filtered(
     item: &SidebarItem,
     known_doc_handles: &HashSet<String>,
@@ -507,7 +502,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                     content_db.and_then(|db| {
                         db.entries
                             .iter()
-                            .find(|entry| entry.handle == handle && is_nav_visible(entry))
+                            .find(|entry| entry.handle == handle && entry.is_visible())
                             .map(PageData::from)
                     })
                 }
@@ -534,7 +529,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                 let known_doc_handles: HashSet<String> = db
                                     .entries
                                     .iter()
-                                    .filter(|entry| entry.kind.doc && is_nav_visible(entry))
+                                    .filter(|entry| entry.kind.doc && entry.is_visible())
                                     .map(|entry| entry.handle.clone())
                                     .collect();
                                 db.sidebar

@@ -57,6 +57,8 @@ web-sys = {
   features = [
     "CanvasRenderingContext2d",
     "Clipboard",
+    "Document",
+    "Element",
     "EventTarget",
     "HtmlCanvasElement",
     "KeyboardEvent",

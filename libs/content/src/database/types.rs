@@ -128,6 +128,13 @@ pub struct ContentEntry {
     pub content: MarkdownContent,
 }
 
+impl ContentEntry {
+    /// Single visibility rule for public pages, navigation, sitemap and feeds.
+    pub fn is_visible(&self) -> bool {
+        !self.draft && !self.dates.released_at.trim().is_empty()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ContentDatabase {
     pub generated_at_unix: u64,

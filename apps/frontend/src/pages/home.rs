@@ -1,5 +1,4 @@
 #[cfg(feature = "ssr")]
-use api::visibility::is_content_visible;
 #[cfg(feature = "ssr")]
 use content::{ContentEntry, HomeConfig};
 use leptos::prelude::*;
@@ -389,7 +388,7 @@ pub fn HomePage() -> impl IntoView {
                         .map(|db| {
                             db.entries
                                 .iter()
-                                .filter(|entry| entry.kind.project && is_content_visible(entry))
+                                .filter(|entry| entry.kind.project && entry.is_visible())
                                 .map(ProjectSummaryData::from)
                                 .collect()
                         })

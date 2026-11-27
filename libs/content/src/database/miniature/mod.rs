@@ -20,8 +20,8 @@ use takumi::{
 };
 
 use crate::{
-    database::public_minia_url, home::HomeConfig, BlogTimelineEntry, ContentDatabase,
-    ContentDatabaseError, ContentEntry, ContentOutputBundle,
+    database::public_minia_url, home::HomeConfig, ContentDatabase, ContentDatabaseError,
+    ContentEntry, ContentOutputBundle,
 };
 
 const INTER_FONT: &[u8] = include_bytes!("../../../assets/fonts/Inter-Variable.ttf");
@@ -52,12 +52,8 @@ pub fn build_miniature_context() -> GlobalContext {
     context
 }
 
-fn miniature_file_name(entry: &ContentEntry) -> String {
-    format!("{}.webp", entry.handle.replace('/', "_"))
-}
-
-fn miniature_file_name_blog(entry: &BlogTimelineEntry) -> String {
-    format!("{}.webp", entry.handle.replace('/', "_"))
+fn miniature_file_name(handle: &str) -> String {
+    format!("{}.webp", handle.replace('/', "_"))
 }
 
 fn parse_bg_color(
@@ -153,13 +149,13 @@ pub fn process_takumi_page_miniature(
     })?;
 
     for entry in &mut database.entries {
-        let miniature_name = miniature_file_name(entry);
+        let miniature_name = miniature_file_name(&entry.handle);
         let miniature_path = minia_dir.join(&miniature_name);
         generate_miniature_for_entry(entry, &miniature_path, &bundle.public_dir, global_context)?;
         entry.minia = Some(public_minia_url(&miniature_name));
     }
     for entry in &mut database.blog_timeline {
-        let miniature_name = miniature_file_name_blog(entry);
+        let miniature_name = miniature_file_name(&entry.handle);
         entry.minia = Some(public_minia_url(&miniature_name));
     }
     Ok(())

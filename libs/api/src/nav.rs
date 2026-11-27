@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use crate::visibility::is_content_visible;
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use content::{
     BlogTimelineEntry, ContentDatabase, ContentEntry, SidebarItem, TechnologyMaturity,
@@ -222,11 +221,11 @@ fn doc_sidebar_item_from(
     }
 }
 
-fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
+pub fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
     let known_handles: HashSet<String> = database
         .entries
         .iter()
-        .filter(|e| e.kind.doc && is_content_visible(e))
+        .filter(|e| e.kind.doc && e.is_visible())
         .map(|e| e.handle.clone())
         .collect();
     database
@@ -236,7 +235,7 @@ fn build_doc_sidebar(database: &ContentDatabase) -> Vec<DocSidebarItem> {
         .collect()
 }
 
-fn build_technology_mindmap(database: &ContentDatabase) -> Vec<TechnologyMindmapNode> {
+pub fn build_technology_mindmap(database: &ContentDatabase) -> Vec<TechnologyMindmapNode> {
     let title_by_handle: HashMap<String, String> = database
         .entries
         .iter()
@@ -328,12 +327,16 @@ fn apply_technology_item(node: &mut TechnologyMindmapTreeNode, item: &Technology
 #[instrument(name = "get_blog_nav", skip(database))]
 pub async fn get_blog_nav(database: Data<ContentDatabase>) -> impl Responder {
     info!("Serving blog nav");
-    let entries: Vec<BlogSidebarEntry> = database
+    HttpResponse::Ok().json(build_blog_nav(database.get_ref()))
+}
+
+/// Blog entries as served by `/nav/blog` (also used for server-side rendering).
+pub fn build_blog_nav(database: &ContentDatabase) -> Vec<BlogSidebarEntry> {
+    database
         .blog_timeline
         .iter()
         .map(BlogSidebarEntry::from)
-        .collect();
-    HttpResponse::Ok().json(entries)
+        .collect()
 }
 
 /// Return the doc sidebar (documentation tree with item type hints).
@@ -363,13 +366,17 @@ pub async fn get_doc_nav(database: Data<ContentDatabase>) -> impl Responder {
 #[instrument(name = "get_projects_nav", skip(database))]
 pub async fn get_projects_nav(database: Data<ContentDatabase>) -> impl Responder {
     info!("Serving projects nav");
-    let projects: Vec<ProjectSummary> = database
+    HttpResponse::Ok().json(build_projects_nav(database.get_ref()))
+}
+
+/// Visible projects as served by `/nav/projects` (also used for server-side rendering).
+pub fn build_projects_nav(database: &ContentDatabase) -> Vec<ProjectSummary> {
+    database
         .entries
         .iter()
-        .filter(|e| e.kind.project && is_content_visible(e))
+        .filter(|e| e.kind.project && e.is_visible())
         .map(ProjectSummary::from)
-        .collect();
-    HttpResponse::Ok().json(projects)
+        .collect()
 }
 
 /// Return the technology tree used by the technology mindmap page.
@@ -402,7 +409,7 @@ pub async fn get_search_index(database: Data<ContentDatabase>) -> impl Responder
     let mut entries: Vec<SearchEntry> = database
         .entries
         .iter()
-        .filter(|entry| is_content_visible(entry))
+        .filter(|entry| entry.is_visible())
         .map(SearchEntry::from)
         .collect();
     entries.sort_by(|a, b| {

@@ -358,8 +358,7 @@ pub fn build_content_database(
         if entry.kind.doc
             && is_technology_doc_handle(&handle)
             && mindmap_meta.include
-            && !entry.draft
-            && !entry.dates.released_at.trim().is_empty()
+            && entry.is_visible()
         {
             if let Some(maturity) = mindmap_meta.maturity {
                 technology_map.push(TechnologyMindmapEntry {
@@ -389,9 +388,7 @@ pub fn build_content_database(
 
     let mut blog_timeline: Vec<BlogTimelineEntry> = entries
         .iter()
-        .filter(|entry| {
-            entry.kind.blog && !entry.draft && !entry.dates.released_at.trim().is_empty()
-        })
+        .filter(|entry| entry.kind.blog && entry.is_visible())
         .map(|entry| BlogTimelineEntry {
             title: entry.title.clone(),
             description: entry.description.clone(),

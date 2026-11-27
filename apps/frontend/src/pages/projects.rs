@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tw_merge::IntoTailwindClass;
 
 #[cfg(not(feature = "ssr"))]
@@ -11,11 +11,11 @@ use crate::components::ui::{
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
-use crate::services::api::fetch_json;
+use crate::services::api::json_resource;
 
 const PROJECTS_PER_PAGE: usize = 6;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 struct ProjectSummaryData {
     title: String,
     description: String,
@@ -25,11 +25,6 @@ struct ProjectSummaryData {
     minia: Option<String>,
     image: String,
     released_at: String,
-}
-
-#[cfg_attr(feature = "ssr", allow(dead_code))]
-async fn load_projects_data() -> Vec<ProjectSummaryData> {
-    fetch_json("/api/v1/nav/projects").await.unwrap_or_default()
 }
 
 fn resolve_project_image(raw: &str) -> Option<String> {
@@ -139,8 +134,17 @@ fn sync_projects_query_to_url(search: &str, tag: &str, techno: &str, page: usize
 pub fn ProjectsPage() -> impl IntoView {
     let lang = use_language();
 
-    let projects_data: RwSignal<Vec<ProjectSummaryData>> = RwSignal::new(vec![]);
-    let loading = RwSignal::new(true);
+    #[cfg(feature = "ssr")]
+    let initial = crate::services::api::from_content_db(api::nav::build_projects_nav);
+    #[cfg(not(feature = "ssr"))]
+    let initial = None;
+    let projects_res = json_resource::<Vec<ProjectSummaryData>>("/api/v1/nav/projects", initial);
+    let loading = Signal::derive(move || projects_res.get().is_none());
+    let projects_data = Memo::new(move |_| {
+        let mut projects = projects_res.get().flatten().unwrap_or_default();
+        projects.sort_by(|a, b| b.released_at.cmp(&a.released_at));
+        projects
+    });
 
     let search_query = RwSignal::new(String::new());
     let selected_tag = RwSignal::new(String::from("all"));
@@ -169,25 +173,6 @@ pub fn ProjectsPage() -> impl IntoView {
     {
         let _ = &query_hydrated;
     }
-
-    let do_fetch = move || {
-        loading.set(true);
-        #[cfg(not(feature = "ssr"))]
-        {
-            wasm_bindgen_futures::spawn_local(async move {
-                let mut projects = load_projects_data().await;
-                projects.sort_by(|a, b| b.released_at.cmp(&a.released_at));
-                projects_data.set(projects);
-                loading.set(false);
-            });
-        }
-    };
-
-    #[cfg(feature = "ssr")]
-    let _ = &do_fetch;
-
-    #[cfg(not(feature = "ssr"))]
-    do_fetch();
 
     let page_title = move || match lang.get() {
         Language::Fr => "Projets",
@@ -389,6 +374,18 @@ pub fn ProjectsPage() -> impl IntoView {
                 <SectionTitle>{page_title}</SectionTitle>
                 <p class="text-muted-foreground mb-6">{page_intro}</p>
 
+                <Suspense fallback=move || {
+                    view! {
+                        <Card class="p-5">
+                            <p class="text-sm text-muted-foreground">
+                                {move || match lang.get() {
+                                    Language::Fr => "Chargement des projets...",
+                                    Language::En => "Loading projects...",
+                                }}
+                            </p>
+                        </Card>
+                    }
+                }>
                 <Card class="p-4 sm:p-5 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <label class="flex flex-col gap-1 text-sm">
@@ -477,19 +474,6 @@ pub fn ProjectsPage() -> impl IntoView {
                 </Card>
 
                 {move || {
-                    if loading.get() {
-                        return view! {
-                            <Card class="p-5">
-                                <p class="text-sm text-muted-foreground">
-                                    {move || match lang.get() {
-                                        Language::Fr => "Chargement des projets...",
-                                        Language::En => "Loading projects...",
-                                    }}
-                                </p>
-                            </Card>
-                        }
-                            .into_any();
-                    }
                     if filtered_projects.get().is_empty() {
                         return view! {
                             <Card class="p-5">
@@ -631,6 +615,7 @@ pub fn ProjectsPage() -> impl IntoView {
                     }
                         .into_any()
                 }}
+                </Suspense>
             </SectionInner>
         </section>
     }

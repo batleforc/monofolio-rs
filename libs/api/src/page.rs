@@ -1,5 +1,4 @@
 use actix_web::{get, web::Data, HttpResponse, Responder};
-use crate::visibility::is_content_visible;
 use content::{ContentDatabase, ContentEntry};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
@@ -81,7 +80,7 @@ pub async fn get_page(
     match database
         .entries
         .iter()
-        .find(|entry| entry.handle == handle && is_content_visible(entry))
+        .find(|entry| entry.handle == handle && entry.is_visible())
     {
         Some(entry) => HttpResponse::Ok().json(PageResponse::from(entry)),
         None => HttpResponse::NotFound().json(ApiErrorResponse {

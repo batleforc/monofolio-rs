@@ -23,6 +23,7 @@ pub use bundle::{
     build_content_database_and_bundle, build_content_database_and_prepare_bundle,
     create_content_output_bundle, finalize_content_output_bundle, prepare_content_output_bundle,
 };
+pub use rss::escape_xml;
 pub use types::{
     BlogTimelineEntry, ContentDatabase, ContentDatabaseError, ContentDates, ContentEntry,
     ContentKind, ContentOutputBundle, DirMeta, SidebarItem, TechnologyMindmapEntry,

@@ -1,6 +1,7 @@
 [tools]
 cocogitto = "latest"
 copilot = "latest"
+"github:batleforc/weebo-skillsagent" = "0.19.0"
 gitleaks = "latest"
 node = "lts"
 opengrep = "latest"

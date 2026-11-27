@@ -6,9 +6,17 @@ pub use translations::{Language, Translations, EN, FR};
 
 /// Install the i18n context.  Must be called once near the root of the app.
 pub fn provide_i18n() {
-    let initial = detect_initial_language();
-    let lang: RwSignal<Language> = RwSignal::new(initial);
+    // Server and client must both start in French so hydration sees the same DOM;
+    // the stored choice is applied right after, in an effect (client-only).
+    let lang: RwSignal<Language> = RwSignal::new(Language::Fr);
     provide_context(lang);
+    #[cfg(not(feature = "ssr"))]
+    Effect::new(move |_| {
+        let stored = load_lang_from_storage();
+        if stored != lang.get_untracked() {
+            lang.set(stored);
+        }
+    });
 }
 
 /// Returns the reactive language signal from context.
@@ -40,17 +48,6 @@ pub fn toggle_language(lang: RwSignal<Language>) {
 }
 
 // ── Internal helpers ────────────────────────────────────────────────────────
-
-fn detect_initial_language() -> Language {
-    #[cfg(not(feature = "ssr"))]
-    {
-        load_lang_from_storage()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        Language::Fr
-    }
-}
 
 fn persist_language(lang: Language) {
     #[cfg(not(feature = "ssr"))]

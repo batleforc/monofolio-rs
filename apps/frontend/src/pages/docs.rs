@@ -2,25 +2,20 @@ use std::collections::HashSet;
 
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
-use crate::services::api::fetch_json;
+use crate::services::api::json_resource;
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 struct DocSidebarItemData {
     title: String,
     handle: String,
     order: u64,
     kind: String,
     children: Vec<DocSidebarItemData>,
-}
-
-#[cfg_attr(feature = "ssr", allow(dead_code))]
-async fn load_docs_nav() -> Vec<DocSidebarItemData> {
-    fetch_json("/api/v1/nav/doc").await.unwrap_or_default()
 }
 
 #[allow(dead_code)]
@@ -205,28 +200,16 @@ fn collect_active_path_folders(
 pub fn DocsReferencePage() -> impl IntoView {
     let _location = use_location();
     let lang = use_language();
-    let docs_nav: RwSignal<Vec<DocSidebarItemData>> = RwSignal::new(vec![]);
-    let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
-    let loading = RwSignal::new(true);
+    #[cfg(feature = "ssr")]
+    let initial = crate::services::api::from_content_db(api::nav::build_doc_sidebar);
     #[cfg(not(feature = "ssr"))]
-    let did_init = RwSignal::new(false);
+    let initial = None;
+    let docs_nav_res = json_resource::<Vec<DocSidebarItemData>>("/api/v1/nav/doc", initial);
+    let docs_nav = Signal::derive(move || docs_nav_res.get().flatten().unwrap_or_default());
+    let expanded_folders: RwSignal<HashSet<String>> = RwSignal::new(HashSet::new());
 
     #[cfg(not(feature = "ssr"))]
     {
-        Effect::new(move |_| {
-            if did_init.get() {
-                return;
-            }
-            did_init.set(true);
-            loading.set(true);
-
-            wasm_bindgen_futures::spawn_local(async move {
-                let data = load_docs_nav().await;
-                docs_nav.set(data);
-                loading.set(false);
-            });
-        });
-
         Effect::new(move |_| {
             let handle = _location.pathname.get().trim_start_matches('/').to_string();
             let nav_data = docs_nav.get();
@@ -287,20 +270,19 @@ pub fn DocsReferencePage() -> impl IntoView {
                 <SectionTitle>{move || title()}</SectionTitle>
                 <p class="text-muted-foreground mb-6">{move || subtitle()}</p>
 
-                {move || {
-                    if loading.get() {
-                        return view! {
-                            <Card class="p-5">
-                                <p class="text-sm text-muted-foreground">
-                                    {move || match lang.get() {
-                                        Language::Fr => "Chargement de la documentation...",
-                                        Language::En => "Loading documentation...",
-                                    }}
-                                </p>
-                            </Card>
-                        }
-                            .into_any();
+                <Suspense fallback=move || {
+                    view! {
+                        <Card class="p-5">
+                            <p class="text-sm text-muted-foreground">
+                                {move || match lang.get() {
+                                    Language::Fr => "Chargement de la documentation...",
+                                    Language::En => "Loading documentation...",
+                                }}
+                            </p>
+                        </Card>
                     }
+                }>
+                {move || {
                     if docs_nav.get().is_empty() {
                         return view! {
                             <Card class="p-5">
@@ -496,6 +478,7 @@ pub fn DocsReferencePage() -> impl IntoView {
                     }
                         .into_any()
                 }}
+                </Suspense>
             </SectionInner>
         </section>
     }

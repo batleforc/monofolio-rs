@@ -1,13 +1,13 @@
 use leptos::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::components::ui::{Card, SectionInner, SectionTitle};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
-use crate::services::api::fetch_json;
+use crate::services::api::json_resource;
 
-#[derive(Debug, Clone, Default, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 struct BlogEntryData {
     title: String,
     description: String,
@@ -17,12 +17,6 @@ struct BlogEntryData {
     tags: Vec<String>,
     image: String,
     reading_time_minutes: usize,
-    draft: bool,
-}
-
-#[cfg_attr(feature = "ssr", allow(dead_code))]
-async fn load_blog_entries() -> Vec<BlogEntryData> {
-    fetch_json("/api/v1/nav/blog").await.unwrap_or_default()
 }
 
 fn resolve_blog_image(raw: &str) -> Option<String> {
@@ -42,40 +36,13 @@ fn resolve_blog_image(raw: &str) -> Option<String> {
 pub fn BlogReferencePage() -> impl IntoView {
     let lang = use_language();
 
-    let blog_entries: RwSignal<Vec<BlogEntryData>> = RwSignal::new(vec![]);
-    let loading = RwSignal::new(true);
-
-    let do_fetch = move || {
-        loading.set(true);
-        #[cfg(not(feature = "ssr"))]
-        {
-            wasm_bindgen_futures::spawn_local(async move {
-                use leptos::leptos_dom::logging::console_log;
-
-                let mut entries: Vec<BlogEntryData> = load_blog_entries()
-                    .await
-                    .into_iter()
-                    .filter(|entry| !entry.draft)
-                    .collect();
-                entries.sort_by(|a, b| b.date.cmp(&a.date));
-                blog_entries.set(entries);
-                loading.set(false);
-                console_log(
-                    format!(
-                        "Blog entries loaded : {}",
-                        blog_entries.get_untracked().len()
-                    )
-                    .as_str(),
-                );
-            });
-        }
-    };
-
     #[cfg(feature = "ssr")]
-    let _ = &do_fetch;
-
+    let initial = crate::services::api::from_content_db(api::nav::build_blog_nav);
     #[cfg(not(feature = "ssr"))]
-    do_fetch();
+    let initial = None;
+    // Already filtered (visible only) and sorted newest first by the content build.
+    let blog_entries_res = json_resource::<Vec<BlogEntryData>>("/api/v1/nav/blog", initial);
+    let blog_entries = Signal::derive(move || blog_entries_res.get().flatten().unwrap_or_default());
 
     let title = move || match lang.get() {
         Language::Fr => "Reference Blog",
@@ -113,20 +80,19 @@ pub fn BlogReferencePage() -> impl IntoView {
                 <SectionTitle>{move || title()}</SectionTitle>
                 <p class="text-muted-foreground mb-6">{move || subtitle()}</p>
 
-                {move || {
-                    if loading.get() {
-                        return view! {
-                            <Card class="p-5">
-                                <p class="text-sm text-muted-foreground">
-                                    {move || match lang.get() {
-                                        Language::Fr => "Chargement des articles...",
-                                        Language::En => "Loading blog entries...",
-                                    }}
-                                </p>
-                            </Card>
-                        }
-                            .into_any();
+                <Suspense fallback=move || {
+                    view! {
+                        <Card class="p-5">
+                            <p class="text-sm text-muted-foreground">
+                                {move || match lang.get() {
+                                    Language::Fr => "Chargement des articles...",
+                                    Language::En => "Loading blog entries...",
+                                }}
+                            </p>
+                        </Card>
                     }
+                }>
+                {move || {
                     if blog_entries.get().is_empty() {
                         return view! {
                             <Card class="p-5">
@@ -217,6 +183,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                     }
                         .into_any()
                 }}
+                </Suspense>
             </SectionInner>
         </section>
     }

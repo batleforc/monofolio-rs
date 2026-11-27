@@ -3,36 +3,30 @@ use actix_web::{dev::Service, http::header};
 #[cfg(feature = "ssr")]
 use actix_web::{get, web::Data, HttpResponse, Responder};
 #[cfg(feature = "ssr")]
-use content::ContentDatabase;
+use content::{escape_xml, ContentDatabase, SITE_URL};
 use tracing_actix_web::RequestId;
 
 #[cfg(feature = "ssr")]
-fn escape_xml(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
-}
-
-#[cfg(feature = "ssr")]
 fn build_sitemap_xml(database: &ContentDatabase) -> String {
-    let mut urls: Vec<String> = vec![
-        "https://maxleriche.net/".to_string(),
-        "https://maxleriche.net/about".to_string(),
-        "https://maxleriche.net/projects".to_string(),
-        "https://maxleriche.net/technologies".to_string(),
-        "https://maxleriche.net/blog".to_string(),
-        "https://maxleriche.net/docs".to_string(),
-        "https://maxleriche.net/contact".to_string(),
-    ];
-    urls.extend(database.entries.iter().map(|entry| {
-        format!(
-            "https://maxleriche.net/{}",
-            entry.handle.trim_start_matches('/')
-        )
-    }));
+    let mut urls: Vec<String> = [
+        "/",
+        "/about",
+        "/projects",
+        "/technologies",
+        "/blog",
+        "/docs",
+        "/contact",
+    ]
+    .iter()
+    .map(|path| format!("{SITE_URL}{path}"))
+    .collect();
+    urls.extend(
+        database
+            .entries
+            .iter()
+            .filter(|entry| entry.is_visible())
+            .map(|entry| format!("{SITE_URL}/{}", entry.handle.trim_start_matches('/'))),
+    );
     urls.sort();
     urls.dedup();
 
@@ -54,6 +48,35 @@ async fn get_sitemap(database: Data<ContentDatabase>) -> impl Responder {
     HttpResponse::Ok()
         .content_type("application/xml; charset=utf-8")
         .body(build_sitemap_xml(database.get_ref()))
+}
+
+/// CSP sent on every page. `None` under `cargo leptos watch`, whose live-reload
+/// websocket runs on another port.
+#[cfg(feature = "ssr")]
+fn build_content_security_policy(tracking_script_src: Option<&str>) -> Option<header::HeaderValue> {
+    if std::env::var_os("LEPTOS_WATCH").is_some() {
+        return None;
+    }
+    // Origin (scheme://host[:port]) of the analytics script, allowed for script and beacon.
+    let tracking_origin = tracking_script_src
+        .and_then(|src| {
+            let (scheme, rest) = src.split_once("://")?;
+            let host = rest.split('/').next().filter(|h| !h.is_empty())?;
+            Some(format!(" {scheme}://{host}"))
+        })
+        .unwrap_or_default();
+    // shortcut: 'unsafe-inline' scripts because Leptos hydration and the Shiki loader are
+    // inline <script>s; switch to a per-request nonce (leptos::nonce) to drop it.
+    let policy = format!(
+        "default-src 'self'; \
+         script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'{tracking_origin}; \
+         style-src 'self' 'unsafe-inline'; \
+         img-src 'self' data: https:; \
+         connect-src 'self'{tracking_origin}; \
+         font-src 'self' data:; \
+         object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    );
+    header::HeaderValue::from_str(&policy).ok()
 }
 
 #[cfg(feature = "ssr")]
@@ -86,10 +109,11 @@ async fn main() -> anyhow::Result<()> {
 
     let content_base_path =
         std::env::var("CONTENT_DB_PATH").unwrap_or_else(|_| "target/content-build".to_string());
-    let home_yaml = std::fs::read_to_string(format!("{}/home.yaml", content_base_path))
-        .unwrap_or_else(|_| String::new());
-    let home_config: HomeConfig =
-        serde_yaml::from_str(&home_yaml).expect("Failed to parse contents/home.yaml");
+    let home_path = format!("{content_base_path}/home.yaml");
+    let home_yaml = std::fs::read_to_string(&home_path)
+        .with_context(|| format!("Failed to read home config at {home_path}"))?;
+    let home_config: HomeConfig = serde_yaml::from_str(&home_yaml)
+        .with_context(|| format!("Failed to parse home config at {home_path}"))?;
     let content_db_path = format!("{}/db.json", content_base_path);
     let content_database_json = std::fs::read_to_string(&content_db_path)
         .with_context(|| format!("Failed to read content database at {content_db_path}"))?;
@@ -109,6 +133,7 @@ async fn main() -> anyhow::Result<()> {
     let routes = generate_route_list(frontend::App);
     let tracking_script_src = std::env::var("TRACKING_SCRIPT_SRC").ok();
     let tracking_site_id = std::env::var("TRACKING_SITE_ID").ok();
+    let content_security_policy = build_content_security_policy(tracking_script_src.as_deref());
 
     let mut api_doc = ApiDoc::openapi();
     api_doc.info.version = env!("CARGO_PKG_VERSION").to_string();
@@ -120,14 +145,19 @@ async fn main() -> anyhow::Result<()> {
             std::env::var("MEDIA_PATH").unwrap_or_else(|_| "contents/media".to_string());
         let tracking_script_src = tracking_script_src.clone();
         let tracking_site_id = tracking_site_id.clone();
+        let content_security_policy = content_security_policy.clone();
 
         let (app, api) = App::new()
             .into_utoipa_app()
             .openapi(api_doc.clone())
             .map(|app| {
-                app.wrap_fn(|mut req, srv| {
+                app.wrap_fn(move |mut req, srv| {
                     let request_id_asc = req.extract::<RequestId>();
                     let is_https = req.connection_info().scheme() == "https";
+                    // Scalar (/api/docs) loads its UI from a CDN, so it is left out of the CSP.
+                    let csp = content_security_policy
+                        .clone()
+                        .filter(|_| !req.path().starts_with("/api/docs"));
                     let fut = srv.call(req);
                     async move {
                         let mut res = fut.await?;
@@ -143,7 +173,9 @@ async fn main() -> anyhow::Result<()> {
                             header::HeaderValue::from_str(env!("CARGO_PKG_VERSION")).unwrap(),
                         );
                         headers.insert(header::X_FRAME_OPTIONS, header::HeaderValue::from_static("SAMEORIGIN"));
-                        // headers.insert(header::CONTENT_SECURITY_POLICY, header::HeaderValue::from_static("default-src 'self' https:; img-src 'self'; script-src 'self' batleforc.fr; style-src 'self';"));
+                        if let Some(csp) = csp {
+                            headers.insert(header::CONTENT_SECURITY_POLICY, csp);
+                        }
                         if is_https {
                             headers.insert(
                                 header::STRICT_TRANSPORT_SECURITY,
@@ -287,7 +319,14 @@ mod tests {
             technology_map: vec![],
         };
 
+        let mut database = database;
+        let mut draft = database.entries[0].clone();
+        draft.handle = "blogs/secret-draft".to_string();
+        draft.draft = true;
+        database.entries.push(draft);
+
         let xml = build_sitemap_xml(&database);
+        assert!(!xml.contains("secret-draft"));
         assert!(xml.contains("<loc>https://maxleriche.net/</loc>"));
         assert!(xml.contains("<loc>https://maxleriche.net/about</loc>"));
         assert!(xml.contains("<loc>https://maxleriche.net/technologies</loc>"));
