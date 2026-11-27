@@ -1,3 +1,6 @@
 allowBuilds:
   "@parcel/watcher": true
   esbuild: true
+# Same 1-day cooldown pnpm 11+ applies by default (the Containerfile runs
+# pnpm@latest): resolve locally only what the image build will accept.
+minimumReleaseAge: 1440

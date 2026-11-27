@@ -12,7 +12,7 @@
     "@shikijs/langs": "4.6.0",
     "@shikijs/themes": "4.6.0",
     "esbuild": "^0.28.2",
-    "knip": "^6.49.0",
+    "knip": "^6.48.0",
     "shiki": "^4.6.0"
   },
   "type": "module"
