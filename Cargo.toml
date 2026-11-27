@@ -18,9 +18,9 @@ leptos_meta = { version = "0.8" }
 leptos_router = { version = "0.8" }
 
 # OpenAPI
-utoipa = { version = "5", features = ["actix_extras"] }
-utoipa-actix-web = { version = "0.1" }
-utoipa-scalar = { version = "0.3", features = ["actix-web"] }
+utoipa = { version = "6", features = ["actix_extras"] }
+utoipa-actix-web = { version = "0.2" }
+utoipa-scalar = { version = "0.4", features = ["actix-web"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
