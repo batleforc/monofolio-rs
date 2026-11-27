@@ -2,6 +2,7 @@
 "cargo:cargo-audit" = "latest"    # audit:rust, deps:cve:snapshot (RustSec advisories)
 "cargo:cargo-deny" = "latest"     # deny: advisories, bans, licenses, sources (deny.toml)
 "cargo:cargo-machete" = "latest"  # deps:unused (unused Rust dependencies)
+"cargo:wasm-bindgen-cli" = "0.2.130"  # cargo leptos picks this from PATH: must equal wasm-bindgen in Cargo.lock
 cocogitto = "latest"
 copilot = "latest"
 "github:batleforc/weebo-skillsagent" = "0.19.0"
