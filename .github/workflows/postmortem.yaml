@@ -54,7 +54,7 @@ jobs:
       # below fails the job — the same report-then-gate shape as semgrep.yaml.
       - name: postmortem supply-chain scan (repo root)
         id: scan
-        uses: mlab-sh/postmortem@f32b60299e0be03bce9238c23399583c7e2c1d48 # main, 2026-10-11 (create-issue)
+        uses: mlab-sh/postmortem@1e8a96ea2e220b128867b70c702fcd513a2a64d1 # main, 2026-10-11 (create-issue)
         with:
           path: "."
           version: v2.5.0
