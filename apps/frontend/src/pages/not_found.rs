@@ -3,7 +3,7 @@ use tw_merge::IntoTailwindClass;
 
 use crate::components::dino_game::DinoGame;
 use crate::components::ui::{
-    ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
+    ButtonClass, ButtonSize, ButtonVariant, Card, PageTitle, SectionInner,
 };
 use crate::i18n::{use_language, Language};
 
@@ -67,6 +67,10 @@ pub fn NotFoundPage() -> impl IntoView {
         Language::Fr => "Retour à l'accueil",
         Language::En => "Back to home",
     };
+    let play_label = move || match lang.get() {
+        Language::Fr => "Jouer au jeu",
+        Language::En => "Play the game",
+    };
     let teapot_label = move || match lang.get() {
         Language::Fr => "Voir la page 418",
         Language::En => "Open the 418 page",
@@ -101,13 +105,20 @@ pub fn NotFoundPage() -> impl IntoView {
                         view! {
                             // ---- Normal 404 view ----
                             <div class="max-w-2xl mx-auto pt-12">
-                                <SectionTitle>{title}</SectionTitle>
+                                <PageTitle>{title}</PageTitle>
                                 <Card class="p-6 sm:p-8">
                                     <p class="text-muted-foreground mb-6">{description}</p>
                                     <div class="flex flex-wrap items-center gap-3">
                                         <a href="/" class=primary_btn.to_class()>
                                             {home_label}
                                         </a>
+                                        <button
+                                            type="button"
+                                            class=ghost_btn.to_class()
+                                            on:click=move |_| show_game.set(true)
+                                        >
+                                            {play_label}
+                                        </button>
                                         <a href="/418" class=ghost_btn.to_class()>
                                             {teapot_label}
                                         </a>
@@ -119,7 +130,7 @@ pub fn NotFoundPage() -> impl IntoView {
                 >
                     // ---- Game 404 view (every 5th visit) ----
                     <div class="max-w-[700px] mx-auto pt-12">
-                        <SectionTitle>{game_title}</SectionTitle>
+                        <PageTitle>{game_title}</PageTitle>
                         <p class="text-muted-foreground mb-4 font-mono text-sm">
                             {game_description}
                         </p>

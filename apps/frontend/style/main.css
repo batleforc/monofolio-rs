@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 /*
  * Cyberpunk × Steampunk hybrid theme
@@ -8,6 +7,9 @@
  */
 
 :root {
+  /* Dark-only theme: native scrollbars, form controls and canvas defaults follow it. */
+  color-scheme: dark;
+
   /* Sharp corners → cyberpunk feel */
   --radius: 0.125rem;
 
@@ -21,7 +23,8 @@
 
   /* === Primary: neon red / crimson (cyberpunk) === */
   --primary: oklch(0.65 0.26 25);
-  --primary-foreground: oklch(0.97 0.01 0);
+  /* near-black on neon red: 5.3:1 (white was 3.6:1, fails AA) */
+  --primary-foreground: oklch(0.07 0.018 18);
 
   /* === Secondary: dark elevated surface === */
   --secondary: oklch(0.14 0.022 18);
@@ -35,14 +38,10 @@
   --accent: oklch(0.72 0.14 52);
   --accent-foreground: oklch(0.07 0.018 18);
 
-  /* === Destructive === */
-  --destructive: oklch(0.55 0.28 25);
-  --destructive-foreground: oklch(0.97 0.01 0);
-
   /* === Borders & inputs (translucent red) === */
   --border: oklch(0.65 0.26 25 / 0.22);
   --input: oklch(0.65 0.26 25 / 0.12);
-  --ring: oklch(0.65 0.26 25 / 0.45);
+  --ring: oklch(0.65 0.26 25);
 
   /* === Chart palette (cyber-neon spectrum, red-anchored) === */
   --chart-1: oklch(0.65 0.26 25);
@@ -74,20 +73,28 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: max(0px, calc(var(--radius) - 4px));
+  --radius-md: max(0px, calc(var(--radius) - 2px));
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: oklch(0.65 0.26 25 / 0.35);
+    color: var(--foreground);
   }
   body {
     @apply bg-background text-foreground;
@@ -123,7 +130,7 @@ main {
   background-size: 48px 48px;
 }
 
-/* Neon text glow (cyan, cyberpunk) */
+/* Neon text glow (red, cyberpunk) */
 .cyber-text-glow {
   text-shadow: var(--cyber-glow);
 }
@@ -151,28 +158,6 @@ main {
   96%            { text-shadow: var(--cyber-glow); opacity: 1; clip-path: none; }
 }
 
-/* Animated cycling hero title ticker */
-.hero-ticker-item {
-  animation: ticker-fade linear infinite;
-}
-
-@keyframes ticker-fade {
-  0%,   4%  { opacity: 0; transform: translateY(6px); }
-  8%,  16%  { opacity: 1; transform: translateY(0);   }
-  20%, 100% { opacity: 0; transform: translateY(-6px); }
-}
-
-/* Decorative hero blob morphing */
-.hero-blob {
-  animation: blob-morph 8s ease-in-out infinite;
-}
-
-@keyframes blob-morph {
-  0%, 100% { border-radius: 50% 45% 55% 48% / 48% 55% 45% 52%; }
-  33%       { border-radius: 55% 42% 48% 52% / 52% 48% 58% 46%; }
-  66%       { border-radius: 45% 55% 52% 48% / 46% 52% 48% 56%; }
-}
-
 /* Pac-Man icon variant for custom timeline step */
 .pacman-icon {
   overflow: visible;
@@ -193,3 +178,33 @@ main {
 .pellet-2 {
   opacity: 0.95;
 }
+
+.pacman-mouth-static {
+  display: none;
+}
+
+/* Reduced motion: keep every state visible, drop the looping decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .glitch {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  /* Pac-Man uses SMIL, which CSS cannot pause: swap to the static mouth, drop pellets. */
+  .pacman-pellet,
+  .pacman-mouth {
+    display: none;
+  }
+  .pacman-mouth-static {
+    display: inline;
+  }
+}
+

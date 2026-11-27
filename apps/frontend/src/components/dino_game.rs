@@ -106,7 +106,7 @@ pub fn DinoGame() -> impl IntoView {
         }
 
         // Draw the full frame onto the canvas context
-        fn draw(ctx: &web_sys::CanvasRenderingContext2d, data: &GameData) {
+        fn draw(ctx: &web_sys::CanvasRenderingContext2d, data: &GameData, fr: bool) {
             // Background
             ctx.set_fill_style_str("#0a0a0f");
             ctx.fill_rect(0.0, 0.0, CANVAS_W, CANVAS_H);
@@ -182,8 +182,9 @@ pub fn DinoGame() -> impl IntoView {
             // Score text
             ctx.set_fill_style_str("#00ffdc");
             ctx.set_font("bold 14px monospace");
+            let best_word = if fr { "Meilleur" } else { "Best" };
             let score_str = format!("Score: {:05}", data.score as u64);
-            let best_str = format!("Best: {:05}", data.high_score as u64);
+            let best_str = format!("{best_word}: {:05}", data.high_score as u64);
             let _ = ctx.fill_text(&score_str, CANVAS_W - 160.0, 20.0);
             let _ = ctx.fill_text(&best_str, CANVAS_W - 160.0, 38.0);
 
@@ -203,7 +204,11 @@ pub fn DinoGame() -> impl IntoView {
                     ctx.set_font("13px monospace");
                     ctx.set_fill_style_str("#aaaaaa");
                     let _ = ctx.fill_text(
-                        "Press Space or click to start",
+                        if fr {
+                            "Espace ou clic pour démarrer"
+                        } else {
+                            "Press Space or click to start"
+                        },
                         CANVAS_W / 2.0 - 115.0,
                         CANVAS_H / 2.0 + 12.0,
                     );
@@ -218,7 +223,7 @@ pub fn DinoGame() -> impl IntoView {
                     ctx.set_fill_style_str("#00ffdc");
                     ctx.set_font("14px monospace");
                     let final_score = format!(
-                        "Score: {}  |  Best: {}",
+                        "Score: {}  |  {best_word}: {}",
                         data.score as u64, data.high_score as u64
                     );
                     let _ =
@@ -226,7 +231,11 @@ pub fn DinoGame() -> impl IntoView {
                     ctx.set_fill_style_str("#aaaaaa");
                     ctx.set_font("13px monospace");
                     let _ = ctx.fill_text(
-                        "Space / click to restart",
+                        if fr {
+                            "Espace / clic pour rejouer"
+                        } else {
+                            "Space / click to restart"
+                        },
                         CANVAS_W / 2.0 - 96.0,
                         CANVAS_H / 2.0 + 30.0,
                     );
@@ -255,7 +264,7 @@ pub fn DinoGame() -> impl IntoView {
             let data = Rc::new(RefCell::new(new_game_data(high_score)));
 
             // Draw initial idle frame
-            draw(&ctx, &data.borrow());
+            draw(&ctx, &data.borrow(), lang.get_untracked() == Language::Fr);
 
             // ---- rAF loop ----
             // RwSignal is Copy + Send + Sync, so it can be captured by on_cleanup.
@@ -337,8 +346,15 @@ pub fn DinoGame() -> impl IntoView {
                     }
                 }
 
-                draw(&ctx_raf, &d);
+                draw(&ctx_raf, &d, lang.get_untracked() == Language::Fr);
+                let running = d.state == GameState::Running;
                 drop(d);
+
+                // Idle and game-over screens are static: stop the loop until the next input.
+                if !running {
+                    raf_handle.set(None);
+                    return;
+                }
 
                 // Schedule next frame
                 let win = web_sys::window().unwrap();
@@ -368,22 +384,36 @@ pub fn DinoGame() -> impl IntoView {
             // ---- Input handlers ----
             let jump_or_start = {
                 let data_input = data.clone();
+                let raf_restart = raf_closure.clone();
                 move || {
-                    let mut d = data_input.borrow_mut();
-                    match d.state {
-                        GameState::Idle => {
-                            d.state = GameState::Running;
-                            d.last_time = 0.0;
-                        }
-                        GameState::Running => {
-                            if d.player_y <= 0.0 {
-                                d.player_vy = JUMP_VY;
+                    {
+                        let mut d = data_input.borrow_mut();
+                        match d.state {
+                            GameState::Idle => {
+                                d.state = GameState::Running;
+                                d.last_time = 0.0;
+                            }
+                            GameState::Running => {
+                                if d.player_y <= 0.0 {
+                                    d.player_vy = JUMP_VY;
+                                }
+                            }
+                            GameState::GameOver => {
+                                let hs = d.high_score;
+                                *d = new_game_data(hs);
+                                d.state = GameState::Running;
                             }
                         }
-                        GameState::GameOver => {
-                            let hs = d.high_score;
-                            *d = new_game_data(hs);
-                            d.state = GameState::Running;
+                    }
+                    // Restart the rAF loop if it went to rest.
+                    if raf_handle.get_untracked().is_none() {
+                        if let (Some(win), Some(cb)) =
+                            (web_sys::window(), raf_restart.borrow().as_ref())
+                        {
+                            if let Ok(id) = win.request_animation_frame(cb.as_ref().unchecked_ref())
+                            {
+                                raf_handle.set(Some(id));
+                            }
                         }
                     }
                 }
@@ -392,31 +422,10 @@ pub fn DinoGame() -> impl IntoView {
             // Keydown
             {
                 let jump_fn = jump_or_start.clone();
-                // The listener sits on `window`, so it must unregister itself once the
-                // canvas leaves the page, or it keeps eating Space/ArrowUp/W site-wide.
-                let keydown_fn: Rc<RefCell<Option<js_sys::Function>>> = Rc::new(RefCell::new(None));
-                let keydown_fn_cb = keydown_fn.clone();
-                let canvas_for_key = canvas_el.clone();
+                // Bound to the focusable canvas, not `window`: Space/ArrowUp/W must not be
+                // hijacked from the rest of the page (WCAG 2.1.1 / 2.1.4).
                 let keydown_cb = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::wrap(Box::new(
                     move |e: web_sys::KeyboardEvent| {
-                        if !canvas_for_key.is_connected() {
-                            if let (Some(win), Some(f)) =
-                                (web_sys::window(), keydown_fn_cb.borrow_mut().take())
-                            {
-                                let _ = win.remove_event_listener_with_callback("keydown", &f);
-                            }
-                            return;
-                        }
-                        let typing = web_sys::window()
-                            .and_then(|w| w.document())
-                            .and_then(|d| d.active_element())
-                            .map(|el| {
-                                matches!(el.tag_name().as_str(), "INPUT" | "TEXTAREA" | "SELECT")
-                            })
-                            .unwrap_or(false);
-                        if typing {
-                            return;
-                        }
                         let key = e.key();
                         if key == " " || key == "ArrowUp" || key == "w" || key == "W" {
                             e.prevent_default();
@@ -424,18 +433,12 @@ pub fn DinoGame() -> impl IntoView {
                         }
                     },
                 ));
-                window
+                canvas_el
                     .add_event_listener_with_callback(
                         "keydown",
                         keydown_cb.as_ref().unchecked_ref(),
                     )
                     .unwrap();
-                *keydown_fn.borrow_mut() = Some(
-                    keydown_cb
-                        .as_ref()
-                        .unchecked_ref::<js_sys::Function>()
-                        .clone(),
-                );
                 keydown_cb.forget();
             }
 
@@ -485,12 +488,13 @@ pub fn DinoGame() -> impl IntoView {
         <div class="relative w-full max-w-[700px] mx-auto">
             <canvas
                 node_ref=canvas_ref
-                class="w-full rounded border border-border bg-[#0a0a0f] touch-none select-none cursor-pointer"
+                class="w-full rounded border border-border bg-background touch-none select-none cursor-pointer"
                 aria-label=move || match lang.get() {
                     Language::Fr => "Jeu de course cyberpunk",
                     Language::En => "Cyberpunk runner game",
                 }
-                role="img"
+                role="application"
+                tabindex="0"
             />
             // Fallback labels kept in DOM for screen-readers / SSR
             <p class="sr-only">{start_label}</p>

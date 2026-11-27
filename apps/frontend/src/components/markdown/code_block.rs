@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 
 use super::MarkdownNode;
+use crate::i18n::{use_language, Language};
 
 fn extract_code_title(raw: &str) -> Option<String> {
     for key in ["title=\"", "title='"] {
@@ -73,6 +74,7 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
     }
 
     let copied = RwSignal::new(false);
+    let lang = use_language();
     #[cfg(not(feature = "ssr"))]
     let copy_text = code_text.clone();
 
@@ -223,9 +225,15 @@ pub fn render_code_block(node: MarkdownNode) -> impl IntoView {
                 <button
                     type="button"
                     on:click=on_copy
+                    aria-live="polite"
                     class="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
                 >
-                    {move || if copied.get() { "Copied" } else { "Copy" }}
+                    {move || match (copied.get(), lang.get()) {
+                        (true, Language::Fr) => "Copié",
+                        (false, Language::Fr) => "Copier",
+                        (true, Language::En) => "Copied",
+                        (false, Language::En) => "Copy",
+                    }}
                 </button>
             </div>
 

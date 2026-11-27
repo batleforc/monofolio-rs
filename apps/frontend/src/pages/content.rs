@@ -13,7 +13,7 @@ use tw_merge::IntoTailwindClass;
 
 use crate::components::markdown::toc::{extract_headings, TableOfContents};
 use crate::components::markdown::{MarkdownContent, MarkdownFromValue};
-use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant, Card, SectionTitle, TagBadge};
+use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant, Card, PageTitle, TagBadge};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
 use crate::seo::{canonical_url, DEFAULT_OG_IMAGE};
@@ -162,7 +162,7 @@ fn render_header_image(image: HeaderImageSource) -> impl IntoView {
             .into_any(),
         HeaderImageSource::Icomoon(href) => view! {
             <div class="w-full h-52 md:h-72 rounded border border-border mb-4 bg-muted/30 flex items-center justify-center p-6 md:p-8">
-                <svg class="w-full h-full" aria-hidden="true" focusable="false" fill="#fff">
+                <svg class="w-full h-full text-foreground" aria-hidden="true" focusable="false" fill="currentColor">
                     <use href=href></use>
                 </svg>
             </div>
@@ -419,7 +419,7 @@ fn render_doc_sidebar_tree(
                                             class=if is_active {
                                                 "text-sm font-semibold text-primary underline"
                                             } else {
-                                                "text-sm font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                "text-sm font-medium text-primary hover:text-foreground underline-offset-2 hover:underline"
                                             }
                                         >
                                             {item_title}
@@ -585,7 +585,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                             </p>
                             <a
                                 href="/projects"
-                                class="inline-flex mt-3 text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                class="inline-flex mt-3 text-sm text-primary hover:text-foreground underline-offset-2 hover:underline"
                             >
                                 {move || match lang.get() {
                                     Language::Fr => "Retour aux projets",
@@ -715,7 +715,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                             name="twitter:image"
                                             content=minia.clone().unwrap_or(image_url.clone())
                                         />
-                                        <SectionTitle>{title.clone()}</SectionTitle>
+                                        <PageTitle>{title.clone()}</PageTitle>
 
                                         {if is_doc {
                                             let handle_for_sidebar = handle.clone();
@@ -870,9 +870,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                                 .into_any()
                                                                         } else {
                                                                             view! {
-                                                                                <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
+                                                                                <TagBadge>
                                                                                     {item}
-                                                                                </span>
+                                                                                </TagBadge>
                                                                             }
                                                                                 .into_any()
                                                                         }}
@@ -961,7 +961,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                 class=edit_btn_class.clone()
                                                             >
                                                                 {move || match lang.get() {
-                                                                    Language::Fr => "Editer sur Git",
+                                                                    Language::Fr => "Modifier sur Git",
                                                                     Language::En => "Edit in Git",
                                                                 }}
                                                             </a>
@@ -1043,9 +1043,9 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                                             .into_any()
                                                                     } else {
                                                                         view! {
-                                                                            <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
+                                                                            <TagBadge>
                                                                                 {item}
-                                                                            </span>
+                                                                            </TagBadge>
                                                                         }
                                                                             .into_any()
                                                                     }}
@@ -1105,7 +1105,7 @@ pub fn ContentHandlePage() -> impl IntoView {
                                                             class=edit_btn_class
                                                         >
                                                             {move || match lang.get() {
-                                                                Language::Fr => "Editer sur Git",
+                                                                Language::Fr => "Modifier sur Git",
                                                                 Language::En => "Edit in Git",
                                                             }}
                                                         </a>

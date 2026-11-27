@@ -6,7 +6,7 @@ use tw_merge::IntoTailwindClass;
 use web_sys::js_sys;
 
 use crate::components::ui::{
-    ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
+    ButtonClass, ButtonSize, ButtonVariant, Card, LinkCard, PageTitle, SectionInner, TagBadge,
 };
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
@@ -27,7 +27,7 @@ struct ProjectSummaryData {
     released_at: String,
 }
 
-fn resolve_project_image(raw: &str) -> Option<String> {
+pub(crate) fn resolve_project_image(raw: &str) -> Option<String> {
     if raw.trim().is_empty() {
         return None;
     }
@@ -215,7 +215,7 @@ pub fn ProjectsPage() -> impl IntoView {
     };
 
     let prev_label = move || match lang.get() {
-        Language::Fr => "Precedent",
+        Language::Fr => "Précédent",
         Language::En => "Previous",
     };
 
@@ -371,7 +371,7 @@ pub fn ProjectsPage() -> impl IntoView {
         />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
-                <SectionTitle>{page_title}</SectionTitle>
+                <PageTitle>{page_title}</PageTitle>
                 <p class="text-muted-foreground mb-6">{page_intro}</p>
 
                 <Suspense fallback=move || {
@@ -508,14 +508,20 @@ pub fn ProjectsPage() -> impl IntoView {
                                             handle.trim_start_matches('/'),
                                         );
                                         view! {
-                                            <Card class="p-4">
+                                            <LinkCard class="p-4">
                                                 {image
                                                     .map(|src| {
                                                         view! {
-                                                            <a href=project_url.clone()>
+                                                            <a
+                                                                href=project_url.clone()
+                                                                tabindex="-1"
+                                                                aria-hidden="true"
+                                                            >
                                                                 <img
                                                                     src=src
                                                                     alt=""
+                                                                    width="640"
+                                                                    height="320"
                                                                     class="w-full h-40 object-cover rounded border border-border mb-3"
                                                                     loading="lazy"
                                                                 />
@@ -541,9 +547,9 @@ pub fn ProjectsPage() -> impl IntoView {
                                                         .take(4)
                                                         .map(|item| {
                                                             view! {
-                                                                <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
+                                                                <TagBadge>
                                                                     {item}
-                                                                </span>
+                                                                </TagBadge>
                                                             }
                                                         })
                                                         .collect_view()}
@@ -552,9 +558,9 @@ pub fn ProjectsPage() -> impl IntoView {
                                                         .take(3)
                                                         .map(|item| {
                                                             view! {
-                                                                <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
+                                                                <TagBadge class="border-primary/30 text-primary">
                                                                     {format!("#{}", item)}
-                                                                </span>
+                                                                </TagBadge>
                                                             }
                                                         })
                                                         .collect_view()}
@@ -564,12 +570,12 @@ pub fn ProjectsPage() -> impl IntoView {
                                                     </p>
                                                     <a
                                                         href=project_url
-                                                        class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                        class="text-sm text-primary hover:text-foreground underline-offset-2 hover:underline"
                                                     >
                                                         {project_link_label}
                                                     </a>
                                                 </div>
-                                            </Card>
+                                            </LinkCard>
                                         }
                                     })
                                     .collect_view()}

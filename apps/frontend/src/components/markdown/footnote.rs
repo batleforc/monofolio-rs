@@ -18,7 +18,7 @@ pub fn render_footnote_reference(node: MarkdownNode) -> impl IntoView {
         <sup id=back_id class="text-[0.7em] leading-none">
             <a
                 href=href
-                class="text-primary hover:text-primary/80 no-underline hover:underline"
+                class="text-primary hover:text-foreground no-underline hover:underline"
                 aria-label=aria
             >
                 "["
@@ -46,7 +46,7 @@ pub fn render_footnote_definition(node: MarkdownNode) -> impl IntoView {
     let back_link = view! {
         <a
             href=back_href
-            class="ml-1 text-primary hover:text-primary/80 no-underline hover:underline text-xs"
+            class="ml-1 text-primary hover:text-foreground no-underline hover:underline text-xs"
             aria-label="Return to content"
         >
             "↩"

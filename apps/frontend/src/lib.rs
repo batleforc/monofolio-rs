@@ -15,8 +15,8 @@ mod services;
 
 const _CONTENT_RELOAD_SENTINEL: &str = include_str!("content_reload_sentinel.rs");
 
-use components::navbar::NavBar;
-use i18n::provide_i18n;
+use components::{footer::SiteFooter, navbar::NavBar};
+use i18n::{provide_i18n, use_translations};
 use pages::{
     about::AboutPage, blog::BlogReferencePage, contact::ContactPage, content::ContentHandlePage,
     docs::DocsReferencePage, home::HomePage, not_found::NotFoundPage, projects::ProjectsPage,
@@ -35,6 +35,7 @@ pub fn hydrate() {
 pub fn App() -> impl IntoView {
     provide_meta_context();
     provide_i18n();
+    let t = use_translations();
 
     view! {
         <Title text="Maxime Leriche - Portfolio" />
@@ -42,8 +43,14 @@ pub fn App() -> impl IntoView {
         <Meta name="apple-mobile-web-app-title" content="Maxime Leriche Portfolio" />
         <Link rel="alternate" type_="application/rss+xml" title="RSS" href="/rss.xml" />
         <Router>
+            <a
+                href="#main"
+                class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:font-mono focus:text-sm focus:text-primary-foreground"
+            >
+                {move || t.get().skip_to_content}
+            </a>
             <NavBar />
-            <main>
+            <main id="main" tabindex="-1" class="focus:outline-none">
                 <Routes fallback=|| view! { <NotFoundPage /> }>
                     <Route path=path!("/") view=HomePage />
                     <Route path=path!("/404") view=NotFoundPage />
@@ -59,6 +66,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/*any") view=NotFoundPage />
                 </Routes>
             </main>
+            <SiteFooter />
         </Router>
     }
 }

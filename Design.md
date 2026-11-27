@@ -20,7 +20,7 @@ Key style signals:
 
 - Dark background with translucent cards and borders.
 - Primary neon red for actions, links, and highlights.
-- Cyan glow effects for titles, shadows, and important accents.
+- Red neon glow (`--cyber-glow`) for titles and highlights; copper glow (`--steam-glow`) for the steampunk accent.
 - Monospace and cyber-style typography for headings and UI labels.
 - Circuit-grid background textures on larger sections.
 
@@ -41,8 +41,10 @@ Use the token styles rather than hardcoded colors:
 
 The main shared primitives are defined in `apps/frontend/src/components/ui.rs`:
 
-- `Card`
-- `SectionTitle`
+- `Card` (static panel, no hover)
+- `LinkCard` (card that links somewhere: hover border signals it is clickable)
+- `PageTitle` (the single `<h1>` of a route)
+- `SectionTitle` (`<h2>`)
 - `SectionInner`
 - `PageSection`
 - `SectionContent`
@@ -54,7 +56,8 @@ The main shared primitives are defined in `apps/frontend/src/components/ui.rs`:
 ### When to use them
 
 - Use `Card` for grouped content panels, info blocks, list items, and overlay containers.
-- Use `SectionTitle` for page headings and section headings.
+- Use `PageTitle` once per route for its main heading (`<h1>`), and `SectionTitle` for the sections below it (`<h2>`). The home page's `<h1>` is the hero name.
+- Use `LinkCard` instead of `Card` when the card is an entry point to another page (project, article).
 - Use `SectionInner` to center and constrain the content width inside page sections.
 - Use `PageSection` for vertical page sections with consistent spacing.
 - Use `SectionContent` to wrap inner content and enforce horizontal padding.
@@ -74,6 +77,10 @@ The main shared primitives are defined in `apps/frontend/src/components/ui.rs`:
 4. Use `leptos_ui::clx!` and `variants!` for reusable components.
 
 ## Layout and structure
+
+- The app shell is: skip link → `NavBar` → `<main id="main">` → `SiteFooter` (every route).
+- Home reading order: hero (name, current role from `currentWork`, one concrete positioning sentence `hero_pitch`, CTA + CV) → latest projects (proof) → journey excerpt (`Timeline limit=3`) → about text.
+- Contact: the email is the primary action (mailto button + copy button), the rest is a compact `<dl>`. Show only real data from `home.yaml`: no invented fallback values.
 
 - Each page should be composed of `section` areas.
 - Wrap content blocks with `SectionInner` to enforce consistent horizontal padding and max width.
@@ -98,6 +105,16 @@ Button guidance:
 - Use `Ghost` for subtle actions that should not compete visually.
 - Use `Icon` for icon-only controls and utilities.
 
+## Steampunk accent
+
+The 30% steampunk half lives in the `accent` token (warm copper) and `steam-glow`:
+
+- Timeline: copper rail bubbles with `steam-glow`, dates in `text-accent`.
+- Technology maturity: `expert` = primary, `advanced` = accent, `intermediate` = foreground outline.
+- Notices inside markdown use `accent` tints.
+
+Do not introduce other palette colors (emerald, amber, yellow…): map new states onto `primary`, `accent`, `foreground` or `muted`.
+
 ## Text and typography
 
 - Headings should use monospace or strongly geometric type styles for the cyber feel.
@@ -111,6 +128,10 @@ Button guidance:
 - Use `transition-colors` and mild transform states on hover.
 - Keep hover states consistent across buttons and interactive elements.
 - Glow effects are reserved for highlights and titles, not for all text.
+- One authored motion per surface: on the hero it is the name's glitch flicker; the blob is static, and there is no slogan ticker.
+- Every looping animation must be listed in the `prefers-reduced-motion` block of `main.css`. That block also caps every CSS animation to one near-instant run. SMIL (`<animate>`, e.g. the timeline Pac-Man) ignores CSS, so ship a static twin and swap with `display`.
+- The theme is dark-only: `:root` sets `color-scheme: dark`.
+- No gradient text: emphasis comes from weight, size or color.
 
 ## Accessibility
 
@@ -119,7 +140,10 @@ Follow these accessibility rules:
 - Keep text contrast strong on dark backgrounds.
 - Use semantic tags like `section`, `header`, `nav`, `main`, and `button`.
 - Provide `aria-label` and accessible text for icons.
-- Ensure focus visibility and keyboard operability for all controls.
+- Ensure focus visibility and keyboard operability for all controls. A global `:focus-visible` outline (2px `--ring`) is set in `main.css`; never remove it with `focus:outline-none` without an equivalent.
+- `Primary` buttons use near-black text on the neon red (5.3:1). Do not switch back to white (3.6:1, fails AA).
+- Toggles expose their state (`aria-expanded`), navigation marks the current page (`aria-current="page"`), and `<html lang>` follows the UI language.
+- Interactive widgets (e.g. the 404 game) listen to keys on their own focusable element, never on `window`.
 - Prefer `Button` variants for actions to keep behavior consistent.
 
 ## Patterns for new UI

@@ -5,13 +5,15 @@ use leptos_icons::Icon;
 use tw_merge::IntoTailwindClass;
 
 use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant};
-use crate::i18n::{use_language, use_translations, Language};
+use crate::i18n::use_translations;
+use crate::pages::about::resolve_cv_url;
 use crate::pages::home::{HomeData, SocialLinkData};
 
 /// Map a home.yaml imgUrl value to the appropriate `IconType`.
 enum SocialIconType {
     Builtin(IconType),
     Gitea,
+    Bluesky,
     Minia(String),
     Icomoon(String),
 }
@@ -30,6 +32,7 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#github" => SocialIconType::Builtin(IconType::Github),
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
+        "ico#bluesky" => SocialIconType::Bluesky,
         _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
         _ => resolve_icomoon_symbol(img_url)
             .map(SocialIconType::Icomoon)
@@ -71,6 +74,17 @@ fn SocialIconButton(link: SocialLinkData) -> impl IntoView {
                     }
                         .into_any()
                 }
+                SocialIconType::Bluesky => {
+                    view! {
+                        <Icon
+                            icon=icondata_si::SiBluesky
+                            width="1rem"
+                            height="1rem"
+                            style="color: currentColor;"
+                        />
+                    }
+                        .into_any()
+                }
                 SocialIconType::Minia(url) => {
                     view! {
                         <img src=url class="w-4 h-4 object-contain" alt="" aria-hidden="true" />
@@ -90,35 +104,20 @@ fn SocialIconButton(link: SocialLinkData) -> impl IntoView {
     }
 }
 
-/// Hero section: name, animated cover title, description, CTA buttons and social links.
+/// Hero section: name, current role, positioning sentence, CTA buttons and social links.
 #[component]
 pub fn Hero(data: HomeData) -> impl IntoView {
-    let lang = use_language();
     let t = use_translations();
 
-    let cover_titles = {
-        let fr = data.cover_title.clone();
-        let en = data.cover_title_en.clone().unwrap_or_else(|| fr.clone());
-        move || match lang.get() {
-            Language::Fr => fr.clone(),
-            Language::En => en.clone(),
-        }
-    };
-
-    let short_desc = {
-        let fr = data.short_description.clone();
-        let en = data
-            .short_description_en
-            .clone()
-            .unwrap_or_else(|| fr.clone());
-        move || match lang.get() {
-            Language::Fr => fr.clone(),
-            Language::En => en.clone(),
-        }
-    };
-
     let name = data.name.clone();
-    let about_url = "/about";
+    let cta_url = "/projects";
+    let current_work = data.current_work.clone();
+    let cv_url = (!data.cv_url.trim().is_empty()).then(|| resolve_cv_url(&data.cv_url));
+    let cv_btn_class = ButtonClass {
+        variant: ButtonVariant::Outline,
+        size: ButtonSize::Default,
+    }
+    .to_class();
     let social_links_primary: Vec<_> = data.url.iter().filter(|s| s.primaire).cloned().collect();
 
     let primary_btn_class = ButtonClass {
@@ -134,52 +133,41 @@ pub fn Hero(data: HomeData) -> impl IntoView {
                     {move || t.get().hero_greeting}
                 </p>
 
-                <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-4 bg-gradient-to-br from-foreground to-primary bg-clip-text text-transparent glitch">
+                <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tighter leading-[1.05] mb-4 text-foreground glitch">
                     {name.clone()}
                 </h1>
 
-                // Animated cover-title ticker
-                <div class="relative h-8 overflow-hidden mb-5" aria-live="polite">
-                    {move || {
-                        let titles = cover_titles();
-                        let n = titles.len();
-                        if n == 0 {
-                            return view! { <span class="text-primary font-semibold">"…"</span> }
-                                .into_any();
+                {current_work
+                    .map(|work| {
+                        view! {
+                            <p class="font-mono text-lg font-semibold text-primary mb-5 text-balance">
+                                {work}
+                            </p>
                         }
-                        let total_s = n * 3;
-                        let items = titles
-                            .into_iter()
-                            .enumerate()
-                            .map(|(i, title)| {
-                                let delay = format!(
-                                    "animation-delay:{}s;animation-duration:{}s",
-                                    i * 3,
-                                    total_s,
-                                );
-                                view! {
-                                    <span
-                                        class="hero-ticker-item absolute left-0 top-0 text-lg font-mono font-semibold text-primary opacity-0 whitespace-nowrap"
-                                        style=delay
-                                    >
-                                        {title}
-                                    </span>
-                                }
-                            })
-                            .collect_view();
-                        view! { <div class="relative h-full">{items}</div> }.into_any()
-                    }}
-                </div>
+                    })}
 
-                <p class="text-muted-foreground text-base max-w-lg mb-8 leading-relaxed">
-                    {move || short_desc()}
+                <p class="text-xl sm:text-2xl text-foreground max-w-2xl leading-snug text-balance">
+                    {move || t.get().hero_pitch}
                 </p>
 
-                <div class="flex flex-wrap items-center gap-4">
-                    <a href=about_url class=primary_btn_class>
+                <div class="flex flex-wrap items-center gap-4 mt-8">
+                    <a href=cta_url class=primary_btn_class>
                         <LeptosIcon icon=IconType::ArrowRight class="w-4 h-4" />
-                        {move || t.get().hero_cta_about}
+                        {move || t.get().hero_cta}
                     </a>
+                    {cv_url
+                        .map(|href| {
+                            view! {
+                                <a
+                                    href=href
+                                    class=cv_btn_class
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {move || t.get().hero_cv}
+                                </a>
+                            }
+                        })}
 
                     <div class="flex gap-3 items-center">
                         {social_links_primary
@@ -190,12 +178,12 @@ pub fn Hero(data: HomeData) -> impl IntoView {
                 </div>
             </div>
 
-            // Decorative blob — neon cyan glow (cyberpunk) with copper ring (steampunk)
+            // Decorative blob: static neon halo behind the hero copy
             <div
                 class="absolute right-[-8rem] top-1/2 -translate-y-1/2 pointer-events-none hidden md:block"
                 aria-hidden="true"
             >
-                <div class="hero-blob w-[28rem] h-[28rem] rounded-[50%_45%_55%_48%/48%_55%_45%_52%] bg-primary/[0.07] cyber-glow border border-primary/30"></div>
+                <div class="w-[28rem] h-[28rem] rounded-[50%_45%_55%_48%/48%_55%_45%_52%] bg-primary/[0.07] cyber-glow border border-primary/30"></div>
             </div>
         </section>
     }

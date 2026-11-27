@@ -9,9 +9,9 @@ use tw_merge::IntoTailwindClass;
 
 use crate::components::timeline::Timeline;
 use crate::components::ui::{
-    ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
+    ButtonClass, ButtonSize, ButtonVariant, Card, PageTitle, SectionInner, SectionTitle,
 };
-use crate::i18n::{use_language, Language};
+use crate::i18n::{use_language, use_translations, Language};
 use crate::pages::home::{HomeData, SocialLinkData};
 use crate::seo::StaticPageSeo;
 use crate::services::api::fetch_json;
@@ -36,7 +36,7 @@ async fn load_home_data_send_safe() -> Option<HomeData> {
     }
 }
 
-fn resolve_cv_url(raw: &str) -> String {
+pub(crate) fn resolve_cv_url(raw: &str) -> String {
     if raw.starts_with("http://") || raw.starts_with("https://") {
         raw.to_string()
     } else {
@@ -47,6 +47,7 @@ fn resolve_cv_url(raw: &str) -> String {
 enum SocialIconType {
     Builtin(IconType),
     Gitea,
+    Bluesky,
     Minia(String),
     Url(String),
     Media(String),
@@ -67,6 +68,7 @@ fn social_icon_type(img_url: &str) -> SocialIconType {
         "ico#github" => SocialIconType::Builtin(IconType::Github),
         "ico#linkedin2" => SocialIconType::Builtin(IconType::Linkedin),
         "ico#gitea" => SocialIconType::Gitea,
+        "ico#bluesky" => SocialIconType::Bluesky,
         _ if img_url.starts_with("/public/minia/") => SocialIconType::Minia(img_url.to_string()),
         _ if img_url.starts_with("media#") => {
             SocialIconType::Media(img_url.to_string().replace("media#", "/public/media/"))
@@ -90,7 +92,7 @@ fn SocialTextLink(link: SocialLinkData) -> impl IntoView {
             href=link.url
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+            class="inline-flex items-center gap-2 text-primary hover:text-foreground underline-offset-2 hover:underline"
             title=name_title
             aria-label=aria_label
         >
@@ -102,6 +104,17 @@ fn SocialTextLink(link: SocialLinkData) -> impl IntoView {
                     view! {
                         <Icon
                             icon=icondata_si::SiGitea
+                            width="1rem"
+                            height="1rem"
+                            style="color: currentColor;"
+                        />
+                    }
+                        .into_any()
+                }
+                SocialIconType::Bluesky => {
+                    view! {
+                        <Icon
+                            icon=icondata_si::SiBluesky
                             width="1rem"
                             height="1rem"
                             style="color: currentColor;"
@@ -151,7 +164,7 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
     .to_class();
 
     let title = move || match lang.get() {
-        Language::Fr => "More about me",
+        Language::Fr => "En savoir plus sur moi",
         Language::En => "More about me",
     };
 
@@ -171,7 +184,7 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
     };
 
     let location_label = move || match lang.get() {
-        Language::Fr => "Location",
+        Language::Fr => "Localisation",
         Language::En => "Location",
     };
 
@@ -201,18 +214,10 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
         .contact_availability_en
         .clone()
         .or(availability_fr.clone());
-    let contact_email = data
-        .contact_email
-        .clone()
-        .unwrap_or_else(|| "max@maxleriche.net".to_string());
-    let contact_location = data
-        .contact_location
-        .clone()
-        .unwrap_or_else(|| "Nouvelle-Aquitaine, France".to_string());
-    let current_work = data
-        .current_work
-        .clone()
-        .unwrap_or_else(|| "Ingénieur plateforme".to_string());
+    // Only real data from home.yaml: a missing value hides its row.
+    let contact_email = data.contact_email.clone();
+    let contact_location = data.contact_location.clone();
+    let current_work = data.current_work.clone();
     let social_links_intro = data.url.clone();
     let social_links_contact = data.url.clone();
     let useful_links = data.useful_links.clone();
@@ -223,7 +228,7 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
     view! {
         <section class="border-b border-border/70 cyber-grid-bg">
             <SectionInner>
-                <SectionTitle>{title}</SectionTitle>
+                <PageTitle>{title}</PageTitle>
                 <Card class="p-6 max-w-4xl">
                     <div class="flex flex-col gap-3">
                         {move || {
@@ -293,34 +298,59 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
                     <Card class="p-5">
                         <h3 class="font-semibold mb-3">"Contact"</h3>
                         <div class="space-y-2 text-sm text-muted-foreground">
-                            <p>
-                                <span class="text-foreground font-medium">"Email: "</span>
-                                {contact_email.clone()}
-                            </p>
-                            <p>
-                                <span class="text-foreground font-medium">
-                                    {move || format!("{}: ", location_label())}
-                                </span>
-                                {contact_location.clone()}
-                            </p>
-                            <p>
-                                <span class="text-foreground font-medium">
-                                    {move || format!("{}: ", work_label())}
-                                </span>
-                                {current_work.clone()}
-                            </p>
-                            <p>
-                                <span class="text-foreground font-medium">
-                                    {move || format!("{}: ", availability_label())}
-                                </span>
-                                {move || {
-                                    match lang.get() {
-                                        Language::Fr => availability_fr.clone(),
-                                        Language::En => availability_en.clone(),
+                            {contact_email
+                                .map(|email| {
+                                    let mailto = format!("mailto:{email}");
+                                    view! {
+                                        <p>
+                                            <span class="text-foreground font-medium">"Email: "</span>
+                                            <a
+                                                href=mailto
+                                                class="text-primary hover:text-foreground underline-offset-2 hover:underline"
+                                            >
+                                                {email}
+                                            </a>
+                                        </p>
                                     }
-                                        .unwrap_or_else(|| "Open to collaborations".to_string())
-                                }}
-                            </p>
+                                })}
+                            {contact_location
+                                .map(|location| {
+                                    view! {
+                                        <p>
+                                            <span class="text-foreground font-medium">
+                                                {move || format!("{}: ", location_label())}
+                                            </span>
+                                            {location}
+                                        </p>
+                                    }
+                                })}
+                            {current_work
+                                .map(|work| {
+                                    view! {
+                                        <p>
+                                            <span class="text-foreground font-medium">
+                                                {move || format!("{}: ", work_label())}
+                                            </span>
+                                            {work}
+                                        </p>
+                                    }
+                                })}
+                            {move || {
+                                match lang.get() {
+                                    Language::Fr => availability_fr.clone(),
+                                    Language::En => availability_en.clone(),
+                                }
+                                    .map(|availability| {
+                                        view! {
+                                            <p>
+                                                <span class="text-foreground font-medium">
+                                                    {move || format!("{}: ", availability_label())}
+                                                </span>
+                                                {availability}
+                                            </p>
+                                        }
+                                    })
+                            }}
                             <div class="pt-2">
                                 <p class="text-foreground font-medium mb-1">{links_label}</p>
                                 <div class="flex flex-wrap gap-3">
@@ -342,6 +372,7 @@ fn MoreAboutContent(data: HomeData) -> impl IntoView {
 
 #[component]
 pub fn AboutPage() -> impl IntoView {
+    let t = use_translations();
     let location = use_location();
     #[cfg(feature = "ssr")]
     let home_config = use_context::<HomeConfig>();
@@ -373,7 +404,7 @@ pub fn AboutPage() -> impl IntoView {
         <Suspense fallback=move || {
             view! {
                 <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
-                    "Loading…"
+                    {move || t.get().loading}
                 </div>
             }
         }>
@@ -383,7 +414,7 @@ pub fn AboutPage() -> impl IntoView {
                     None => {
                         view! {
                             <div class="min-h-[calc(100svh-3.5rem)] flex items-center justify-center text-muted-foreground">
-                                "Unable to load data for this page."
+                                {move || t.get().error_loading}
                             </div>
                         }
                             .into_any()

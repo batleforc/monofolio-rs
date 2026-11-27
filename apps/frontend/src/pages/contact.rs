@@ -4,8 +4,8 @@ use leptos::prelude::*;
 use tw_merge::IntoTailwindClass;
 
 use crate::components::ui::{ButtonClass, ButtonSize, ButtonVariant};
-use crate::components::ui::{Card, SectionInner, SectionTitle};
-use crate::i18n::{use_language, Language};
+use crate::components::ui::{Card, PageTitle, SectionInner};
+use crate::i18n::{use_language, use_translations, Language};
 use crate::pages::home::HomeData;
 use crate::seo::StaticPageSeo;
 use crate::services::api::fetch_json;
@@ -18,6 +18,7 @@ async fn load_home_data() -> Option<HomeData> {
 #[component]
 pub fn ContactPage() -> impl IntoView {
     let lang = use_language();
+    let t = use_translations();
     let home_data: RwSignal<Option<HomeData>> = RwSignal::new(None);
     let loading = RwSignal::new(true);
     let fetch_error = RwSignal::new(false);
@@ -48,6 +49,7 @@ pub fn ContactPage() -> impl IntoView {
         size: ButtonSize::Default,
     }
     .to_class();
+    let copied = RwSignal::new(false);
 
     let page_title = move || match lang.get() {
         Language::Fr => "Contact",
@@ -75,13 +77,8 @@ pub fn ContactPage() -> impl IntoView {
     };
 
     let location_title = move || match lang.get() {
-        Language::Fr => "Location",
+        Language::Fr => "Localisation",
         Language::En => "Location",
-    };
-
-    let email_title = move || match lang.get() {
-        Language::Fr => "Email",
-        Language::En => "Email",
     };
 
     view! {
@@ -92,20 +89,20 @@ pub fn ContactPage() -> impl IntoView {
         />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
-                <SectionTitle>{page_title}</SectionTitle>
+                <PageTitle>{page_title}</PageTitle>
                 <p class="text-muted-foreground mb-8 max-w-2xl">{intro}</p>
 
                 <Show when=move || loading.get()>
                     <div class="min-h-40 flex items-center text-muted-foreground">
-                        "Loading contact…"
+                        {move || t.get().loading}
                     </div>
                 </Show>
 
                 <Show when=move || fetch_error.get() && !loading.get()>
                     <div class="min-h-40 flex flex-col gap-4 items-start justify-center">
-                        <p class="text-muted-foreground">"Unable to load contact data."</p>
+                        <p class="text-muted-foreground">{move || t.get().error_loading}</p>
                         <button class=retry_btn_class.clone() on:click=move |_| do_fetch()>
-                            "Retry"
+                            {move || t.get().error_retry}
                         </button>
                     </div>
                 </Show>
@@ -118,125 +115,123 @@ pub fn ContactPage() -> impl IntoView {
                             .get()
                             .map(|data| {
                                 let availability = match lang.get() {
-                                    Language::Fr => {
-                                        data.contact_availability
-                                            .clone()
-                                            .unwrap_or_else(|| {
-                                                "Ouvert à des discussions techniques et collaborations"
-                                                    .to_string()
-                                            })
-                                    }
+                                    Language::Fr => data.contact_availability.clone(),
                                     Language::En => {
                                         data.contact_availability_en
                                             .clone()
                                             .or(data.contact_availability.clone())
-                                            .unwrap_or_else(|| {
-                                                "Open to technical discussions and collaborations"
-                                                    .to_string()
-                                            })
                                     }
                                 };
-                                let location = data
-                                    .contact_location
-                                    .clone()
-                                    .unwrap_or_else(|| "Niort, France".to_string());
-                                let current_work = data
-                                    .current_work
-                                    .clone()
-                                    .unwrap_or_else(|| {
-                                        "Ingénieur Socle de fabrication / Couche d'échange"
-                                            .to_string()
-                                    });
-                                let email = data
-                                    .contact_email
-                                    .clone()
-                                    .unwrap_or_else(|| "contact@maxime-leriche.dev".to_string());
-                                let mailto = format!("mailto:{}", email);
+                                // Only real data: rows without a value are not rendered.
+                                let rows = [
+                                    (availability_label(), availability),
+                                    (current_work_title(), data.current_work.clone()),
+                                    (location_title(), data.contact_location.clone()),
+                                ]
+                                    .into_iter()
+                                    .filter_map(|(label, value)| value.map(|v| (label, v)))
+                                    .collect::<Vec<_>>();
+                                let email = data.contact_email.clone();
+                                let primary_btn_class = ButtonClass {
+                                    variant: ButtonVariant::Primary,
+                                    size: ButtonSize::Default,
+                                }
+                                .to_class();
+                                let outline_btn_class = ButtonClass {
+                                    variant: ButtonVariant::Outline,
+                                    size: ButtonSize::Default,
+                                }
+                                .to_class();
+                                let links = data.url.clone();
 
                                 view! {
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        <Card class="p-5">
-                                            <div class="flex items-start gap-3">
-                                                <div class="w-9 h-9 rounded border border-primary/40 flex items-center justify-center text-primary">
-                                                    <LeptosIcon icon=IconType::Clock class="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-semibold mb-1">{availability_label}</h3>
-                                                    <p class="text-sm text-muted-foreground">{availability}</p>
-                                                </div>
-                                            </div>
-                                        </Card>
-
-                                        <Card class="p-5">
-                                            <div class="flex items-start gap-3">
-                                                <div class="w-9 h-9 rounded border border-primary/40 flex items-center justify-center text-primary">
-                                                    <LeptosIcon icon=IconType::Briefcase class="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-semibold mb-1">{current_work_title}</h3>
-                                                    <p class="text-sm text-muted-foreground">{current_work}</p>
-                                                </div>
-                                            </div>
-                                        </Card>
-
-                                        <Card class="p-5">
-                                            <div class="flex items-start gap-3">
-                                                <div class="w-9 h-9 rounded border border-primary/40 flex items-center justify-center text-primary">
-                                                    <LeptosIcon icon=IconType::ExternalLink class="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-semibold mb-1">{contact_links_title}</h3>
-                                                    <div class="text-sm text-muted-foreground flex flex-col gap-1">
-                                                        {data
-                                                            .url
-                                                            .iter()
-                                                            .map(|link| {
-                                                                view! {
-                                                                    <a
-                                                                        class="hover:text-foreground transition-colors"
-                                                                        href=link.url.clone()
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                    >
-                                                                        {link.name.clone()}
-                                                                    </a>
+                                    <Card class="p-6 max-w-2xl">
+                                        {email
+                                            .map(|email| {
+                                                let mailto = format!("mailto:{email}");
+                                                #[cfg(not(feature = "ssr"))]
+                                                let copy_text = email.clone();
+                                                view! {
+                                                    <div class="flex flex-wrap items-center gap-3 mb-6">
+                                                        <a href=mailto class=primary_btn_class.clone()>
+                                                            <LeptosIcon icon=IconType::Mail class="w-4 h-4" />
+                                                            <span>{email.clone()}</span>
+                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            class=outline_btn_class.clone()
+                                                            on:click=move |_| {
+                                                                #[cfg(not(feature = "ssr"))]
+                                                                {
+                                                                    let copy_text = copy_text.clone();
+                                                                    wasm_bindgen_futures::spawn_local(async move {
+                                                                        let Some(window) = web_sys::window() else {
+                                                                            return;
+                                                                        };
+                                                                        let promise = window
+                                                                            .navigator()
+                                                                            .clipboard()
+                                                                            .write_text(&copy_text);
+                                                                        if wasm_bindgen_futures::JsFuture::from(promise)
+                                                                            .await
+                                                                            .is_ok()
+                                                                        {
+                                                                            copied.set(true);
+                                                                        }
+                                                                    });
                                                                 }
-                                                            })
-                                                            .collect_view()}
+                                                            }
+                                                        >
+                                                            <span aria-live="polite">
+                                                                {move || match (copied.get(), lang.get()) {
+                                                                    (true, Language::Fr) => "Adresse copiée",
+                                                                    (false, Language::Fr) => "Copier l'adresse",
+                                                                    (true, Language::En) => "Address copied",
+                                                                    (false, Language::En) => "Copy address",
+                                                                }}
+                                                            </span>
+                                                        </button>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </Card>
+                                                }
+                                            })}
 
-                                        <Card class="p-5">
-                                            <div class="flex items-start gap-3">
-                                                <div class="w-9 h-9 rounded border border-primary/40 flex items-center justify-center text-primary">
-                                                    <LeptosIcon icon=IconType::MapPin class="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-semibold mb-1">{location_title}</h3>
-                                                    <p class="text-sm text-muted-foreground">{location}</p>
-                                                </div>
-                                            </div>
-                                        </Card>
-
-                                        <Card class="p-5 md:col-span-2">
-                                            <div class="flex items-start gap-3">
-                                                <div class="w-9 h-9 rounded border border-primary/40 flex items-center justify-center text-primary">
-                                                    <LeptosIcon icon=IconType::Mail class="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <h3 class="font-semibold mb-1">{email_title}</h3>
-                                                    <a
-                                                        class="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                                                        href=mailto.clone()
-                                                    >
-                                                        {email.clone()}
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    </div>
+                                        <dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-3 text-sm">
+                                            {rows
+                                                .into_iter()
+                                                .map(|(label, value)| {
+                                                    view! {
+                                                        <dt class="font-mono text-muted-foreground">{label}</dt>
+                                                        <dd class="text-foreground">{value}</dd>
+                                                    }
+                                                })
+                                                .collect_view()}
+                                            {(!links.is_empty())
+                                                .then(|| {
+                                                    view! {
+                                                        <dt class="font-mono text-muted-foreground">
+                                                            {contact_links_title}
+                                                        </dt>
+                                                        <dd class="flex flex-wrap gap-x-4 gap-y-1">
+                                                            {links
+                                                                .into_iter()
+                                                                .map(|link| {
+                                                                    view! {
+                                                                        <a
+                                                                            class="text-primary hover:text-foreground underline-offset-2 hover:underline"
+                                                                            href=link.url
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                        >
+                                                                            {link.name}
+                                                                        </a>
+                                                                    }
+                                                                })
+                                                                .collect_view()}
+                                                        </dd>
+                                                    }
+                                                })}
+                                        </dl>
+                                    </Card>
                                 }
                             })
                     }}

@@ -4,10 +4,16 @@ use leptos_ui::variants;
 
 // ── Reusable UI primitives built with leptos_ui ──────────────────────────
 
-// Card wrapper with a translucent-cyan border and dark background.
-clx! { Card, div, "rounded border border-border bg-card text-card-foreground hover:border-primary/40 transition-colors" }
+// Static content panel: translucent red border on the dark card surface.
+clx! { Card, div, "rounded border border-border bg-card text-card-foreground transition-colors" }
 
-// Section title — monospace font with a neon-cyan underline accent.
+// Card that links somewhere: the hover border signals it is clickable.
+clx! { LinkCard, div, "rounded border border-border bg-card text-card-foreground transition-colors hover:border-primary/40" }
+
+// Page title — the single <h1> of a route; same look as SectionTitle.
+clx! { PageTitle, h1, "text-3xl sm:text-4xl leading-tight text-balance font-mono font-bold tracking-tight mb-8 relative inline-block after:block after:h-[2px] after:w-10 after:bg-primary after:rounded-sm after:mt-1 cyber-text-glow" }
+
+// Section title — monospace font with a neon-red underline accent.
 clx! { SectionTitle, h2, "text-2xl font-mono font-bold tracking-tight mb-8 relative inline-block after:block after:h-[2px] after:w-10 after:bg-primary after:rounded-sm after:mt-1 cyber-text-glow" }
 
 // Inner wrapper that centres content and adds responsive horizontal padding.
@@ -22,8 +28,8 @@ clx! { SectionContent, div, "max-w-5xl mx-auto px-5" }
 // Alternate card style for content panels.
 clx! { PanelCard, div, "rounded border border-border bg-card text-card-foreground shadow-sm transition-colors" }
 
-// Markdown content wrapper using the shared design tokens.
-clx! { ProseContent, article, "prose prose-sm max-w-none" }
+// Markdown article: reading measure capped at ~72 characters per line.
+clx! { ProseContent, article, "max-w-[72ch] text-base leading-relaxed text-pretty [&>:first-child]:mt-0" }
 
 // Reusable tag badge for metadata chips.
 clx! { TagBadge, span, "inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground transition-colors" }

@@ -19,5 +19,5 @@ pub fn render_list(node: MarkdownNode) -> impl IntoView {
 }
 
 pub fn render_list_item(node: MarkdownNode) -> impl IntoView {
-    view! { <li class="text-sm">{render_children(node.children)}</li> }
+    view! { <li class="leading-relaxed">{render_children(node.children)}</li> }
 }

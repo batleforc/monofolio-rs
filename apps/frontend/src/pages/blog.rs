@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::components::ui::{Card, SectionInner, SectionTitle};
+use crate::components::ui::{Card, LinkCard, PageTitle, SectionInner, TagBadge};
 use crate::date_utils::format_display_date;
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
@@ -45,18 +45,18 @@ pub fn BlogReferencePage() -> impl IntoView {
     let blog_entries = Signal::derive(move || blog_entries_res.get().flatten().unwrap_or_default());
 
     let title = move || match lang.get() {
-        Language::Fr => "Reference Blog",
-        Language::En => "Blog Reference",
+        Language::Fr => "Blog",
+        Language::En => "Blog",
     };
 
     let subtitle = move || match lang.get() {
-        Language::Fr => "Liste des articles de blog et acces rapide.",
-        Language::En => "Blog entries with quick access.",
+        Language::Fr => "Articles, retours d'expérience et notes techniques.",
+        Language::En => "Articles, field notes and technical write-ups.",
     };
 
     let empty_label = move || match lang.get() {
-        Language::Fr => "Aucun article de blog a afficher.",
-        Language::En => "No blog entry to display.",
+        Language::Fr => "Aucun article publié pour le moment.",
+        Language::En => "No article published yet.",
     };
 
     let read_label = move || match lang.get() {
@@ -77,7 +77,7 @@ pub fn BlogReferencePage() -> impl IntoView {
         />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
-                <SectionTitle>{move || title()}</SectionTitle>
+                <PageTitle>{move || title()}</PageTitle>
                 <p class="text-muted-foreground mb-6">{move || subtitle()}</p>
 
                 <Suspense fallback=move || {
@@ -123,7 +123,7 @@ pub fn BlogReferencePage() -> impl IntoView {
                                     let reading_time = entry.reading_time_minutes;
                                     let target_url = format!("/{}", handle.trim_start_matches('/'));
                                     view! {
-                                        <Card class="p-4">
+                                        <LinkCard class="p-4">
                                             {image
                                                 .map(|src| {
                                                     view! {
@@ -131,6 +131,8 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                             <img
                                                                 src=src
                                                                 alt=""
+                                                                width="640"
+                                                                height="320"
                                                                 class="w-full h-40 object-cover rounded border border-border mb-3"
                                                                 loading="lazy"
                                                             />
@@ -156,9 +158,9 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                     .take(4)
                                                     .map(|tag| {
                                                         view! {
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
+                                                            <TagBadge class="border-primary/30 text-primary">
                                                                 {format!("#{}", tag)}
-                                                            </span>
+                                                            </TagBadge>
                                                         }
                                                     })
                                                     .collect_view()}
@@ -170,12 +172,12 @@ pub fn BlogReferencePage() -> impl IntoView {
                                                 </p>
                                                 <a
                                                     href=target_url
-                                                    class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                    class="text-sm text-primary hover:text-foreground underline-offset-2 hover:underline"
                                                 >
                                                     {move || read_label()}
                                                 </a>
                                             </div>
-                                        </Card>
+                                        </LinkCard>
                                     }
                                 })
                                 .collect_view()}

@@ -51,13 +51,21 @@ fn entry_description<'a>(entry: &'a HistoryEntryData, lang: Language) -> &'a str
 
 /// Career / education timeline section.
 #[component]
-pub fn Timeline(data: HomeData) -> impl IntoView {
+pub fn Timeline(
+    data: HomeData,
+    /// Show only the latest N entries plus a link to the full journey on /about.
+    #[prop(optional)]
+    limit: Option<usize>,
+) -> impl IntoView {
     let lang = use_language();
     let t = use_translations();
 
     // Sort by weight descending (latest first)
     let mut entries = data.history.clone();
     entries.sort_by(|a, b| b.weight.cmp(&a.weight));
+    if let Some(limit) = limit {
+        entries.truncate(limit);
+    }
 
     view! {
         <section class="timeline-section" id="timeline">
@@ -80,8 +88,8 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                             let entry_c = entry.clone();
                             view! {
                                 <li class="relative pb-10 last:pb-0 flex gap-5">
-                                    // Icon bubble on the timeline rail — cyan neon (cyber)
-                                    <div class="absolute start-[-0.6875rem] top-0.5 w-7 h-7 rounded border-2 border-primary bg-card flex items-center justify-center text-primary z-10 cyber-glow">
+                                    // Icon bubble on the timeline rail: copper (steampunk accent)
+                                    <div class="absolute start-[-0.6875rem] top-0.5 w-7 h-7 rounded-full border-2 border-accent bg-card flex items-center justify-center text-accent z-10 steam-glow">
                                         {if is_pacman {
                                             view! {
                                                 <svg
@@ -150,6 +158,12 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                                                             values="M12 12L22 7.2L22 16.8Z;M12 12L22 10.2L22 13.8Z;M12 12L22 7.2L22 16.8Z"
                                                         />
                                                     </path>
+                                                    // Static mouth, shown instead of the animated one under reduced motion
+                                                    <path
+                                                        class="pacman-mouth-static"
+                                                        d="M12 12L22 7.2L22 16.8Z"
+                                                        fill="var(--background)"
+                                                    />
                                                     <circle
                                                         cx="13.2"
                                                         cy="8.4"
@@ -188,6 +202,10 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                                                         <img
                                                             src=src
                                                             alt=""
+                                                            width="40"
+                                                            height="40"
+                                                            loading="lazy"
+                                                            decoding="async"
                                                             class="w-10 h-10 rounded object-contain shrink-0 bg-muted p-0.5"
                                                         />
                                                     }
@@ -227,7 +245,7 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                                                                     href=link.url
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline transition-colors"
+                                                                    class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-foreground underline-offset-2 hover:underline transition-colors"
                                                                 >
                                                                     <LeptosIcon
                                                                         icon=IconType::ExternalLink
@@ -250,6 +268,18 @@ pub fn Timeline(data: HomeData) -> impl IntoView {
                         })
                         .collect_view()}
                 </ol>
+                {limit
+                    .map(|_| {
+                        view! {
+                            <a
+                                href="/about#timeline"
+                                class="inline-flex items-center gap-2 mt-8 ms-10 text-sm font-mono text-primary underline-offset-4 hover:underline"
+                            >
+                                {move || t.get().timeline_see_all}
+                                <LeptosIcon icon=IconType::ArrowRight class="w-4 h-4" />
+                            </a>
+                        }
+                    })}
             </SectionInner>
         </section>
     }

@@ -2,7 +2,7 @@ use leptos::prelude::*;
 use tw_merge::IntoTailwindClass;
 
 use crate::components::ui::{
-    ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
+    ButtonClass, ButtonSize, ButtonVariant, Card, PageTitle, SectionInner,
 };
 use crate::i18n::{use_language, Language};
 
@@ -12,17 +12,17 @@ pub fn TeapotPage() -> impl IntoView {
     let lang = use_language();
 
     let title = move || match lang.get() {
-        Language::Fr => "418 - Je suis une teiere",
+        Language::Fr => "418 - Je suis une théière",
         Language::En => "418 - I'm a teapot",
     };
 
     let description = move || match lang.get() {
-        Language::Fr => "Cette page refuse de preparer du cafe. Elle prefere clairement le the.",
+        Language::Fr => "Cette page refuse de préparer du café. Elle préfère clairement le thé.",
         Language::En => "This page refuses to brew coffee. It clearly prefers tea.",
     };
 
     let home_label = move || match lang.get() {
-        Language::Fr => "Retour a l'accueil",
+        Language::Fr => "Retour à l'accueil",
         Language::En => "Back to home",
     };
 
@@ -47,7 +47,7 @@ pub fn TeapotPage() -> impl IntoView {
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
                 <div class="max-w-2xl mx-auto pt-12">
-                    <SectionTitle>{title}</SectionTitle>
+                    <PageTitle>{title}</PageTitle>
                     <Card class="p-6 sm:p-8">
                         <p class="text-6xl leading-none mb-4" aria-hidden="true">
                             "(  )"

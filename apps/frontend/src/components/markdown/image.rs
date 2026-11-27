@@ -27,7 +27,14 @@ pub fn render_image(node: MarkdownNode) -> impl IntoView {
 
     view! {
         <figure class=figure_class>
-            <img src=src alt=alt.clone() title=title class=image_class />
+            <img
+                src=src
+                alt=alt.clone()
+                title=title
+                class=image_class
+                loading="lazy"
+                decoding="async"
+            />
             {if !alt.is_empty() {
                 view! { <figcaption class="text-xs text-muted-foreground mt-1">{alt}</figcaption> }
                     .into_any()

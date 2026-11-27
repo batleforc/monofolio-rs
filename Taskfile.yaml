@@ -28,7 +28,7 @@ tasks:
     cmds:
       - cargo check --workspace --exclude frontend
       - cargo check --package frontend --features ssr
-      - cargo check --package frontend --features hydrate --target
+      - cargo check --package frontend --lib --no-default-features --features hydrate --target
         wasm32-unknown-unknown
 
   build:

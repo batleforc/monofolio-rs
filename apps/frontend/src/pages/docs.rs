@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use serde::{Deserialize, Serialize};
 
-use crate::components::ui::{Card, SectionInner, SectionTitle};
+use crate::components::ui::{Card, PageTitle, SectionInner};
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
 use crate::services::api::json_resource;
@@ -51,6 +51,7 @@ fn render_doc_tree(
                     let handle = item.handle.clone();
                     let handle_for_toggle = handle.clone();
                     let handle_for_open = handle.clone();
+                    let handle_for_expanded = handle.clone();
                     let active_handle_next = active_handle.clone();
                     view! {
                         <li class=indent>
@@ -59,7 +60,14 @@ fn render_doc_tree(
                                     view! {
                                         <button
                                             type="button"
-                                            class="inline-flex h-5 w-5 items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                                            aria-label=title.clone()
+                                            aria-expanded=move || {
+                                                (depth == 0
+                                                    || expanded_folders
+                                                        .with(|open| open.contains(&handle_for_expanded)))
+                                                    .to_string()
+                                            }
                                             on:click=move |_| {
                                                 if depth == 0 {
                                                     return;
@@ -90,7 +98,7 @@ fn render_doc_tree(
                                     }
                                         .into_any()
                                 } else {
-                                    view! { <span class="inline-flex h-5 w-5"></span> }.into_any()
+                                    view! { <span class="inline-flex h-6 w-6"></span> }.into_any()
                                 }}
                                 {if is_folder_with_index {
                                     view! {
@@ -117,7 +125,7 @@ fn render_doc_tree(
                                     view! {
                                         <a
                                             href=href
-                                            class="text-sm font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                            class="text-sm font-medium text-primary hover:text-foreground underline-offset-2 hover:underline"
                                         >
                                             {title}
                                         </a>
@@ -225,18 +233,18 @@ pub fn DocsReferencePage() -> impl IntoView {
     }
 
     let title = move || match lang.get() {
-        Language::Fr => "Reference Docs",
-        Language::En => "Docs Reference",
+        Language::Fr => "Documentation",
+        Language::En => "Documentation",
     };
 
     let subtitle = move || match lang.get() {
-        Language::Fr => "Index de la documentation et navigation rapide.",
-        Language::En => "Documentation index and quick navigation.",
+        Language::Fr => "Guides et références techniques, organisés par section.",
+        Language::En => "Technical guides and references, organised by section.",
     };
 
     let empty_label = move || match lang.get() {
-        Language::Fr => "Aucune documentation a afficher.",
-        Language::En => "No documentation entry to display.",
+        Language::Fr => "Aucune documentation publiée pour le moment.",
+        Language::En => "No documentation published yet.",
     };
 
     let sidebar_label = move || match lang.get() {
@@ -250,13 +258,13 @@ pub fn DocsReferencePage() -> impl IntoView {
     };
 
     let index_hint = move || match lang.get() {
-        Language::Fr => "Index disponible uniquement pour les sections de type folder_with_index.",
-        Language::En => "Index is shown only for sections of type folder_with_index.",
+        Language::Fr => "Accès direct aux sections qui ont une page d'index.",
+        Language::En => "Jump straight to sections that have an index page.",
     };
 
     let index_empty = move || match lang.get() {
-        Language::Fr => "Aucune section folder_with_index detectee.",
-        Language::En => "No folder_with_index section detected.",
+        Language::Fr => "Aucune section avec page d'index pour le moment.",
+        Language::En => "No section with an index page yet.",
     };
 
     view! {
@@ -267,7 +275,7 @@ pub fn DocsReferencePage() -> impl IntoView {
         />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
-                <SectionTitle>{move || title()}</SectionTitle>
+                <PageTitle>{move || title()}</PageTitle>
                 <p class="text-muted-foreground mb-6">{move || subtitle()}</p>
 
                 <Suspense fallback=move || {
@@ -368,7 +376,7 @@ pub fn DocsReferencePage() -> impl IntoView {
                                                                                     view! {
                                                                                         <a
                                                                                             href=href
-                                                                                            class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline truncate"
+                                                                                            class="text-sm text-primary hover:text-foreground underline-offset-2 hover:underline truncate"
                                                                                         >
                                                                                             {label}
                                                                                         </a>
@@ -457,7 +465,7 @@ pub fn DocsReferencePage() -> impl IntoView {
                                                                         view! {
                                                                             <a
                                                                                 href=href
-                                                                                class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline truncate"
+                                                                                class="text-sm text-primary hover:text-foreground underline-offset-2 hover:underline truncate"
                                                                             >
                                                                                 {label}
                                                                             </a>

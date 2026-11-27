@@ -80,7 +80,7 @@ fn static_search_entries(lang: Language, t: &'static Translations) -> Vec<Search
         Language::En => "Portfolio home page.",
     };
     let about_description = match lang {
-        Language::Fr => "Presentation et parcours.",
+        Language::Fr => "Présentation et parcours.",
         Language::En => "Background and profile.",
     };
     let contact_description = match lang {
@@ -88,7 +88,7 @@ fn static_search_entries(lang: Language, t: &'static Translations) -> Vec<Search
         Language::En => "Ways to get in touch.",
     };
     let technologies_description = match lang {
-        Language::Fr => "Carte des technologies et niveaux de maturite.",
+        Language::Fr => "Carte des technologies et niveaux de maturité.",
         Language::En => "Technology map and maturity levels.",
     };
 
@@ -124,6 +124,26 @@ fn static_search_entries(lang: Language, t: &'static Translations) -> Vec<Search
     ]
 }
 
+/// Main navigation, in visit order: the work first, the person and contact last.
+/// The logo already links home, so "Home" is not repeated here.
+type NavItem = (&'static str, fn(&Translations) -> &'static str);
+
+static NAV_ITEMS: [NavItem; 6] = [
+    ("/projects", |t| t.nav_projects),
+    ("/technologies", |t| t.nav_technologies),
+    ("/blog", |t| t.nav_blog),
+    ("/docs", |t| t.nav_docs),
+    ("/about", |t| t.nav_about),
+    ("/contact", |t| t.nav_contact),
+];
+
+/// True when `path` is `href` or one of its sub-pages (`/blog` also owns `/blogs/*`).
+fn nav_matches(path: &str, href: &str) -> bool {
+    path == href
+        || path.starts_with(&format!("{href}/"))
+        || (href == "/blog" && path.starts_with("/blogs/"))
+}
+
 /// Top navigation bar with language toggle.
 #[component]
 pub fn NavBar() -> impl IntoView {
@@ -133,6 +153,8 @@ pub fn NavBar() -> impl IntoView {
     let search_index: RwSignal<Vec<SearchEntryData>> = RwSignal::new(vec![]);
     let search_loading = RwSignal::new(true);
     let mobile_menu_open = RwSignal::new(false);
+    let location = leptos_router::hooks::use_location();
+    let is_active = move |href: &str| nav_matches(&location.pathname.get(), href);
     #[cfg(not(feature = "ssr"))]
     let did_init = RwSignal::new(false);
 
@@ -151,6 +173,12 @@ pub fn NavBar() -> impl IntoView {
         });
     }
 
+    let icon_btn_class = ButtonClass {
+        variant: ButtonVariant::Icon,
+        size: ButtonSize::Default,
+    }
+    .to_class();
+
     let lang_btn_class = tw_merge!(
         ButtonClass {
             variant: ButtonVariant::Ghost,
@@ -166,8 +194,26 @@ pub fn NavBar() -> impl IntoView {
     };
 
     let search_empty = move || match lang.get() {
-        Language::Fr => "Aucun resultat.",
+        Language::Fr => "Aucun résultat.",
         Language::En => "No result.",
+    };
+
+    let home_link_label = move || match lang.get() {
+        Language::Fr => "Max. – Accueil",
+        Language::En => "Max. – Home",
+    };
+    let main_nav_label = move || match lang.get() {
+        Language::Fr => "Navigation principale",
+        Language::En => "Main navigation",
+    };
+    let rss_label = move || match lang.get() {
+        Language::Fr => "Flux RSS",
+        Language::En => "RSS feed",
+    };
+    // Keeps the visible "EN"/"FR" text inside the accessible name (WCAG 2.5.3).
+    let lang_toggle_label = move || match lang.get() {
+        Language::Fr => "EN – Switch to English",
+        Language::En => "FR – Passer en français",
     };
 
     let search_loading_label = move || match lang.get() {
@@ -176,68 +222,54 @@ pub fn NavBar() -> impl IntoView {
     };
 
     view! {
-        <header class="sticky top-0 z-50 border-b border-border backdrop-blur-md bg-background/90 cyber-grid-bg">
+        <header
+            on:keydown=move |ev| {
+                if ev.key() == "Escape" {
+                    search_query.set(String::new());
+                    mobile_menu_open.set(false);
+                }
+            }
+            class="sticky top-0 z-50 border-b border-border bg-background/95 cyber-grid-bg">
             <div class="max-w-5xl mx-auto px-5 h-14 flex items-center gap-4">
                 <a
                     href="/"
                     class="font-mono font-bold text-xl text-primary tracking-tight cyber-text-glow"
-                    aria-label="Home"
+                    aria-label=home_link_label
                 >
                     "Max."
                 </a>
 
-                <nav class="hidden md:flex gap-6 flex-1 min-w-0" aria-label="Main navigation">
-                    <a
-                        href="/"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_home}
-                    </a>
-                    <a
-                        href="/contact"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_contact}
-                    </a>
-                    <a
-                        href="/projects"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_projects}
-                    </a>
-                    <a
-                        href="/technologies"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_technologies}
-                    </a>
-                    <a
-                        href="/blog"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_blog}
-                    </a>
-                    <a
-                        href="/docs"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_docs}
-                    </a>
-                    <a
-                        href="/about"
-                        class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-                    >
-                        {move || t.get().nav_about}
-                    </a>
+                <nav class="hidden md:flex gap-5 flex-1 min-w-0" aria-label=main_nav_label>
+                    {NAV_ITEMS
+                        .iter()
+                        .map(|&(href, label)| {
+                            view! {
+                                <a
+                                    href=href
+                                    aria-current=move || is_active(href).then_some("page")
+                                    class=move || {
+                                        if is_active(href) {
+                                            "text-sm font-medium text-primary whitespace-nowrap"
+                                        } else {
+                                            "text-sm font-medium text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                                        }
+                                    }
+                                >
+                                    {move || label(t.get())}
+                                </a>
+                            }
+                        })
+                        .collect_view()}
                 </nav>
 
-                <div class="relative w-72 shrink-0 hidden md:block">
+                <div class="relative w-52 lg:w-64 shrink-0 hidden md:block">
                     <input
                         type="search"
                         prop:value=move || search_query.get()
                         on:input=move |ev| search_query.set(event_target_value(&ev))
                         placeholder=move || search_placeholder()
-                        class="w-full rounded border border-border bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                        aria-label=search_placeholder
+                        class="w-full rounded border border-border bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary"
                     />
 
                     {move || {
@@ -313,8 +345,8 @@ pub fn NavBar() -> impl IntoView {
                     href="/rss.xml"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="RSS feed"
-                    class="hidden md:inline-flex items-center justify-center rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                    aria-label=rss_label
+                    class=tw_merge!(icon_btn_class.clone(), "hidden md:inline-flex")
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -329,15 +361,17 @@ pub fn NavBar() -> impl IntoView {
 
                 <button
                     class=tw_merge!(lang_btn_class.clone(), "hidden md:inline-flex")
-                    aria-label="Toggle language"
+                    aria-label=lang_toggle_label
                     on:click=move |_| toggle_language(lang)
                 >
                     {move || lang.get().toggle_label()}
                 </button>
 
                 <button
-                    class="md:hidden inline-flex items-center justify-center rounded border border-border px-2 py-1 text-sm font-mono tracking-wide text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
-                    aria-label="Toggle menu"
+                    class=tw_merge!(icon_btn_class.clone(), "md:hidden w-11 h-11 text-sm font-mono")
+                    aria-label="Menu"
+                    aria-controls="mobile-menu"
+                    aria-expanded=move || if mobile_menu_open.get() { "true" } else { "false" }
                     on:click=move |_| mobile_menu_open.update(|open| *open = !*open)
                 >
                     {move || if mobile_menu_open.get() { "✕" } else { "☰" }}
@@ -345,58 +379,30 @@ pub fn NavBar() -> impl IntoView {
             </div>
 
             <Show when=move || mobile_menu_open.get()>
-                <div class="md:hidden border-t border-border bg-background/95 backdrop-blur-md">
+                <div id="mobile-menu" class="md:hidden border-t border-border bg-background">
                     <div class="max-w-5xl mx-auto px-5 py-4 flex flex-col gap-4">
-                        <nav class="flex min-w-0 flex-col gap-2" aria-label="Mobile navigation">
-                            <a
-                                href="/"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_home}
-                            </a>
-                            <a
-                                href="/contact"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_contact}
-                            </a>
-                            <a
-                                href="/projects"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_projects}
-                            </a>
-                            <a
-                                href="/technologies"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_technologies}
-                            </a>
-                            <a
-                                href="/blog"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_blog}
-                            </a>
-                            <a
-                                href="/docs"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_docs}
-                            </a>
-                            <a
-                                href="/about"
-                                class="py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
-                                on:click=move |_| mobile_menu_open.set(false)
-                            >
-                                {move || t.get().nav_about}
-                            </a>
+                        <nav class="flex min-w-0 flex-col" aria-label=main_nav_label>
+                            {NAV_ITEMS
+                                .iter()
+                                .map(|&(href, label)| {
+                                    view! {
+                                        <a
+                                            href=href
+                                            aria-current=move || is_active(href).then_some("page")
+                                            class=move || {
+                                                if is_active(href) {
+                                                    "py-3 text-sm font-medium text-primary break-words"
+                                                } else {
+                                                    "py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors break-words"
+                                                }
+                                            }
+                                            on:click=move |_| mobile_menu_open.set(false)
+                                        >
+                                            {move || label(t.get())}
+                                        </a>
+                                    }
+                                })
+                                .collect_view()}
                         </nav>
 
                         <div class="relative w-full">
@@ -405,7 +411,8 @@ pub fn NavBar() -> impl IntoView {
                                 prop:value=move || search_query.get()
                                 on:input=move |ev| search_query.set(event_target_value(&ev))
                                 placeholder=move || search_placeholder()
-                                class="w-full rounded border border-border bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none"
+                                aria-label=search_placeholder
+                                class="w-full rounded border border-border bg-background/70 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary"
                             />
 
                             {move || {
@@ -485,8 +492,8 @@ pub fn NavBar() -> impl IntoView {
                             href="/rss.xml"
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label="RSS feed"
-                            class="inline-flex items-center justify-center rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+                            aria-label=rss_label
+                            class=icon_btn_class.clone()
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -501,7 +508,7 @@ pub fn NavBar() -> impl IntoView {
 
                         <button
                             class=lang_btn_class.clone()
-                            aria-label="Toggle language"
+                            aria-label=lang_toggle_label
                             on:click=move |_| toggle_language(lang)
                         >
                             {move || lang.get().toggle_label()}
@@ -510,5 +517,20 @@ pub fn NavBar() -> impl IntoView {
                 </div>
             </Show>
         </header>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::nav_matches;
+
+    #[test]
+    fn nav_active_state() {
+        assert!(nav_matches("/projects", "/projects"));
+        assert!(nav_matches("/docs/rust/intro", "/docs"));
+        assert!(nav_matches("/blogs/my-post", "/blog"));
+        assert!(!nav_matches("/about", "/contact"));
+        assert!(!nav_matches("/projectsx", "/projects"));
+        assert!(!nav_matches("/", "/projects"));
     }
 }

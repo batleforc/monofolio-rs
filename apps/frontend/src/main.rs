@@ -229,7 +229,6 @@ async fn main() -> anyhow::Result<()> {
                                     sizes="96x96"
                                     type_="image/png"
                                 />
-                                <Link rel="icon" href="/assets/favicon.svg" type_="image/svg+xml" />
                                 <Link
                                     rel="apple-touch-icon"
                                     sizes="180x180"

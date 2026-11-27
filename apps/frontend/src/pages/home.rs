@@ -4,18 +4,17 @@ use content::{ContentEntry, HomeConfig};
 use leptos::prelude::*;
 use leptos_router::hooks::use_location;
 use serde::{Deserialize, Serialize};
-use tw_merge::IntoTailwindClass;
 
-use crate::components::ui::{
-    ButtonClass, ButtonSize, ButtonVariant, Card, SectionInner, SectionTitle,
-};
+use crate::components::ui::{Card, LinkCard, SectionInner, SectionTitle, TagBadge};
 use crate::components::{
     about::About,
     hero::Hero,
     state::{ErrorScreen, LoadingScreen},
+    timeline::Timeline,
 };
 use crate::date_utils::format_display_date;
-use crate::i18n::{use_language, use_translations, Language};
+use crate::i18n::{use_language, Language};
+use crate::pages::projects::resolve_project_image;
 use crate::seo::{PersonJsonLd, StaticPageSeo};
 use crate::services::api::fetch_json;
 
@@ -211,7 +210,7 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
 
     let title = move || match lang.get() {
         Language::Fr => "Derniers projets",
-        Language::En => "Last projects",
+        Language::En => "Latest projects",
     };
 
     let empty = move || match lang.get() {
@@ -246,13 +245,29 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                 let released_at_raw = project.released_at.clone();
                                 let tags = project.tags.clone();
                                 let techno = project.techno.clone();
-                                let project_handle = project.handle.clone();
+                                let image = resolve_project_image(&project.image);
                                 let project_url = format!(
                                     "/{}",
                                     project.handle.trim_start_matches('/'),
                                 );
                                 view! {
-                                    <Card class="p-4">
+                                    <LinkCard class="p-4">
+                                        {image
+                                            .map(|src| {
+                                                view! {
+                                                    <a href=project_url.clone() tabindex="-1" aria-hidden="true">
+                                                        <img
+                                                            src=src
+                                                            alt=""
+                                                            width="640"
+                                                            height="320"
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            class="w-full aspect-[2/1] object-cover rounded border border-border mb-3"
+                                                        />
+                                                    </a>
+                                                }
+                                            })}
                                         <span class="text-[0.7rem] uppercase tracking-widest font-mono font-semibold text-accent">
                                             {move || format_display_date(&released_at_raw, lang.get())}
                                         </span>
@@ -273,9 +288,9 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                                 .take(3)
                                                 .map(|item| {
                                                     view! {
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded border border-border text-[0.7rem] text-muted-foreground">
+                                                        <TagBadge>
                                                             {item}
-                                                        </span>
+                                                        </TagBadge>
                                                     }
                                                 })
                                                 .collect_view()}
@@ -284,25 +299,22 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
                                                 .take(2)
                                                 .map(|item| {
                                                     view! {
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded border border-primary/30 text-[0.7rem] text-primary">
+                                                        <TagBadge class="border-primary/30 text-primary">
                                                             {format!("#{}", item)}
-                                                        </span>
+                                                        </TagBadge>
                                                     }
                                                 })
                                                 .collect_view()}
                                         </div>
-                                        <div class="mt-3 flex items-center justify-between gap-2">
-                                            <p class="text-xs text-muted-foreground font-mono truncate">
-                                                {project_handle}
-                                            </p>
+                                        <div class="mt-3 flex items-center justify-end gap-2">
                                             <a
                                                 href=project_url
-                                                class="text-sm text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                                                class="text-sm text-primary hover:text-foreground underline-offset-2 hover:underline"
                                             >
                                                 {open_label}
                                             </a>
                                         </div>
-                                    </Card>
+                                    </LinkCard>
                                 }
                             })
                             .collect_view()
@@ -317,35 +329,20 @@ fn LatestProjectsSection(projects: Vec<ProjectSummaryData>) -> impl IntoView {
 /// Renders the full home page content once data is available.
 #[component]
 fn HomeContent(data: HomeData, projects: Vec<ProjectSummaryData>) -> impl IntoView {
-    let t = use_translations();
-    let contact_btn_class = ButtonClass {
-        variant: ButtonVariant::Outline,
-        size: ButtonSize::Default,
-    }
-    .to_class();
-
+    // Reading order: who (hero) → proof (projects) → trajectory → voice.
     view! {
         <PersonJsonLd data=data.clone() />
         <Hero data=data.clone() />
-        <About data=data.clone() />
         <LatestProjectsSection projects=projects />
-        <footer class="border-t border-border/70 mt-8">
-            <div class="max-w-5xl mx-auto px-5 py-10 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-                <p class="text-sm text-muted-foreground">"Let's build something useful."</p>
-                <a href="/contact" class=contact_btn_class>
-                    {move || t.get().home_footer_contact_cta}
-                </a>
-            </div>
-        </footer>
+        <Timeline data=data.clone() limit=3 />
+        <About data=data />
     }
 }
 
 // ── Home page component ───────────────────────────────────────────────────
 
-/// Home page - 100% client-hydrated.
-///
-/// Data is fetched from `/api/v1/home` on the client after hydration.
-/// The server sends a loading skeleton; the client fills in the content.
+/// Home page. Rendered on the server from `HomeConfig`, then hydrated; client-side
+/// navigation fetches `/api/v1/home`.
 #[component]
 pub fn HomePage() -> impl IntoView {
     let location = use_location();

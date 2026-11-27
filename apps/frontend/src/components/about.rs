@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::components::ui::{Card, SectionInner, SectionTitle};
+use crate::components::ui::{SectionInner, SectionTitle};
 use crate::i18n::{use_language, use_translations, Language};
 use crate::pages::home::HomeData;
 
@@ -20,26 +20,24 @@ pub fn About(data: HomeData) -> impl IntoView {
     };
 
     view! {
-        <section class="border-y border-border bg-card/50" id="about">
+        <section class="border-t border-border" id="about">
             <SectionInner>
                 <SectionTitle>{move || t.get().about_title}</SectionTitle>
-                <Card class="p-6 max-w-3xl">
-                    <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-3 max-w-[65ch]">
                         {move || {
                             presentation()
                                 .lines()
                                 .filter(|l| !l.trim().is_empty())
                                 .map(|line| {
                                     view! {
-                                        <p class="leading-7 text-muted-foreground">
+                                        <p class="leading-7 text-foreground/85">
                                             {line.to_string()}
                                         </p>
                                     }
                                 })
                                 .collect_view()
                         }}
-                    </div>
-                </Card>
+                </div>
             </SectionInner>
         </section>
     }

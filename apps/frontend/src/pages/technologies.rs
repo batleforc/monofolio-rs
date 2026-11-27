@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "ssr"))]
 use web_sys::js_sys;
 
-use crate::components::ui::{Card, SectionInner, SectionTitle, TagBadge};
+use crate::components::ui::{Card, PageTitle, SectionInner, TagBadge};
 use crate::i18n::{use_language, Language};
 use crate::seo::StaticPageSeo;
 use crate::services::api::json_resource;
@@ -93,10 +93,10 @@ fn maturity_badge_class(value: &str) -> &'static str {
             "inline-flex items-center rounded border border-primary/60 bg-primary/10 px-2 py-0.5 text-[0.7rem] font-mono uppercase tracking-widest text-primary"
         }
         "advanced" => {
-            "inline-flex items-center rounded border border-emerald-400/60 bg-emerald-400/10 px-2 py-0.5 text-[0.7rem] font-mono uppercase tracking-widest text-emerald-300"
+            "inline-flex items-center rounded border border-accent/60 bg-accent/10 px-2 py-0.5 text-[0.7rem] font-mono uppercase tracking-widest text-accent"
         }
         "intermediate" => {
-            "inline-flex items-center rounded border border-amber-400/60 bg-amber-400/10 px-2 py-0.5 text-[0.7rem] font-mono uppercase tracking-widest text-amber-300"
+            "inline-flex items-center rounded border border-foreground/40 bg-foreground/5 px-2 py-0.5 text-[0.7rem] font-mono uppercase tracking-widest text-foreground"
         }
         _ => {
             "inline-flex items-center rounded border border-border bg-muted/30 px-2 py-0.5 text-[0.7rem] font-mono uppercase tracking-widest text-muted-foreground"
@@ -190,14 +190,17 @@ fn render_visual(visual: TechnologyVisual) -> impl IntoView {
             <img
                 src=src
                 alt=""
+                width="40"
+                height="40"
                 class="h-10 w-10 shrink-0 rounded border border-border object-cover"
                 loading="lazy"
+                decoding="async"
             />
         }
         .into_any(),
         TechnologyVisual::Icomoon(href) => view! {
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-border bg-muted/20">
-                <svg class="h-6 w-6" aria-hidden="true" focusable="false" fill="#fff">
+                <svg class="h-6 w-6 text-foreground" aria-hidden="true" focusable="false" fill="currentColor">
                     <use href=href></use>
                 </svg>
             </div>
@@ -238,7 +241,7 @@ fn TechnologyBranch(
     let children = node.children.clone();
     let visual = resolve_technology_visual(&node.image);
     let section_label = move || match lang.get() {
-        Language::Fr => "Categorie",
+        Language::Fr => "Catégorie",
         Language::En => "Category",
     };
     let technologies_label = move || match lang.get() {
@@ -313,9 +316,15 @@ fn TechnologyBranch(
                                                 .into_iter()
                                                 .map(|tag| {
                                                     let tag_for_click = tag.clone();
+                                                    let tag_label = tag.clone();
                                                     view! {
                                                         <button
                                                             type="button"
+                                                            class="inline-flex min-h-6 items-center"
+                                                            aria-label=move || match lang.get() {
+                                                                Language::Fr => format!("Filtrer par #{tag_label}"),
+                                                                Language::En => format!("Filter by #{tag_label}"),
+                                                            }
                                                             on:click=move |_| on_tag_click.run(tag_for_click.clone())
                                                         >
                                                             <TagBadge class="border-primary/30 text-primary hover:border-primary/60 hover:text-primary transition-colors">
@@ -471,7 +480,7 @@ pub fn TechnologiesPage() -> impl IntoView {
     };
 
     let empty_label = move || match lang.get() {
-        Language::Fr => "Aucune technologie ne correspond a la recherche.",
+        Language::Fr => "Aucune technologie ne correspond à la recherche.",
         Language::En => "No technology matches the current search.",
     };
 
@@ -497,7 +506,7 @@ pub fn TechnologiesPage() -> impl IntoView {
         />
         <section class="min-h-[calc(100svh-3.5rem)] cyber-grid-bg">
             <SectionInner>
-                <SectionTitle>{title}</SectionTitle>
+                <PageTitle>{title}</PageTitle>
                 <p class="mb-6 text-muted-foreground">{subtitle}</p>
 
                 <Suspense fallback=move || {

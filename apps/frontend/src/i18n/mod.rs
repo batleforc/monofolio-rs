@@ -17,6 +17,17 @@ pub fn provide_i18n() {
             lang.set(stored);
         }
     });
+    // Keep <html lang> in step with the UI language (WCAG 3.1.1).
+    #[cfg(not(feature = "ssr"))]
+    Effect::new(move |_| {
+        let code = lang.get().as_str();
+        if let Some(root) = web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.document_element())
+        {
+            let _ = root.set_attribute("lang", code);
+        }
+    });
 }
 
 /// Returns the reactive language signal from context.
