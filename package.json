@@ -5,15 +5,15 @@
     "langs:codeblock": "node scripts/list-codeblock-langs.mjs"
   },
   "dependencies": {
-    "@tailwindcss/cli": "^4.2.2",
-    "tailwindcss": "^4.2.2"
+    "@tailwindcss/cli": "^4.3.5",
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
-    "@shikijs/langs": "4.0.2",
-    "@shikijs/themes": "4.0.2",
-    "esbuild": "^0.28.0",
+    "@shikijs/langs": "4.6.0",
+    "@shikijs/themes": "4.6.0",
+    "esbuild": "^0.28.2",
     "knip": "^6.49.0",
-    "shiki": "^4.0.2"
+    "shiki": "^4.6.0"
   },
   "type": "module"
 }
