@@ -1,5 +1,6 @@
 [tools]
-"cargo:cargo-audit" = "latest"    # deps:cve:snapshot (RustSec advisories)
+"cargo:cargo-audit" = "latest"    # audit:rust, deps:cve:snapshot (RustSec advisories)
+"cargo:cargo-deny" = "latest"     # deny: advisories, bans, licenses, sources (deny.toml)
 "cargo:cargo-machete" = "latest"  # deps:unused (unused Rust dependencies)
 cocogitto = "latest"
 copilot = "latest"

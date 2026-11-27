@@ -4,6 +4,9 @@ includes:
   deps:
     taskfile: .tasks/deps.yaml
     flatten: true
+  security:
+    taskfile: .tasks/security.yaml
+    flatten: true
 
 tasks:
   init:

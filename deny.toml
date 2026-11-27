@@ -1,0 +1,131 @@
+# source: weebo-security template (batlehub@20879e5 deny.toml), adapted to monofolio.
+# cargo-deny configuration — supply-chain gate for the Rust workspace.
+#
+# Complements `cargo audit` (RUSTSEC advisories only) with:
+#   • advisories — vulnerabilities + unmaintained + yanked crates
+#   • bans       — assert deliberately-removed crates never re-enter the tree
+#   • licenses   — flag a future copyleft transitive dependency
+#   • sources    — only crates.io (+ in-repo path patches) are trusted
+#
+# Run locally with `task deny`. CI gates on it in back-dep-audit.yaml.
+
+[graph]
+# all-features keeps optional adapters in the graph. No `targets` filter: if a
+# binary is released for Windows/macOS, restricting to Linux would also stop
+# advisories being reported for the artefact those users download.
+all-features = true
+
+# ── Advisories ────────────────────────────────────────────────────────────────
+[advisories]
+db-urls = ["https://github.com/rustsec/advisory-db"]
+# Yanked crates are treated as a failure — a yank usually means "do not use".
+yanked = "deny"
+# Mirror the "no suppressions" stance of .cargo/audit.toml: nothing ignored.
+# If an entry ever lands here it carries the advisory id, why it does not apply,
+# who checked, the date, and the upstream issue that will retire it.
+ignore = []
+
+# ── Bans ──────────────────────────────────────────────────────────────────────
+[bans]
+# Every duplicate is checked and accounted for in `skip`; one this list does not
+# know fails the build.
+#
+# ── Security outranks tidiness, and the config enforces it ────────────────────
+#
+#   1. An advisory is never resolved by keeping an old line for tidiness, and a
+#      duplicate is never resolved by downgrading. If upgrading a crate to close
+#      a RUSTSEC advisory creates a duplicate, **the upgrade stands and the skip
+#      is added in the same commit.**
+#   2. `skip` is for de-duplication only. It has no power over `deny` below —
+#      cargo-deny refuses to load this file if a crate appears in both, so the
+#      vulnerable lines named there cannot be silenced by adding them here.
+#   3. Only then: before adding a `skip`, name who holds the old version and
+#      check whether it can simply be upgraded away.
+multiple-versions = "deny"
+
+# One entry per duplicate, each with the crate that holds the older line.
+# Versions are semver requirements (`0.22` is `^0.22`), so a patch release of a
+# holder needs no edit here — only a genuinely new line does.
+skip = [
+    { name = "actix-files", version = "0.6" },  # held by leptos_actix 0.8 (latest 0.7.5). RUSTSEC-2026-0443, retired by leptos_actix 0.9 (uses 0.7).
+    { name = "base64", version = "0.22" },  # held by leptos, leptos_server, server_fn, tonic (latest 0.23.1)
+    { name = "block-buffer", version = "0.10" },  # held by digest (latest 0.12.1)
+    { name = "convert_case", version = "0.6" },  # held by config (latest 0.11.0)
+    { name = "convert_case", version = "0.10" },  # held by derive_more-impl (latest 0.11.0)
+    { name = "cpufeatures", version = "0.2" },  # held by sha2 (latest 0.3.1)
+    { name = "crypto-common", version = "0.1" },  # held by digest (latest 0.2.2)
+    { name = "digest", version = "0.10" },  # held by sha2 (latest 0.11.3)
+    { name = "foldhash", version = "0.1" },  # held by hashbrown (latest 0.2.0)
+    { name = "getrandom", version = "0.2" },  # held by ring (latest 0.4.3)
+    { name = "getrandom", version = "0.3" },  # held by rand_core (latest 0.4.3)
+    { name = "gloo-net", version = "0.6" },  # held by leptos_router, server_fn (latest 0.8.0)
+    { name = "gloo-utils", version = "0.2" },  # held by gloo-net (latest 0.3.1)
+    { name = "h2", version = "0.3" },  # held by actix-http (latest 0.4.21). RUSTSEC-2026-0258: actix-web/actix-http `http2` is on through 7 crates' default features, so h2 0.3 cannot be removed; h2c is off at runtime (main.rs auto_h2c(false)). Belongs in `deny` once actix-http moves to h2 0.4.
+    { name = "hashbrown", version = "0.15" },  # held by hashlink (latest 0.17.2)
+    { name = "http", version = "0.2" },  # held by actix-http, actix-router, h2 (latest 1.5.0)
+    { name = "itertools", version = "0.14" },  # held by leptos_macro, rav1e, reactive_stores, tachys (latest 0.15.0)
+    { name = "miniz_oxide", version = "0.8" },  # held by exr, png (latest 0.9.1)
+    { name = "nom", version = "7" },  # held by tw_merge (latest 8.0.0)
+    { name = "pastey", version = "0.1" },  # held by av-scenechange (latest 0.2.3)
+    { name = "r-efi", version = "5" },  # held by getrandom (latest 6.0.0)
+    { name = "rand", version = "0.9" },  # held by leptos, opentelemetry_sdk, rav1e (latest 0.10.4)
+    { name = "rand_core", version = "0.9" },  # held by rand, rand_chacha (latest 0.10.1)
+    { name = "sha2", version = "0.10" },  # held by wasm_split_macros (latest 0.11.2)
+    { name = "syn", version = "2" },  # held by most proc-macros in the tree (darling, thiserror-impl, leptos macros, …) (latest 3.x)
+    { name = "thiserror", version = "1" },  # held by gloo-net (latest 2.0.21)
+    { name = "thiserror-impl", version = "1" },  # held by thiserror (latest 2.0.21)
+    { name = "v_htmlescape", version = "0.15" },  # held by actix-files (latest 0.17.0)
+    { name = "windows-sys", version = "0.52" },  # held by ring (latest 0.61.2)
+]
+# Workspace crates depend on each other via versionless `{ path = … }`, which
+# cargo-deny counts as wildcards. The security value is `deny`, not this.
+wildcards = "allow"
+deny = [
+    # Crates removed from the tree for a security reason. Denying them turns
+    # "removed by a bump/patch/feature flag" into a CI-failing invariant: if a
+    # dependency bump silently drags one back in, the build breaks. Each entry
+    # names the advisory and how it was removed. Real examples from batlehub:
+    #
+    # RUSTSEC-2023-0071 (Marvin attack) — pulled in via sqlx-mysql, removed by
+    # patching sqlx-mysql out.
+    # { name = "rsa" },
+    #
+    # RUSTSEC-2026-0258 — fixed in h2 0.4.16, no 0.3 backport. Removed by
+    # turning off actix-web's `http2` default feature; this stops a future
+    # `default-features = true` from quietly reintroducing it.
+    # { name = "h2", version = "<0.4" },
+]
+
+# ── Licenses ──────────────────────────────────────────────────────────────────
+# Permissive allowlist. Anything NOT listed (notably GPL/AGPL/LGPL copyleft)
+# fails the check, so a future copyleft transitive dependency is surfaced.
+# Add an entry with a comment naming the crate that needs it.
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "MPL-2.0",
+    "CC0-1.0",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0", # webpki-roots trust store
+    "BSL-1.0",
+    "Unlicense",
+    "IJG",                  # jpeg-encoder, via takumi-raster (miniature JPEG encode)
+    "NCSA",                 # libfuzzer-sys, via rav1e/ravif (image's default avif feature)
+]
+confidence-threshold = 0.8
+
+# Workspace crates are not published (publish = false): no license to check.
+[licenses.private]
+ignore = true
+
+# ── Sources ───────────────────────────────────────────────────────────────────
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

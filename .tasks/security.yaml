@@ -1,0 +1,57 @@
+# source: weebo-security template (batlehub@20879e5 .tasks/security.yaml), trimmed to
+# the mandatory audit. postmortem, sbom:rust and vex are not set up yet.
+# House contract: `task audit` covers the dependencies AND the image. batlehub's
+# own `audit` is cargo audit alone (here `audit:rust`) and leaves Trivy to CI.
+version: "3"
+
+tasks:
+  audit:
+    desc: "The mandatory audit: Rust advisories + bans, frontend advisories, image CVEs"
+    cmds:
+      - task: audit:rust
+      - task: deny
+      - task: ui:audit
+      - task: audit:image
+
+  audit:rust:
+    desc: Check Rust dependencies for security vulnerabilities (RUSTSEC; no suppressions, see .cargo/audit.toml)
+    cmds:
+      - cargo audit
+
+  deny:
+    desc: "Supply-chain gate: advisories, banned crates, licenses and sources (see deny.toml)"
+    cmds:
+      - cargo deny check
+
+  ui:audit:
+    desc: Check frontend pnpm dependencies for security vulnerabilities
+    cmds:
+      # Covers the whole tree (direct + transitive) and resolves from
+      # pnpm-lock.yaml, so it needs no install. Exits non-zero on high/critical.
+      #
+      # No `--prod`, deliberately: this tree's build tooling produces what the
+      # console ships, so a dev-only advisory is still an advisory about our
+      # output. `--prod` is for a tree that ships nothing it builds (a docs site).
+      #
+      # An `overrides:` pin is the wrong fix for a package that ships a
+      # *prebuilt* bundle: it moves the lockfile, turns this green, and changes
+      # nothing about the bytes the browser runs. Bump the parent instead, or
+      # ignore one advisory with a dated comment saying who checked and why:
+      #
+      #   - pnpm audit --audit-level high --ignore GHSA-xxxx-xxxx-xxxx
+      #
+      # One entry per advisory, never a blanket carve-out.
+      - pnpm audit --audit-level high
+
+  audit:image:
+    desc: "Trivy gate on a built image, same flags as CI — IMAGE=monofolio:scan (skipped, loudly, when unset)"
+    cmds:
+      # No container engine in the CDE, so the image is usually built elsewhere
+      # (CI, a registry) and scanned by reference. Fixable HIGH/CRITICAL only.
+      - |
+        if [ -z "{{.IMAGE}}" ]; then
+          echo "SKIPPED: audit:image — IMAGE unset; image-scan.yaml gates it in CI" >&2
+          exit 0
+        fi
+        trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 \
+          --ignorefile .trivyignore.yaml "{{.IMAGE}}"
