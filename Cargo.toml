@@ -71,7 +71,7 @@ image = {
   ]
 }
 mermaid-rs-renderer = { version = "0.3", default-features = false }
-notify = "6"
+notify = "9"
 # Content parsing
 pulldown-cmark = "0.13"
 regex = "1"
