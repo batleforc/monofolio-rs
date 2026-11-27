@@ -30,7 +30,7 @@ serde_yaml = "0.9"
 # Tracing
 tracing = { version = "0.1", features = ["std"] }
 tracing-actix-web = { version = "0.7" }
-tracing-opentelemetry = { version = "0.32" }
+tracing-opentelemetry = { version = "0.34" }
 tracing-subscriber = {
   version = "0.3",
   features = [
@@ -42,9 +42,9 @@ tracing-subscriber = {
 }
 
 # OpenTelemetry
-opentelemetry = { version = "0.31", features = ["metrics", "trace"] }
+opentelemetry = { version = "0.33", features = ["metrics", "trace"] }
 opentelemetry-otlp = {
-  version = "0.31",
+  version = "0.33",
   features = [
     "grpc-tonic",
     "metrics",
@@ -52,7 +52,7 @@ opentelemetry-otlp = {
   ]
 }
 opentelemetry_sdk = {
-  version = "0.31",
+  version = "0.33",
   features = [
     "metrics",
     "rt-tokio",
