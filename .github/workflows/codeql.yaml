@@ -33,6 +33,11 @@ jobs:
           toolchain: "stable"
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Build Rust workspace
+        # No debug info: with .cargo/config.toml forcing ld.bfd, the frontend
+        # binary's .debug_str overflows 32-bit relocations ("relocation truncated
+        # to fit"). CodeQL does not need it.
+        env:
+          CARGO_PROFILE_DEV_DEBUG: "0"
         run: cargo build --locked --workspace
       - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
   analyze-javascript:
