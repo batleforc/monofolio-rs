@@ -39,7 +39,31 @@ dependencies = [
  "mime_guess",
  "percent-encoding",
  "pin-project-lite",
- "v_htmlescape",
+ "v_htmlescape 0.15.8",
+]
+
+[[package]]
+name = "actix-files"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35587505432a51eb52536fbf86c89d57a3ebe792f3eb1d94e01da0b917aa07bc"
+dependencies = [
+ "actix-http",
+ "actix-service",
+ "actix-utils",
+ "actix-web",
+ "bitflags 2.13.2",
+ "bytes",
+ "derive_more",
+ "futures-core",
+ "http-range",
+ "log",
+ "mime",
+ "mime_guess",
+ "percent-encoding",
+ "pin-project-lite",
+ "v_htmlescape 0.17.0",
+ "winapi-util",
 ]
 
 [[package]]
@@ -293,7 +317,7 @@ checksum = "2cb931c189b85683d69a5cfad41d4d418671e1ac413dd209f3f2fc31e3cfd902"
 name = "api"
 version = "0.1.0"
 dependencies = [
- "actix-files",
+ "actix-files 0.7.5",
  "actix-web",
  "content",
  "serde",
@@ -1309,7 +1333,7 @@ dependencies = [
 name = "frontend"
 version = "0.1.0"
 dependencies = [
- "actix-files",
+ "actix-files 0.7.5",
  "actix-web",
  "anyhow",
  "api",
@@ -2319,7 +2343,7 @@ version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c65c0cee7ff1da4bc1c912ad5d01099c399cd546b6ea70f1561778d087d079de"
 dependencies = [
- "actix-files",
+ "actix-files 0.6.10",
  "actix-http",
  "actix-web",
  "any_spawner",
@@ -5039,6 +5063,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "v_escape-base"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1212fce830b75af194b578e55b3db9049f2c8c45f58d397fb25602fdb50fb3d"
+
+[[package]]
 name = "v_frame"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5054,6 +5084,15 @@ name = "v_htmlescape"
 version = "0.15.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e8257fbc510f0a46eb602c10215901938b5c2a7d5e70fc11483b1d3c9b5b18c"
+
+[[package]]
+name = "v_htmlescape"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "befb3d53c9e3ec641417685896cbc8cc5bd264d6a2e190c56aaef1af24740d99"
+dependencies = [
+ "v_escape-base",
+]
 
 [[package]]
 name = "valuable"

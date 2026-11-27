@@ -39,8 +39,10 @@ async fn get_public_file(
         return Err(ErrorNotFound("Not Found"));
     }
 
-    NamedFile::open_async(file_path)
+    // actix-files 0.7 dropped open_async: open on the blocking pool so the worker is not stalled.
+    web::block(move || NamedFile::open(file_path))
         .await
+        .map_err(|_| ErrorNotFound("Not Found"))?
         .map_err(|_| ErrorNotFound("Not Found"))
 }
 

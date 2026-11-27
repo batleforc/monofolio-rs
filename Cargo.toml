@@ -3,7 +3,7 @@ resolver = "2"
 members = ["apps/frontend", "libs/api", "libs/content", "libs/trace"]
 
 [workspace.dependencies]
-actix-files = { version = "0.6" }
+actix-files = { version = "0.7" }
 # Actix
 actix-web = { version = "4", features = ["macros"] }
 
