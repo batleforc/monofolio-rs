@@ -70,7 +70,7 @@ image = {
     "webp",
   ]
 }
-mermaid-rs-renderer = { version = "0.2.2", default-features = false }
+mermaid-rs-renderer = { version = "0.3", default-features = false }
 notify = "6"
 # Content parsing
 pulldown-cmark = "0.13"
