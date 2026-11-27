@@ -6,7 +6,9 @@ use std::path::Path;
 
 use image::codecs::jpeg::JpegEncoder;
 use image::ImageReader;
-use mermaid_rs_renderer::{render_with_options as render_mermaid_svg, LayoutConfig, RenderOptions, Theme};
+use mermaid_rs_renderer::{
+    render_with_options as render_mermaid_svg, LayoutConfig, RenderOptions, Theme,
+};
 use sha2::{Digest, Sha256};
 
 use crate::markdown::MarkdownNode;
