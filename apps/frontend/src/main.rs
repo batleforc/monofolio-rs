@@ -266,6 +266,10 @@ async fn main() -> anyhow::Result<()> {
                 }
             })
     })
+    // HTTP/1.x only. actix-web 4.20 accepts cleartext HTTP/2 (h2c) by default, which
+    // reaches h2 0.3 and its RUSTSEC-2026-0258 (unbounded empty DATA frames, no 0.3
+    // backport). The reverse proxy terminates HTTP/2 and speaks HTTP/1.1 to us.
+    .auto_h2c(false)
     .bind((Ipv4Addr::UNSPECIFIED, addr.port()))?;
 
     server.run().await?;
