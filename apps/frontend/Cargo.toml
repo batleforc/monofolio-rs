@@ -35,7 +35,7 @@ actix-web = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 futures = { version = "0.3.32", optional = true }
-gloo-net = { version = "0.7", features = ["http"], optional = true }
+gloo-net = { version = "0.8", features = ["http"], optional = true }
 js-sys = { version = "0.3", optional = true }
 leptos = { workspace = true }
 leptos_actix = { workspace = true, optional = true }
