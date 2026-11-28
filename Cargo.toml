@@ -61,12 +61,16 @@ opentelemetry_sdk = {
 }
 
 gray_matter = "0.3"
+# Only the formats content-build decodes (jpg, png, webp; others are copied
+# as-is). The defaults pulled every codec, AVIF included (rav1e), which
+# dominated cold builds.
 image = {
   version = "0.25",
-  default-features = true,
+  default-features = false,
   features = [
     "jpeg",
     "png",
+    "rayon",
     "webp",
   ]
 }
@@ -122,6 +126,13 @@ bin-package = "frontend"
 lib-package = "frontend"
 
 tailwind-input-file = "apps/frontend/style/main.css"
+
+# Dev debug info stays in the object files instead of going through the
+# linker: the SSR binary carried over 4 GB of DWARF, which ld.bfd (forced in
+# .cargo/config.toml) took minutes to process before failing with
+# "relocation truncated to fit ... .debug_str". Debuggers still find it.
+[profile.dev]
+split-debuginfo = "unpacked"
 
 [profile.release]
 opt-level = 3

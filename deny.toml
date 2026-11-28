@@ -63,10 +63,8 @@ skip = [
     { name = "h2", version = "0.3" },  # held by actix-http (latest 0.4.21). RUSTSEC-2026-0258: actix-web/actix-http `http2` is on through 7 crates' default features, so h2 0.3 cannot be removed; h2c is off at runtime (main.rs auto_h2c(false)). Belongs in `deny` once actix-http moves to h2 0.4.
     { name = "hashbrown", version = "0.15" },  # held by hashlink (latest 0.17.2)
     { name = "http", version = "0.2" },  # held by actix-http, actix-router, h2 (latest 1.5.0)
-    { name = "itertools", version = "0.14" },  # held by leptos_macro, rav1e, reactive_stores, tachys (latest 0.15.0)
+    { name = "itertools", version = "0.14" },  # held by leptos_macro, reactive_stores, tachys (latest 0.15.0)
     { name = "miniz_oxide", version = "0.8" },  # held by exr, png (latest 0.9.1)
-    { name = "nom", version = "7" },  # held by tw_merge (latest 8.0.0)
-    { name = "pastey", version = "0.1" },  # held by av-scenechange (latest 0.2.3)
     { name = "r-efi", version = "5" },  # held by getrandom (latest 6.0.0)
     { name = "rand", version = "0.9" },  # held by leptos, opentelemetry_sdk, rav1e (latest 0.10.4)
     { name = "rand_core", version = "0.9" },  # held by rand, rand_chacha (latest 0.10.1)
@@ -116,7 +114,6 @@ allow = [
     "BSL-1.0",
     "Unlicense",
     "IJG",                  # jpeg-encoder, via takumi-raster (miniature JPEG encode)
-    "NCSA",                 # libfuzzer-sys, via rav1e/ravif (image's default avif feature)
 ]
 confidence-threshold = 0.8
 
