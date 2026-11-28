@@ -1,139 +1,146 @@
 # syntax=docker/dockerfile:1.7
+# Shape from weebo-containerfile: pinned bases and tools, cargo-chef dependency
+# layer, distroless runtime. Bases are pinned by digest; updatecli moves them.
+
+# pnpm, exact: lockfiles are law in the image. The lockfile is checked with
+# this version (pnpm install --frozen-lockfile passes with it).
+ARG PNPM_VERSION=12.23.0
+
 # =============================================================================
-# Stage 1 - node-builder: bundle Shiki (syntax highlighting)
+# Stage 1 - node-builder: JS toolchain + Shiki bundle
 # =============================================================================
 FROM docker.io/node:lts-bookworm-slim@sha256:242549cd46785b480c832479a730f4f2a20865d61ea2e404fdb2a5c3d3b73ecf AS node-builder
+ARG PNPM_VERSION
 WORKDIR /build
 
+# --ignore-scripts: a future pnpm release cannot run an install-time script here.
+RUN npm install -g --ignore-scripts pnpm@${PNPM_VERSION}
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    corepack enable && corepack prepare pnpm@latest --activate \
-    && pnpm config set store-dir /pnpm/store \
+    pnpm config set store-dir /pnpm/store \
     && pnpm install --frozen-lockfile
 
 COPY apps/frontend/shiki.entry.js apps/frontend/shiki.entry.js
 COPY scripts/ scripts/
-
 RUN pnpm run build:shiki
 
 # =============================================================================
-# Stage 2 - rust-base: shared Rust + Node.js toolchain for build stages
+# Stage 2 - chef: Rust toolchain + build tools, shared by planner and builder
 # Node.js is required by cargo-leptos to run the Tailwind CSS compiler.
 # =============================================================================
-FROM docker.io/rust:1-bookworm@sha256:75d26c23c24cc6ea1cdabf0714a6bff8fd7bf3248716043fd7ae86dac7f41b94 AS rust-base
+FROM docker.io/rust:1.100-bookworm@sha256:75d26c23c24cc6ea1cdabf0714a6bff8fd7bf3248716043fd7ae86dac7f41b94 AS chef
 WORKDIR /app
 
-# ── Install Node.js (LTS) by copying from the official node image ────────────
-COPY --from=docker.io/node:lts-bookworm-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=docker.io/node:lts-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js  /usr/local/bin/npm \
-    && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
-    && npm install -g pnpm \
+# Node from the pinned node-builder stage (not an unpinned image reference).
+COPY --from=node-builder /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-builder /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -sf /usr/local/lib/node_modules/pnpm/pnpm /usr/local/bin/pnpm \
     && node --version && pnpm --version
 
-# ── Install Rust toolchain extras ────────────────────────────────────────────
 RUN rustup target add wasm32-unknown-unknown
 
-# cargo-leptos is the build orchestrator for Leptos SSR projects.
-# --locked ensures the version pinned in its Cargo.lock is used.
+# Prebuilt, checksum-pinned tools instead of `cargo install`, which compiled
+# them on every base image change. cargo-leptos 0.3.11 is the latest release
+# with binaries (glibc >= 2.35); an unpinned install broke when 0.3.12 needed a
+# newer rustc. Bump both with the Rust image.
+ARG CARGO_LEPTOS_VERSION=0.3.11
+ARG CARGO_LEPTOS_SHA256=1c9cf0e1e3ffae6c8b58d29281d949dab560cea613b80d361f323f93071df7c8
+ARG CARGO_CHEF_VERSION=0.1.78
+ARG CARGO_CHEF_SHA256=70ef940ef90d04d122f0176fdb8d6c39069191b484a1eaa29b327370c2e1c3c0
+RUN curl -fsSLo /tmp/cargo-leptos.tar.gz \
+      "https://github.com/leptos-rs/cargo-leptos/releases/download/v${CARGO_LEPTOS_VERSION}/cargo-leptos-x86_64-unknown-linux-gnu.tar.gz" \
+    && echo "${CARGO_LEPTOS_SHA256}  /tmp/cargo-leptos.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/cargo-leptos.tar.gz -C /tmp \
+    && install -m 0755 /tmp/cargo-leptos-x86_64-unknown-linux-gnu/cargo-leptos /usr/local/cargo/bin/ \
+    && curl -fsSLo /tmp/cargo-chef.tar.xz \
+      "https://github.com/LukeMathWalker/cargo-chef/releases/download/v${CARGO_CHEF_VERSION}/cargo-chef-x86_64-unknown-linux-gnu.tar.xz" \
+    && echo "${CARGO_CHEF_SHA256}  /tmp/cargo-chef.tar.xz" | sha256sum -c - \
+    && tar -xJf /tmp/cargo-chef.tar.xz -C /tmp \
+    && install -m 0755 /tmp/cargo-chef-x86_64-unknown-linux-gnu/cargo-chef /usr/local/cargo/bin/ \
+    && rm -rf /tmp/cargo-leptos* /tmp/cargo-chef* \
+    && cargo leptos --version && cargo chef --version
+
+# =============================================================================
+# Stage 3 - planner: workspace manifests -> recipe.json
+# The recipe only changes when dependencies or members change, so a source
+# edit keeps the dependency layer below cached.
+# =============================================================================
+FROM chef AS planner
+COPY Cargo.toml Cargo.lock ./
+COPY apps/ apps/
+COPY libs/ libs/
+RUN cargo chef prepare --recipe-path recipe.json
+
+# =============================================================================
+# Stage 4 - builder: dependencies (cached while recipe.json is unchanged),
+# then tests, the Leptos release build and the content build
+# =============================================================================
+FROM chef AS builder
+
+# .cargo/config.toml changes rustflags (linker), so it must be in place before
+# cooking or the final build would not reuse the cooked artefacts.
+COPY .cargo .cargo
+COPY --from=planner /app/recipe.json recipe.json
+# Same profile, targets and features as the builds below:
+#   1. workspace, default features: content bins, api, frontend SSR
+#      (frontend's default feature is ssr, which is what cargo-leptos builds)
+#   2. --tests: dev-dependencies for `cargo test --release --workspace`
+#   3. the content bins alone: `cargo run -p content` resolves content's own
+#      feature set, different from the workspace-wide one
+#   4. the WASM front, in target/front where cargo-leptos builds it
 RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
-    cargo install cargo-leptos --locked
+    cargo chef cook --release --locked --recipe-path recipe.json \
+    && cargo chef cook --release --locked --tests --recipe-path recipe.json \
+    && cargo chef cook --release --locked --recipe-path recipe.json \
+       --manifest-path libs/content/Cargo.toml --bins \
+    && cargo chef cook --release --locked --recipe-path recipe.json \
+       --manifest-path apps/frontend/Cargo.toml --no-default-features --features hydrate \
+       --target wasm32-unknown-unknown --target-dir target/front
 
-# Reuse the node_modules tree already resolved in the Node stage so the Rust
-# stages do not spend time reinstalling the same JS toolchain.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --from=node-builder /build/node_modules ./node_modules
 
-# =============================================================================
-# Stage 3 - rust-deps: precompile dependency-heavy Rust targets from manifests
-# =============================================================================
-FROM rust-base AS rust-deps
-
 COPY Cargo.toml Cargo.lock Leptos.toml ./
-COPY .cargo .cargo
-COPY apps/frontend/Cargo.toml apps/frontend/Cargo.toml
-COPY libs/api/Cargo.toml libs/api/Cargo.toml
-COPY libs/content/Cargo.toml libs/content/Cargo.toml
-COPY libs/trace/Cargo.toml libs/trace/Cargo.toml
-
-# Build placeholder crates so Docker can cache compiled dependencies separately
-# from the real workspace sources. When code changes but manifests do not, the
-# final build can reuse most of this stage.
-RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
-    --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
-    mkdir -p apps/frontend/src libs/api/src libs/content/src/bin libs/trace/src \
-    && printf 'pub fn __placeholder() {}\n' > apps/frontend/src/lib.rs \
-    && printf 'fn main() {}\n' > apps/frontend/src/main.rs \
-    && printf 'pub fn __placeholder() {}\n' > libs/api/src/lib.rs \
-    && printf 'pub fn __placeholder() {}\n' > libs/content/src/lib.rs \
-    && printf 'fn main() {}\n' > libs/content/src/bin/content-build.rs \
-    && printf 'fn main() {}\n' > libs/content/src/bin/generate-signature.rs \
-    && printf 'pub fn __placeholder() {}\n' > libs/trace/src/lib.rs \
-    && cargo build --release --locked --package content --bins \
-    && cargo build --release --locked --package frontend --bin frontend --features ssr \
-    && cargo build --release --locked --package frontend --lib --no-default-features --features hydrate --target wasm32-unknown-unknown
-
-# =============================================================================
-# Stage 4 - rust-builder: final content-build + cargo-leptos release build
-# =============================================================================
-FROM rust-base AS rust-builder
-
-COPY Cargo.toml Cargo.lock Leptos.toml ./
-COPY .cargo .cargo
-COPY apps/frontend/Cargo.toml apps/frontend/Cargo.toml
-COPY libs/api/Cargo.toml libs/api/Cargo.toml
-COPY libs/content/Cargo.toml libs/content/Cargo.toml
-COPY libs/trace/Cargo.toml libs/trace/Cargo.toml
-COPY --from=rust-deps /app/target ./target
-
-# ── Copy workspace source ─────────────────────────────────────────────────────
 COPY apps/ apps/
 COPY libs/ libs/
-
-# Inject the pre-built Shiki bundle (built in stage 1)
+# The Shiki bundle built in stage 1.
 COPY --from=node-builder /build/apps/frontend/public/js/shiki.bundle.js \
     apps/frontend/public/js/shiki.bundle.js
 
-# Keep third-party dependencies from rust-deps, but force workspace crates to be
-# rebuilt from the real sources instead of reusing placeholder artefacts.
-RUN cargo clean --release --package frontend --package content --package api --package trace \
-    && cargo clean --release --target wasm32-unknown-unknown --package frontend
-
-# ── Run the test suite: a failing test stops the image build (and the deploy) ─
+# A failing test stops the image build (and the deploy).
 RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
     cargo test --release --locked --workspace
 
-# Pre-generate the stylesheet expected by cargo-leptos.
-# This avoids a build failure when cargo-leptos cannot find target/tmp/tailwind.css.
+# The stylesheet cargo-leptos expects at target/tmp/tailwind.css.
 RUN mkdir -p target/tmp \
     && CI=true pnpm exec tailwindcss \
     -i apps/frontend/style/main.css \
     -o target/tmp/tailwind.css \
     --minify
 
-# ── Build Leptos app: SSR binary + WASM/CSS assets ───────────────────────────
-# Outputs:
-#   target/release/frontend   - SSR server binary
-#   target/site/              - static assets, WASM bundle, compiled CSS
+# SSR binary (target/release/frontend) + WASM/CSS assets (target/site/).
 RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
     cargo leptos build --release --project frontend
 
-# Copy content last so content-only updates do not invalidate the expensive
-# Leptos SSR/WASM compilation step above.
-COPY contents/ contents/
-# Git history gives each page its created/updated dates (content-build runs `git log`).
-# Copied last so a new commit only invalidates the content step.
-COPY .git .git
-
-# ── Generate content database (db.json, home.yaml, rss.xml, public/ media) ───
+# The content tools are compiled before the content is copied, so a
+# content-only change (a new post) just runs them.
 RUN --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git \
-    cargo run --release --locked --package content --bin content-build && \
-    cargo run --release --locked --package content --bin generate-signature -- --output \
-    ./target/content-build/public/minia/signature.png
+    cargo build --release --locked --package content --bin content-build --bin generate-signature
+
+# Content last, so content-only updates do not invalidate the builds above.
+COPY contents/ contents/
+# Git history gives each page its created/updated dates (content-build runs
+# `git log`). Copied last so a new commit only invalidates the content step.
+COPY .git .git
+
+# Content database (db.json, home.yaml, rss.xml, public/ media) + signature.
+RUN ./target/release/content-build \
+    && ./target/release/generate-signature --output ./target/content-build/public/minia/signature.png
 
 # =============================================================================
 # Stage 5 - runtime: minimal image with only what the server needs at runtime
@@ -142,17 +149,17 @@ FROM gcr.io/distroless/cc-debian12:nonroot@sha256:bd2899c12b335c827750ccf2359879
 WORKDIR /app
 
 # SSR server binary
-COPY --from=rust-builder /app/target/release/frontend ./frontend
+COPY --from=builder /app/target/release/frontend ./frontend
 
 # Leptos site assets: WASM bundle, compiled CSS, and static files from
 # apps/frontend/public/ (favicons, manifest, shiki.bundle.js, …)
-COPY --from=rust-builder /app/target/site ./target/site
+COPY --from=builder /app/target/site ./target/site
 
 # Content database: db.json, home.yaml, rss.xml, config.yaml, public/ (media)
-COPY --from=rust-builder /app/target/content-build ./target/content-build
+COPY --from=builder /app/target/content-build ./target/content-build
 
 # Raw media files served at /media (MEDIA_PATH default: contents/media)
-COPY --from=rust-builder /app/contents/media ./contents/media
+COPY --from=builder /app/contents/media ./contents/media
 
 # ── Runtime configuration ─────────────────────────────────────────────────────
 # LEPTOS_SITE_ROOT must match the path where target/site/ is mounted.
@@ -163,5 +170,9 @@ ENV LEPTOS_SITE_ADDR="0.0.0.0:3000"
 # ENV MEDIA_PATH="contents/media"
 
 EXPOSE 3000
+
+# 65532 is distroless's nonroot user, declared numerically: no /etc/passwd
+# lookup at runtime, and Kubernetes needs a numeric UID for runAsNonRoot.
+USER 65532:65532
 
 CMD ["./frontend"]
