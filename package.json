@@ -1,4 +1,5 @@
 {
+  "packageManager": "pnpm@12.23.0",
   "scripts": {
     "build:shiki": "esbuild apps/frontend/shiki.entry.js --bundle --format=iife --platform=browser --target=es2020 --outfile=apps/frontend/public/js/shiki.bundle.js",
     "watch:shiki": "pnpm run build:shiki -- --watch",
