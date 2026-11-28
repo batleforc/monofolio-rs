@@ -39,7 +39,7 @@ jobs:
         env:
           CARGO_PROFILE_DEV_DEBUG: "0"
         run: cargo build --locked --workspace
-      - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
   analyze-javascript:
     name: Analyze JavaScript/TypeScript
     runs-on: ubuntu-latest
@@ -57,4 +57,4 @@ jobs:
             paths-ignore:
               - apps/frontend/public/js
               - graphify-out
-      - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
