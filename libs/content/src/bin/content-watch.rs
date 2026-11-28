@@ -136,7 +136,17 @@ fn write_reload_sentinel(path: &Path) -> Result<u64, String> {
     Ok(now_unix)
 }
 
+/// db.json without its build timestamp, to tell whether the content really changed.
+fn content_fingerprint(output_dir: &Path) -> Option<serde_json::Value> {
+    let raw = fs::read_to_string(output_dir.join("db.json")).ok()?;
+    let mut value: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    value.as_object_mut()?.remove("generated_at_unix");
+    Some(value)
+}
+
 fn run_rebuild(config: &WatchConfig) -> Result<(), String> {
+    let before = content_fingerprint(&config.output_dir);
+
     println!("[content-watch] Running shiki generation...");
     run_shiki_pipeline()?;
 
@@ -154,6 +164,13 @@ fn run_rebuild(config: &WatchConfig) -> Result<(), String> {
     println!("[content-watch] Regenerating signature...");
     run_signature_generation(&config.output_dir)?;
 
+    // The sentinel forces cargo leptos to rebuild and restart the server: skip it
+    // when the content database is unchanged (e.g. the initial pass on startup).
+    if before.is_some() && before == content_fingerprint(&config.output_dir) {
+        println!("[content-watch] Content unchanged, reload sentinel left as is");
+        return Ok(());
+    }
+
     let timestamp = write_reload_sentinel(&config.sentinel_file)?;
     println!(
         "[content-watch] Updated reload sentinel at {} ({timestamp})",
@@ -164,6 +181,11 @@ fn run_rebuild(config: &WatchConfig) -> Result<(), String> {
 }
 
 fn event_paths(event: &Event) -> Vec<String> {
+    // notify 9 reports reads (open/access) too: the content build reading every
+    // file under contents/ would otherwise trigger the next rebuild, forever.
+    if event.kind.is_access() {
+        return Vec::new();
+    }
     event
         .paths
         .iter()
