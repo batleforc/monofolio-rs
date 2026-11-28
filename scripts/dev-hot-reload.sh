@@ -4,7 +4,10 @@ set -euo pipefail
 cargo run --package content --features dev-tools --bin content-watch &
 watch_pid=$!
 
-cargo leptos watch --project frontend &
+# Own target dir: cargo-leptos builds dev with RUSTFLAGS="--cfg erase_components",
+# plain cargo (check/test/build, content-watch) without. Sharing target/ made
+# every switch between the two recompile all ~770 crates.
+CARGO_TARGET_DIR=target/leptos-dev cargo leptos watch --project frontend &
 leptos_pid=$!
 
 cleanup() {
